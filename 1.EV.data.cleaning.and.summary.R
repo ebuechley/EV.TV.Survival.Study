@@ -245,6 +245,9 @@ head(ev.all)
 names(ev.all)
 unique(ev.all$individual.local.identifier) #note 156 unique id.tag
 
+#write complete dataset
+write.csv(ev.all, "ev.all.csv")
+
 #rename/simplify column headers
 colnames(ev.all)[colnames(ev.all)=="location.long"] <- "long"
 colnames(ev.all)[colnames(ev.all)=="location.lat"] <- "lat"
@@ -305,13 +308,13 @@ map.plot = map.plot + geom_path(data = ev.all, aes(long,lat, group = id.tag)) + 
 map.plot = map.plot + theme(legend.title = element_blank()) 
 map.plot #notice bad fixes in dataset
 
-#write.csv at this point
-write.csv(ev.all, "./Outputs/ev.all.csv", row.names=FALSE)
+#write 1ptperday dataset
+write.csv(ev.all, "./Outputs/ev.all.1ptperday.csv", row.names=FALSE)
 
 ########################################
 #filter data to remove bad fixes
 ########################################
-ev.all = read.csv("./Outputs/ev.all.csv")
+ev.all = read.csv("./Outputs/ev.all.1ptperday.csv")
 unique(ev.all$id.tag) #Note 155 unique id.tag
 unique(ev.all$study.name)
 
