@@ -1,5 +1,5 @@
 #Set WD
-setwd("~/Google Drive/Research Projects/EV-TV tracking study/Dataset/Final")
+setwd("~/Google Drive/Research Projects/EV-TV tracking study/Dataset/Final/")
 
 ###Load relevant libraries###
 ##install MigrateR
@@ -203,7 +203,7 @@ write.csv(ev.mcgrady, "./Original Data/ev.mcgrady.meyburg.all.csv")
 
 ###################################################################
 # read and process additional raw (non Movebank) data
-#
+
 ev30 = read.csv("./Original Data/ISPRA.Italy.CaptiveRaised/AF5AF11F_2018_EV_Italy.csv")
 names(ev30)
 names(ev30)[1] = "individual.local.identifier"
@@ -246,6 +246,7 @@ names(ev.all)
 unique(ev.all$individual.local.identifier) #note 156 unique id.tag
 
 #write complete dataset
+setwd("~/Documents/GitHub/EV - TV Survival Study/")
 write.csv(ev.all, "ev.all.csv")
 
 #rename/simplify column headers
@@ -314,6 +315,7 @@ write.csv(ev.all, "./Outputs/ev.all.1ptperday.csv", row.names=FALSE)
 ########################################
 #filter data to remove bad fixes
 ########################################
+setwd("~/Documents/GitHub/EV - TV Survival Study/")
 ev.all = read.csv("./Outputs/ev.all.1ptperday.csv")
 unique(ev.all$id.tag) #Note 155 unique id.tag
 unique(ev.all$study.name)
@@ -390,7 +392,8 @@ write.csv(ev.all.filtered, "./Outputs/ev.all.filtered.csv", row.names=FALSE)
 #####################################################
 #compute movement stats in adeHabitatLT
 #####################################################
-ev.all.filtered = read.csv("./Outputs/ev.all.filtered.csv")
+setwd("~/Documents/GitHub/EV - TV Survival Study/")
+ev.all.filtered = read.csv("./ev.all.filtered.csv")
 head(ev.all.filtered)
 names(ev.all.filtered)
 unique(ev.all$id.tag) #note 155 unique id.tag
@@ -433,10 +436,10 @@ ev.all.filtered$dt.days <- d1$dt/3600/24
 head(ev.all.filtered)
 
 #write filtered dataset
-write.csv(ev.all.filtered, "./Outputs/ev.all.filtered.csv", row.names = FALSE)
+write.csv(ev.all.filtered, "./ev.all.filtered.csv", row.names = FALSE)
 
 #read
-ev.all.filtered = read.csv("./Outputs/ev.all.filtered.csv")
+ev.all.filtered = read.csv("./ev.all.filtered.csv")
 head(ev.all.filtered)
 
 #lubridate
