@@ -1,0 +1,100 @@
+
+model {
+
+# -------------------------------------------------
+# Parameters:
+# phi[1]: juvenile survival probability during migration
+# phi[2]: juvenile survival probability during winter
+# phi[3]: immature survival probability during stationary period (winter or summer)
+# phi[4]: immature survival probability during migration
+# phi[5]: adult survival probability during summer (breeding season)
+# phi[6]: adult survival probability during migration
+# phi[7]: adult survival probability during winter (non-breeding season)
+# tag.fail: probability that tag will fail
+
+# p.obs: probability to be tracked with functioning tag (=1)
+# p.found.dead: probability for carcass to be recovered
+# p.seen.alive: probability to be observed alive despite the tag being defunct
+
+# -------------------------------------------------
+# States (S):
+# 1 dead
+# 2 alive with functioning tag
+# 3 alive with defunct tag
+
+# Observations (O):
+# 1 Tag ok, bird moving
+# 2 Tag ok, bird not moving (dead)
+# 3 Tag failed, bird observed alive
+# 4 Dead bird recovered
+# 5 No signal (=not seen)
+
+# -------------------------------------------------
+
+# Priors and constraints
+  for (s in 1:7){
+    phi[s] ~ dunif(0.8, 0.9999)   # Equal uninformative prior for all MONTHLY survival probabilities
+  }
+
+  tag.fail ~ dunif(0, 1)   # Prior for MONTHLY tag failure probability
+  p.found.dead ~ dunif(0, 1)   # Prior for probability that dead bird carcass is found
+  p.seen.alive ~ dunif(0, 1)    # Prior for probability that bird with defunct tag is observed alive
+  p.obs ~ dunif(0.99, 1)       # Prior for probability to 'observe' a bird with functional tag (=should be 1?)
+
+
+
+# Define state-transition and observation matrices 
+for (i in 1:nind){
+   
+   for (t in f[i]:(n.occasions-1)){
+   
+      # Define probabilities of state S(t+1) [last dim] given S(t) [first dim]
+   
+    ps[1,i,t,1]<-1    ## dead birds stay dead
+    ps[1,i,t,2]<-0
+    ps[1,i,t,3]<-0
+
+    ps[2,i,t,1]<-(1-phi[phi.mat[i,t]])
+    ps[2,i,t,2]<-phi[phi.mat[i,t]] * (1-tag.fail)
+    ps[2,i,t,3]<-phi[phi.mat[i,t]] * tag.fail
+
+    ps[3,i,t,1]<-(1-phi[phi.mat[i,t]])
+    ps[3,i,t,2]<-phi[phi.mat[i,t]] * (1-tag.fail)
+    ps[3,i,t,3]<-phi[phi.mat[i,t]] * tag.fail
+
+      # Define probabilities of O(t) [last dim] given S(t)  [first dim]
+      
+    po[1,i,t,1]<-0
+    po[1,i,t,2]<-p.obs * (1-tag.fail) * (1-p.found.dead)
+    po[1,i,t,3]<-0
+    po[1,i,t,4]<-p.found.dead
+    po[1,i,t,5]<-(1-p.obs) * tag.fail * (1-p.found.dead)
+
+    po[2,i,t,1]<-p.obs
+    po[2,i,t,2]<-0
+    po[2,i,t,3]<-0
+    po[2,i,t,4]<-0
+    po[2,i,t,5]<-(1-p.obs)
+
+    po[3,i,t,1]<-0
+    po[3,i,t,2]<-0
+    po[3,i,t,3]<-p.seen.alive
+    po[3,i,t,4]<-0
+    po[3,i,t,5]<-(1-p.seen.alive)
+
+  } #t
+} #i
+
+# Likelihood 
+for (i in 1:nind){
+   # Define latent state at first capture
+   z[i,f[i]] <- y[i,f[i]]
+   for (t in (f[i]+1):n.occasions){
+      # State process: draw S(t) given S(t-1)
+      z[i,t] ~ dcat(ps[z[i,t-1], i, t-1,])
+      # Observation process: draw O(t) given S(t)
+      y[i,t] ~ dcat(po[z[i,t], i, t-1,])
+      } #t
+   } #i
+}
+
