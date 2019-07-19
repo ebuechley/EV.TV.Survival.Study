@@ -32,106 +32,43 @@ setwd("~/Documents/GitHub/EV - TV Survival Study/")
 ################################################################
 # cleaning data
 ################################################################
-#read in merged dataset
-ev.all = read.csv("ev.all.csv")
-
-#rename/simplify column headers
-colnames(ev.all)[colnames(ev.all)=="location.long"] <- "long"
-colnames(ev.all)[colnames(ev.all)=="location.lat"] <- "lat"
-colnames(ev.all)[colnames(ev.all)=="tag.local.identifier"] <- "tag"
-colnames(ev.all)[colnames(ev.all)=="individual.local.identifier"] <- "id"
-colnames(ev.all)[colnames(ev.all)=="individual.taxon.canonical.name"] <- "species"
-ev.all$id = as.factor(ev.all$id)
-summary(ev.all$id)
-head(ev.all)
-
-###Create burst by ID and tag
-ev.all$id.tag <- c(paste(ev.all$id,ev.all$tag,sep="_")) 
-ev.all$id.tag <- as.factor(ev.all$id.tag) 
-unique(ev.all$id.tag) #note 156 unique id.tag
-
-#lubridate
-summary(ev.all$timestamp)
-ev.all$timestamp = ymd_hms(ev.all$timestamp)
-summary(ev.all$timestamp)
-
-#limit to one point per day
-ev.all$year <- year(ev.all$timestamp)
-ev.all$month <- month(ev.all$timestamp)
-ev.all$day = day(ev.all$timestamp)
-ev.all$hour <- hour(ev.all$timestamp)
-ev.all = ev.all[!duplicated(ev.all[,c('id', 'year', 'month', 'day')]),]
-unique(ev.all$id.tag) #note 156 unique id.tag
-
-#remove any rows that don't have date, lat or long
-names(ev.all)
-ev.all = ev.all[complete.cases(ev.all[,3:5]),] 
-unique(ev.all$id.tag) #note 156 unique id.tag
-
-#remove data from after May 31, 2019 (setting a cutoff point for the study data)
-summary(ev.all$timestamp)
-which(ev.all$timestamp >= as.POSIXct('2019-05-31'))
-ev.all <- subset(ev.all, timestamp <= as.POSIXct('2019-05-31'))
-summary(ev.all$timestamp)
-unique(ev.all$id.tag) #THIS PROCESS REMOVED 1 ID.TAG
-
-#remove species other than ev
-ev.all$species = as.factor(ev.all$species)
-summary(ev.all$species)
-ev.all$species = "Neophron percnopterus"
-
-#reorder dataframe to have x,y,date,id.tag as first four columns
-names(ev.all)
-ev.all = ev.all[,c(4,5,3,163,1:2,6:162,164:167)]
-names(ev.all)
-
-# Order the data frame by date
-ev.all = ev.all[order(ev.all$timestamp),]
-unique(ev.all$id.tag) #note 155 unique id.tag
-
-#quick plot of data
-map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = ev.all, aes(long,lat, group = id.tag)) + labs(x = "longitude", y = "latitude")
-map.plot = map.plot + theme(legend.title = element_blank()) 
-map.plot #notice bad fixes in dataset
-
-#write 1ptperday dataset
-write.csv(ev.all, "./Outputs/ev.all.1ptperday.csv", row.names=FALSE)
 
 ########################################
 #filter data to remove bad fixes
-########################################
-setwd("~/Documents/GitHub/EV - TV Survival Study/")
-ev.all = read.csv("./Outputs/ev.all.1ptperday.csv")
-unique(ev.all$id.tag) #Note 155 unique id.tag
-unique(ev.all$study.name)
+d = read.csv("./Outputs/ev.tv.all.1ptperday.csv")
+unique(d$id.tag)
+unique(d$study.name)
+unique(d$species)
 
 #first remove fixes with lat & long = 0
-ev.all<-ev.all[!(ev.all$long==0 & ev.all$lat==0),]
-ev.all<-ev.all[!(ev.all$long<=-25),]
-ev.all<-ev.all[!(ev.all$long>=70),]
-ev.all<-ev.all[!(ev.all$long<5 & ev.all$study.name=="Neophron percnopterus Bulgaria/Greece"),]
-ev.all<-ev.all[!(ev.all$long<19 & ev.all$lat>35 & ev.all$study.name=="Neophron percnopterus Bulgaria/Greece"),]
-ev.all<-ev.all[!(ev.all$lat>35 & ev.all$id=="Mille"),]
-ev.all<-ev.all[!(ev.all$long<=-1 & ev.all$study.name=="Released Egyptian Vultures in Italy"),]
+d<-d[!(d$long==0 & d$lat==0),]
+d<-d[!(d$long<=-25) & d$species=="Neophron percnopterus"),]
+d<-d[!(d$long>=70) & d$species=="Neophron percnopterus"),]
+d<-d[!(d$long<5 & d$study.name=="Neophron percnopterus Bulgaria/Greece"),]
+d<-d[!(d$long<19 & d$lat>35 & d$study.name=="Neophron percnopterus Bulgaria/Greece"),]
+d<-d[!(d$lat>35 & d$id=="Mille"),]
+d<-d[!(d$long<=-1 & d$study.name=="Released Egyptian Vultures in Italy"),]
+
+#tv.all<-tv.all[!(tv.all$long>=-40),]
+#tv.all<-tv.all[!(tv.all$lat==0),]
 
 #remove height above elipsoid < -100 and > 30,000
-summary(ev.all$height.above.ellipsoid)
-which(ev.all$height.above.ellipsoid < -100)
-which(ev.all$height.above.ellipsoid > 30000)
-ev.all = ev.all[-c(which(ev.all$height.above.ellipsoid < -100)),]
-ev.all = ev.all[-c(which(ev.all$height.above.ellipsoid > 30000)),]
-summary(ev.all$height.above.ellipsoid)
+summary(d$height.above.ellipsoid)
+which(d$height.above.ellipsoid < -100)
+which(d$height.above.ellipsoid > 30000)
+d = d[-c(which(d$height.above.ellipsoid < -100)),]
+d = d[-c(which(d$height.above.ellipsoid > 30000)),]
+summary(d$height.above.ellipsoid)
 
 #remove any rows that don't have date, lat or long
-summary(ev.all[1:4])
-ev.all = ev.all[complete.cases(ev.all[,1:4]),] 
+summary(d[1:4])
+d = d[complete.cases(d[,1:4]),] 
 
 #speed filter from 'trip' package
 library(trip)
 
 #convert to 'trip'
-tr = trip(ev.all)
+tr = trip(d)
 
 #plot trip
 #plot(tr)
@@ -163,33 +100,33 @@ d2 = subset(d, d$spd == "TRUE")
 plot(d2)
 
 #save as df
-ev.all.filtered = as.data.frame(d2)
-head(ev.all.filtered)
+d.filtered = as.data.frame(d2)
+head(d.filtered)
 
 #quick plot of data
 map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = ev.all.filtered, aes(long,lat, group = id.tag), alpha = .5) + labs(x = "longitude", y = "latitude")
+map.plot = map.plot + geom_path(data = d.filtered, aes(long,lat, group = id.tag), alpha = .5) + labs(x = "longitude", y = "latitude")
 map.plot = map.plot + theme(legend.title = element_blank()) 
 map.plot #notice bad fixes in dataset
 
 #write
-write.csv(ev.all.filtered, "./Outputs/ev.all.filtered.csv", row.names=FALSE)
+write.csv(d.filtered, "./Outputs/d.filtered.csv", row.names=FALSE)
 
 #####################################################
 #compute movement stats in adeHabitatLT
 #####################################################
 setwd("~/Documents/GitHub/EV - TV Survival Study/")
-ev.all.filtered = read.csv("./ev.all.filtered.csv")
-head(ev.all.filtered)
-names(ev.all.filtered)
-unique(ev.all$id.tag) #note 155 unique id.tag
+d.filtered = read.csv("./d.filtered.csv")
+head(d.filtered)
+names(d.filtered)
+unique(d$id.tag) #note 155 unique id.tag
 
 #lubridate
-ev.all.filtered$timestamp = ymd_hms(ev.all.filtered$timestamp)
+d.filtered$timestamp = ymd_hms(d.filtered$timestamp)
 
 #convert to ltraj
 #use UTM so that distance values are calculated in meters
-d = as.ltraj(xy = ev.all.filtered[, c("long", "lat")], date = ev.all.filtered$timestamp, id = ev.all.filtered$id.tag)
+d = as.ltraj(xy = d.filtered[, c("long", "lat")], date = d.filtered$timestamp, id = d.filtered$id.tag)
 d
 
 #index
@@ -215,25 +152,25 @@ d1 <- do.call(rbind, d)
 head(d1)
 
 #merge ltraj calcs to full dataset
-ev.all.filtered$NSD <- d1$R2n
-ev.all.filtered$ND <- sqrt(ev.all.filtered$NSD)
-ev.all.filtered$dist <- d1$dist
-ev.all.filtered$dt.days <- d1$dt/3600/24
-head(ev.all.filtered)
+d.filtered$NSD <- d1$R2n
+d.filtered$ND <- sqrt(d.filtered$NSD)
+d.filtered$dist <- d1$dist
+d.filtered$dt.days <- d1$dt/3600/24
+head(d.filtered)
 
 #write filtered dataset
-write.csv(ev.all.filtered, "./ev.all.filtered.csv", row.names = FALSE)
+write.csv(d.filtered, "./d.filtered.csv", row.names = FALSE)
 
 #read
-ev.all.filtered = read.csv("./ev.all.filtered.csv")
-head(ev.all.filtered)
+d.filtered = read.csv("./d.filtered.csv")
+head(d.filtered)
 
 #lubridate
-ev.all.filtered$timestamp = ymd_hms(ev.all.filtered$timestamp)
+d.filtered$timestamp = ymd_hms(d.filtered$timestamp)
 
 #plot net displacement
 tiff("./Outputs/ev.tracking.nd.overview.tiff", units="cm", width=50, height=40, res=300)
-plot = ggplot(ev.all.filtered, aes(timestamp, ND)) + geom_line() + facet_wrap(~ id)
+plot = ggplot(d.filtered, aes(timestamp, ND)) + geom_line() + facet_wrap(~ id)
 plot = plot + labs(x = "date", y = "net displacement (degrees)") + theme_bw() 
 plot 
 dev.off()
@@ -242,22 +179,22 @@ dev.off()
 # create for loop to produce ggplot2 graphs 
 library(gridExtra)
 
-for (i in unique(ev.all.filtered$id)) { 
+for (i in unique(d.filtered$id)) { 
   
   #net displacement
   plot1 <- 
-    ggplot(aes(timestamp, ND), data = subset(ev.all.filtered, id ==  i))  + 
+    ggplot(aes(timestamp, ND), data = subset(d.filtered, id ==  i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "net displacement (degrees)") 
   
   #fix rate
   plot2 <- 
-    ggplot(aes(timestamp, dt.days), data = subset(ev.all.filtered, id == i))  + 
+    ggplot(aes(timestamp, dt.days), data = subset(d.filtered, id == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "time between fixes (days)") 
   
   #tracks
   plot3 <- 
     ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() +
-    geom_path(data = subset(ev.all.filtered, id ==  i), aes(long,lat)) + labs(x = "longitude", y = "latitude") + 
+    geom_path(data = subset(d.filtered, id ==  i), aes(long,lat)) + labs(x = "longitude", y = "latitude") + 
     theme(legend.title = element_blank()) +
     ggtitle(paste(i)) + theme(plot.title = element_text(hjust = 0.5))
   
@@ -269,47 +206,47 @@ for (i in unique(ev.all.filtered$id)) {
 }
 
 #check battery charge fields
-#head(ev.all.filtered)
-#summary(ev.all.filtered$battery.charge.percent)
-#summary(ev.all.filtered$battery.charging.current)
-#summary(ev.all.filtered$tag.voltage)
-#summary(ev.all.filtered$eobs.battery.voltage)
-#summary(ev.all.filtered$eobs.fix.battery.voltage)
-#summary(ev.all.filtered$U_bat_mV)
-#summary(ev.all.filtered$bat_soc_pct)
-#summary(ev.all.filtered$Battery.voltage)
-#summary(ev.all.filtered$Solar.voltage)
+#head(d.filtered)
+#summary(d.filtered$battery.charge.percent)
+#summary(d.filtered$battery.charging.current)
+#summary(d.filtered$tag.voltage)
+#summary(d.filtered$eobs.battery.voltage)
+#summary(d.filtered$eobs.fix.battery.voltage)
+#summary(d.filtered$U_bat_mV)
+#summary(d.filtered$bat_soc_pct)
+#summary(d.filtered$Battery.voltage)
+#summary(d.filtered$Solar.voltage)
 
 #battery charge
-for (i in unique(ev.all.filtered$id)) { 
+for (i in unique(d.filtered$id)) { 
   
   b1 <- 
-    ggplot(aes(timestamp, battery.charge.percent), data = subset(ev.all.filtered, id ==  i))  + 
+    ggplot(aes(timestamp, battery.charge.percent), data = subset(d.filtered, id ==  i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "battery.charge.percent") 
   b2 <- 
-    ggplot(aes(timestamp, battery.charging.current), data = subset(ev.all.filtered, id == i))  + 
+    ggplot(aes(timestamp, battery.charging.current), data = subset(d.filtered, id == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "battery.charging.current") +
     ggtitle(paste(i)) + theme(plot.title = element_text(hjust = 0.5))
   b3 <- 
-    ggplot(aes(timestamp, tag.voltage), data = subset(ev.all.filtered, id == i))  + 
+    ggplot(aes(timestamp, tag.voltage), data = subset(d.filtered, id == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "tag.voltage") 
   b5 <- 
-    ggplot(aes(timestamp, eobs.battery.voltage), data = subset(ev.all.filtered, id == i))  + 
+    ggplot(aes(timestamp, eobs.battery.voltage), data = subset(d.filtered, id == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "eobs.battery.voltage") 
   b6 <- 
-    ggplot(aes(timestamp, eobs.fix.battery.voltage), data = subset(ev.all.filtered, id == i))  + 
+    ggplot(aes(timestamp, eobs.fix.battery.voltage), data = subset(d.filtered, id == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "eobs.fix.battery.voltage") 
   b7 <- 
-    ggplot(aes(timestamp, U_bat_mV), data = subset(ev.all.filtered, id == i))  + 
+    ggplot(aes(timestamp, U_bat_mV), data = subset(d.filtered, id == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "U_bat_mV")
   b8 <- 
-    ggplot(aes(timestamp, bat_soc_pct), data = subset(ev.all.filtered, id == i))  + 
+    ggplot(aes(timestamp, bat_soc_pct), data = subset(d.filtered, id == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "bat_soc_pct")
   b9 <- 
-    ggplot(aes(timestamp, Battery.voltage), data = subset(ev.all.filtered, id == i))  + 
+    ggplot(aes(timestamp, Battery.voltage), data = subset(d.filtered, id == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "Battery.voltage")
   b10 <- 
-    ggplot(aes(timestamp, Solar.voltage), data = subset(ev.all.filtered, id == i))  + 
+    ggplot(aes(timestamp, Solar.voltage), data = subset(d.filtered, id == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "Solar.voltage")
   
   #arrange
@@ -342,12 +279,12 @@ for (i in unique(ev.all.filtered$id)) {
 #data summary
 ########################################
 #convert to data.table to summarize
-ev.all.dt = setDT(ev.all.filtered)
-head(ev.all.dt)
-unique(ev.all.dt$id.tag) #note 155 unique id.tag
+d.dt = setDT(d.filtered)
+head(d.dt)
+unique(d.dt$id.tag) #note 155 unique id.tag
 
 #create summary
-ev.summary = ev.all.dt[,.(unique(species), unique(study.name), unique(id),unique(tag), min(timestamp), max(timestamp), head(lat,1), head(long,1), tail(lat,1), tail(long,1)), by = .(id.tag)]
+ev.summary = d.dt[,.(unique(species), unique(study.name), unique(id),unique(tag), min(timestamp), max(timestamp), head(lat,1), head(long,1), tail(lat,1), tail(long,1)), by = .(id.tag)]
 names(ev.summary) = c("id.tag", "species", "study.name", "id", "tag",  "start.date", "end.date", "start.lat", "start.long", "end.lat", "end.long")
 head(ev.summary)
 summary(ev.summary)
@@ -451,7 +388,7 @@ ev.summary = ev.summary.country
 #add number of locations column
 ev.summary = as.data.frame(ev.summary)
 ev.summary
-n.locs = count(ev.all.dt$id.tag)
+n.locs = count(d.dt$id.tag)
 n.locs$id.tag = n.locs$x
 n.locs$n.locs = n.locs$freq
 n.locs$freq = NULL
@@ -619,11 +556,11 @@ write.csv(ev.summary.merge, "./Outputs/ev.summary.merge.csv", row.names = F)
 
 #############################################################
 #Figure
-ev.all.filtered = read.csv("./Outputs/ev.all.filtered.csv")
+d.filtered = read.csv("./Outputs/d.filtered.csv")
 ev.summary.merge = read.csv("./Outputs/ev.summary.merge.manualcleaning.csv")
 summary(ev.summary.merge)
-summary(ev.all.filtered$argos.lat1)
-summary(ev.all.filtered$argos.lat2)
+summary(d.filtered$argos.lat1)
+summary(d.filtered$argos.lat2)
 summary(ev.summary.merge$fate)
 summary(ev.summary.merge$captive.raised)
 ev.summary.merge.alive.removed = ev.summary.merge[!ev.summary.merge$fate == "alive", ]
@@ -634,7 +571,7 @@ colourpalette<-c('#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a
 colourpalette
 tiff("./Outputs/ev.tracking.overview.alive.removed.tiff", units="cm", width=25, height=20, res=300)
 map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = ev.all.filtered, aes(long,lat, group = id), color = '#4daf4a') 
+map.plot = map.plot + geom_path(data = d.filtered, aes(long,lat, group = id), color = '#4daf4a') 
 map.plot = map.plot + geom_point(data = ev.summary.merge, aes(start.long, start.lat, color = "deployment"))  
 map.plot = map.plot + geom_point(data = ev.summary.merge.alive.removed, aes(end.long, end.lat, color = "termination")) + labs(x = "longitude", y = "latitude")
 #map.plot = map.plot + geom_segment(data = ev.summary.merge.alive.removed, aes(x = start.long, y = start.lat, xend = end.long, yend = end.lat)) 

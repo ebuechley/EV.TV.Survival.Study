@@ -29,6 +29,10 @@ require(pander)
 ##Clear workspace
 rm(list = ls())
 
+########################################################
+#EV
+########################################################
+
 # read data
 ev1 = read.csv("./Original Data/Egyptian vulture (Neophron percnopterus) in Arribes del Duero (Salamanca) - SALORO.csv")
 ev2 = read.csv("./Original Data/Egyptian Vulture (Neophron percnopterus), Turkey, Armenia, Ethiopia .csv")
@@ -237,14 +241,103 @@ write.csv(ev.ISPRA, "./Original Data/ev.ISPRA.all.csv")
 
 ########################################################
 #Merge
-########################################################
 
 #merge (vertically) the data, keeping all unique columns
 ev.all = rbind.fill(ev1,ev2,ev3,ev4,ev5,ev6,ev7,ev8,ev9,ev10,ev11,ev12,ev13,ev14,ev15,ev.mcgrady,ev.ISPRA)
 head(ev.all)
 names(ev.all)
-unique(ev.all$individual.local.identifier) #note 156 unique id.tag
+unique(ev.all$individual.local.identifier) #note 155 unique id.tag
+
+#remove any other species
+ev.all$individual.taxon.canonical.name = as.factor(ev.all$individual.taxon.canonical.name)
+summary(ev.all$individual.taxon.canonical.name)
+ev.all$individual.taxon.canonical.name = "Neophron percnopterus" #standardize the species name for all
+
+########################################################
+#TV
+########################################################
+#Set WD
+setwd("~/Google Drive/Research Projects/EV-TV tracking study/Dataset/Final")
+
+# read data
+tv1 = read.csv("./Original Data/Turkey Vulture Acopian Center USA GPS.csv")
+tv2 = read.csv("./Original Data/Black Vultures and Turkey Vultures Southeastern USA.csv")
+tv3 = read.csv("./Original Data/Vulture Movements.csv")
+
+#merge (vertically) the data, keeping all unique columns
+tv.all = rbind.fill(tv1, tv2, tv3)
+
+#remove other species
+summary(tv.all$individual.taxon.canonical.name)
+tv.all = tv.all[!(tv.all$individual.taxon.canonical.name == "Coragyps atratus"),] #some black vultures were included in some of the data
+tv.all = tv.all[!(tv.all$individual.taxon.canonical.name == ""),] # the blank species are black vultures in this data
+summary(tv.all$individual.taxon.canonical.name)
+tv.all$individual.taxon.canonical.name = "Cathartes aura" #standardize the species name for all
+unique(tv.all$individual.local.identifier) #note 104 unique id
+
+########################################################
+#Merge EV & TV
+########################################################
+#merge (vertically) the data, keeping all unique columns
+ev.tv = rbind.fill(ev.all,tv.all)
+head(ev.tv)
+names(ev.tv)
+unique(ev.tv$individual.local.identifier) #note 259 unique id
+
+#rename/simplify column headers
+colnames(ev.tv)[colnames(ev.tv)=="location.long"] <- "long"
+colnames(ev.tv)[colnames(ev.tv)=="location.lat"] <- "lat"
+colnames(ev.tv)[colnames(ev.tv)=="tag.local.identifier"] <- "tag"
+colnames(ev.tv)[colnames(ev.tv)=="individual.local.identifier"] <- "id"
+colnames(ev.tv)[colnames(ev.tv)=="individual.taxon.canonical.name"] <- "species"
+
+###Create burst by ID and tag
+ev.tv$id.tag <- c(paste(ev.tv$id,ev.tv$tag,sep="_")) 
+ev.tv$id.tag <- as.factor(ev.tv$id.tag) 
+
+#lubridate
+summary(ev.tv$timestamp)
+tail(ev.tv$timestamp)
+ev.tv$timestamp = ymd_hms(ev.tv$timestamp)
+summary(ev.tv$timestamp)
+
+#remove data from after May 31, 2019 (setting a cutoff point for the study data)
+ev.tv <- subset(ev.tv, timestamp <= as.POSIXct('2019-05-31'))
+summary(ev.tv$timestamp)
+unique(ev.tv$id.tag) #THIS PROCESS REMOVED 1 ID.TAG
+
+#remove any rows that don't have date, lat or long
+names(ev.tv)
+ev.tv = ev.tv[complete.cases(ev.tv[,3:5]),] 
+
+#reorder dataframe to have x,y,date,id.tag as first four columns
+names(ev.tv)
+ev.tv = ev.tv[,c(4,5,3,164,1:2,6:163)]
+names(ev.tv)
+
+# Order the data frame by date
+ev.tv = ev.tv[order(ev.tv$timestamp),]
+
+#add ymdh
+ev.tv$year <- year(ev.tv$timestamp)
+ev.tv$month <- month(ev.tv$timestamp)
+ev.tv$day = day(ev.tv$timestamp)
+ev.tv$hour <- hour(ev.tv$timestamp)
 
 #write complete dataset
+#write.csv(ev.tv, "ev.tv.all.merged.csv", row.names=FALSE)
+
+#censor to one point per day 
+#(at least to start, to have a workable dataset, as well as to standardize across transmitter types)
+ev.tv.1ptperday  = ev.tv[!duplicated(ev.tv[,c('id', 'year', 'month', 'day')]),]
+
+#write 1ptperday dataset
+#set wd
 setwd("~/Documents/GitHub/EV - TV Survival Study/")
-write.csv(ev.all, "ev.all.merged.csv")
+write.csv(ev.tv.1ptperday, "ev.tv.1ptperday.csv", row.names=FALSE)
+
+#quick plot of data
+map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() 
+map.plot = map.plot + geom_path(data = ev.tv.1ptperday, aes(long,lat, group = id.tag)) + labs(x = "longitude", y = "latitude")
+map.plot = map.plot + theme(legend.title = element_blank()) 
+map.plot #notice bad fixes in dataset
