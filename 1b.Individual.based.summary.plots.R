@@ -1,0 +1,119 @@
+#################################################################################
+#Individual-based summary plots
+#################################################################################
+
+#Clear workspace
+rm(list = ls())
+
+#set wd
+setwd("~/Documents/GitHub/EV - TV Survival Study/")
+
+#read data
+d = read.csv("ev.tv.filtered.csv")
+
+#plot net displacement
+tiff("ev.tv.tracking.nd.overview.tiff", units="cm", width=50, height=40, res=300)
+plot = ggplot(d, aes(timestamp, ND)) + geom_line() + facet_wrap(~ id)
+plot = plot + labs(x = "date", y = "net displacement (degrees)") + theme_bw() 
+plot 
+dev.off()
+
+#plot ND for each id
+# create for loop to produce ggplot2 graphs 
+library(gridExtra)
+
+for (i in unique(d$id)) { 
+  
+  #net displacement
+  plot1 <- 
+    ggplot(aes(timestamp, ND), data = subset(d, id ==  i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "net displacement (degrees)") 
+  
+  #fix rate
+  plot2 <- 
+    ggplot(aes(timestamp, dt.days), data = subset(d, id == i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "time between fixes (days)") 
+  
+  #tracks
+  plot3 <- 
+    ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() +
+    geom_path(data = subset(d, id ==  i), aes(long,lat)) + labs(x = "longitude", y = "latitude") + 
+    theme(legend.title = element_blank()) +
+    ggtitle(paste(i)) + theme(plot.title = element_text(hjust = 0.5))
+  
+  #arrange
+  plot4 = grid.arrange(plot3, plot1, plot2, ncol = 2, nrow = 2, 
+                       widths = c(1,1), layout_matrix = rbind(c(1, 2), c(1,3)))
+  
+  ggsave(filename = sprintf('./overview.plots/%s.png', i), plot = plot4, width = 30, height = 20, units = c("cm"),dpi = 300)
+}
+
+#check battery charge fields
+#head(d)
+#summary(d$battery.charge.percent)
+#summary(d$battery.charging.current)
+#summary(d$tag.voltage)
+#summary(d$eobs.battery.voltage)
+#summary(d$eobs.fix.battery.voltage)
+#summary(d$U_bat_mV)
+#summary(d$bat_soc_pct)
+#summary(d$Battery.voltage)
+#summary(d$Solar.voltage)
+
+#battery charge
+for (i in unique(d$id)) { 
+  
+  b1 <- 
+    ggplot(aes(timestamp, battery.charge.percent), data = subset(d, id ==  i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "battery.charge.percent") 
+  b2 <- 
+    ggplot(aes(timestamp, battery.charging.current), data = subset(d, id == i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "battery.charging.current") +
+    ggtitle(paste(i)) + theme(plot.title = element_text(hjust = 0.5))
+  b3 <- 
+    ggplot(aes(timestamp, tag.voltage), data = subset(d, id == i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "tag.voltage") 
+  b5 <- 
+    ggplot(aes(timestamp, eobs.battery.voltage), data = subset(d, id == i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "eobs.battery.voltage") 
+  b6 <- 
+    ggplot(aes(timestamp, eobs.fix.battery.voltage), data = subset(d, id == i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "eobs.fix.battery.voltage") 
+  b7 <- 
+    ggplot(aes(timestamp, U_bat_mV), data = subset(d, id == i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "U_bat_mV")
+  b8 <- 
+    ggplot(aes(timestamp, bat_soc_pct), data = subset(d, id == i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "bat_soc_pct")
+  b9 <- 
+    ggplot(aes(timestamp, Battery.voltage), data = subset(d, id == i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "Battery.voltage")
+  b10 <- 
+    ggplot(aes(timestamp, Solar.voltage), data = subset(d, id == i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "Solar.voltage")
+  
+  #arrange
+  b11 = grid.arrange(b1,b2,b3,b5,b6,b7,b8,b9,b10, ncol = 3)
+  
+  ggsave(filename = sprintf('./battery.plots/%s.png', i), plot = b11, width = 20, height = 30, units = c("cm"),dpi = 300)
+}
+
+#2HP has highly intermittent fixes
+#9FC has very few fixes
+#18 White has very few fixes
+#93 - possible mortality / dropped tx
+#A17 Green - last point far from others
+#A25 Green - last point far from others
+#Cabuk - errant last point?
+#Iliaz ND is such a cool figure of individual migration development
+#Levkipos -- possible mortality or dropped tx in early 2015?
+#Mille - errant last point?
+#NeoPer_Poiares - errant last point?
+#Sarygush - possible mortality or dropped tx?
+#Sharka - only 3 points!
+
+#Carmen looks to have died at see and tx floated long after
+#NeoPer_Poiares has a straight shot back from Africa to Spain
+#Provence_2016_Ad_wild has a straight shot from Africa back to France
+#White 08 has a random point in the Med
+#Yellow 04 has what looks like erroneous points in the Med
