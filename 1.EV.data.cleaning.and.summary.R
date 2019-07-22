@@ -399,6 +399,12 @@ ev.tv.summary = ev.tv.summary[order(ev.tv.summary$study.name),]
 head(ev.tv.summary)
 write.csv(ev.tv.summary, "ev.tv.summary.csv", row.names = FALSE)
 
+#quick plot of data
+map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() 
+map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id.tag), alpha = .5) + labs(x = "longitude", y = "latitude")
+map.plot = map.plot + theme(legend.title = element_blank()) 
+map.plot
+
 #####################################################################
 #merging data summary with coauthor info input in Google Sheet
 #set wd
@@ -408,106 +414,83 @@ setwd("~/Documents/GitHub/EV - TV Survival Study/")
 rm(list = ls())
 
 #read final summaries
-ev.gs = read.csv("./Google Sheets/Egyptian Vulture tracking summary - EV summary.csv")
-tv.gs = read.csv("./Google Sheets/Turkey Vulture tracking summary - TV summary.csv")
-ev.tv.summary = read.csv("ev.tv.summary.csv")
+ev.gs = read.csv("./Google Sheets/Egyptian Vulture tracking summary - EV summary.csv", colClasses = "character")
+tv.gs = read.csv("./Google Sheets/Turkey Vulture tracking summary - TV summary.csv", colClasses = "character")
+ev.tv.summary = read.csv("ev.tv.summary.csv", colClasses = "character")
 
-#check id's match
-unique(gs$id) #Provence_2016_Ad_wild_EO5018_Salom√©_8P
+#check id's match, manually correct
+unique(ev.gs$id) #Provence_2016_Ad_wild_EO5018_Salom√©_8P
 unique(ev.tv.summary$id) # Provence_2016_Ad_wild_EO5018_Salomé_8P
 
-# merge data frames
-ev.tv.summary.merge = merge(ev.tv.summary, gs, by = "id.tag", all = T)
-summary(ev.tv.summary.merge[1])
-summary(ev.tv.summary.merge[1])
-
-#select, reorganize and rename columns
-names(ev.tv.summary.merge)
-ev.tv.summary.merge = ev.tv.summary.merge[c(2:5,1,29:32,10,11,35:36,12:19,44:47)]
-names(ev.tv.summary.merge)
-names(ev.tv.summary.merge) = c("study.name","species","tag","id","id.tag","sex","age.at.deployment",
-                            "captive.raised","rehabilitated","start.date","end.date","start.date.adjusted", "end.date.adjusted",
-                            "start.lat","start.long","end.lat","end.long","start.country", "end.country",        
-                            "deployment.duration", "n.locs","fate","how.fate.determined", "cause.of.death","comments")
-head(ev.tv.summary.merge)
-ev.tv.summary.merge$end.date.adjusted = as.factor(ev.tv.summary.merge$end.date.adjusted)
-summary(ev.tv.summary.merge)
-
+#check for duplicates
+summary(ev.gs$id)
+which(duplicated(ev.gs$id))
 
 #remove rows that have NA for study. These are id that Guido put in the Sheet, 
 #but which we don't have any data for
-ev.tv.summary.merge =  ev.tv.summary.merge[!is.na(ev.tv.summary.merge$study.name),]
+ev.gs =  ev.gs[!is.na(ev.gs$study.name),]
 
-# Order the data frame by study
-ev.tv.summary.merge = ev.tv.summary.merge[order(ev.tv.summary.merge$study.name),]
+# replace cell values for matching ids
+for (i in unique(ev.gs$id.tag)) { 
+  
+  ev.tv.summary$start.date.adjusted[which(ev.tv.summary$id.tag == i)] = ev.gs$start.date.adjusted[which(ev.gs$id.tag == i)]
+  ev.tv.summary$end.date.adjusted[which(ev.tv.summary$id.tag == i)] = ev.gs$end.date.adjusted[which(ev.gs$id.tag == i)]
+  ev.tv.summary$sex[which(ev.tv.summary$id.tag == i)] = ev.gs$sex[which(ev.gs$id.tag == i)]
+  ev.tv.summary$age.at.deployment[which(ev.tv.summary$id.tag == i)] = ev.gs$age.at.deployment[which(ev.gs$id.tag == i)]
+  ev.tv.summary$captive.raised[which(ev.tv.summary$id.tag == i)] = ev.gs$captive.raised[which(ev.gs$id.tag == i)]
+  ev.tv.summary$rehabilitated[which(ev.tv.summary$id.tag == i)] = ev.gs$rehabilitated[which(ev.gs$id.tag == i)]
+  ev.tv.summary$fate[which(ev.tv.summary$id.tag == i)] = ev.gs$fate[which(ev.gs$id.tag == i)]
+  ev.tv.summary$how.fate.determined[which(ev.tv.summary$id.tag == i)] = ev.gs$how.fate.determined[which(ev.gs$id.tag == i)]
+  ev.tv.summary$cause.of.death[which(ev.tv.summary$id.tag == i)] = ev.gs$cause.of.death[which(ev.gs$id.tag == i)]
+  ev.tv.summary$comments[which(ev.tv.summary$id.tag == i)] = ev.gs$comments[which(ev.gs$id.tag == i)]
+  
+}
 
-#check data
-any(duplicated(ev.tv.summary.merge$id))
-unique(ev.tv.summary$id) == unique(ev.tv.summary.merge$id)
+for (i in unique(tv.gs$id.tag)) { 
+  
+  ev.tv.summary$sex[which(ev.tv.summary$id.tag == i)] = tv.gs$sex[which(tv.gs$id.tag == i)]
+  ev.tv.summary$age.at.deployment[which(ev.tv.summary$id.tag == i)] = tv.gs$age.at.deployment[which(tv.gs$id.tag == i)]
+  ev.tv.summary$captive.raised[which(ev.tv.summary$id.tag == i)] = tv.gs$captive.raised[which(tv.gs$id.tag == i)]
+  ev.tv.summary$rehabilitated[which(ev.tv.summary$id.tag == i)] = tv.gs$rehabilitated[which(tv.gs$id.tag == i)]
+  ev.tv.summary$fate[which(ev.tv.summary$id.tag == i)] = tv.gs$fate[which(tv.gs$id.tag == i)]
+  ev.tv.summary$how.fate.determined[which(ev.tv.summary$id.tag == i)] = tv.gs$how.fate.determined[which(tv.gs$id.tag == i)]
+  ev.tv.summary$cause.of.death[which(ev.tv.summary$id.tag == i)] = tv.gs$cause.of.death[which(tv.gs$id.tag == i)]
+  ev.tv.summary$comments[which(ev.tv.summary$id.tag == i)] = tv.gs$comments[which(tv.gs$id.tag == i)]
+  
+}
 
-#write
-write.csv(ev.tv.summary.merge, "./Outputs/ev.tv.summary.merge.csv", row.names = F)
+write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
 
-#################################################
-#merge data from Balkans sent as csv
+##################################################################
+#merge with Blakans sheet
 
-#Clear workspace
-rm(list = ls())
+#read data
+ev.tv.summary = read.csv("ev.tv.summary.merged.csv", colClasses = "character")
+balkans = read.csv("./Fate summaries/EGVU_fate_summary_Balkans.csv", colClasses = "character")
 
-ev.tv.summary.merge = read.csv("./Outputs/ev.tv.summary.merge.csv")
-balkans.summary = read.csv("./Fate summaries/EGVU_fate_summary_Balkans.csv")
-head(ev.tv.summary.merge)
+#check for duplicates
+which(duplicated(balkans$id))
 
-#subset
-unique(balkans.summary$study.name)
-unique(ev.tv.summary.merge$study.name)
+# replace cell values for matching ids
+head(ev.tv.summary)
+head(balkans)
+for (i in unique(balkans$id.tag)) { 
+  
+  ev.tv.summary$start.date.adjusted[which(ev.tv.summary$id.tag == i)] = balkans$start.date.adjusted[which(balkans$id.tag == i)]
+  ev.tv.summary$end.date.adjusted[which(ev.tv.summary$id.tag == i)] = balkans$end.date.adjusted[which(balkans$id.tag == i)]
+  ev.tv.summary$sex[which(ev.tv.summary$id.tag == i)] = balkans$sex[which(balkans$id.tag == i)]
+  ev.tv.summary$age.at.deployment[which(ev.tv.summary$id.tag == i)] = balkans$age.at.deployment[which(balkans$id.tag == i)]
+  ev.tv.summary$captive.raised[which(ev.tv.summary$id.tag == i)] = balkans$captive.raised[which(balkans$id.tag == i)]
+  ev.tv.summary$rehabilitated[which(ev.tv.summary$id.tag == i)] = balkans$rehabilitated[which(balkans$id.tag == i)]
+  ev.tv.summary$fate[which(ev.tv.summary$id.tag == i)] = balkans$fate[which(balkans$id.tag == i)]
+  ev.tv.summary$how.fate.determined[which(ev.tv.summary$id.tag == i)] = balkans$how.fate.determined[which(balkans$id.tag == i)]
+  ev.tv.summary$cause.of.death[which(ev.tv.summary$id.tag == i)] = balkans$cause.of.death[which(balkans$id.tag == i)]
+  ev.tv.summary$comments[which(ev.tv.summary$id.tag == i)] = balkans$comments[which(balkans$id.tag == i)]
+  
+}
 
-#lubridate
-ev.tv.summary.merge$start.date = ymd_hms(ev.tv.summary.merge$start.date)
-ev.tv.summary.merge$end.date = ymd_hms(ev.tv.summary.merge$end.date)
-summary(ev.tv.summary.merge$start.date.adjusted)
-#ev.tv.summary.merge$start.date.adjusted = mdy_hm(ev.tv.summary.merge$start.date.adjusted)
-summary(balkans.summary$end.date.adjusted)
-#balkans.summary$start.date.adjusted = mdy_hm(balkans.summary$start.date.adjusted)
-#balkans.summary$end.date.adjusted = mdy_hm(balkans.summary$end.date.adjusted)
-summary(balkans.summary)
+write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
 
-#remove balkans data from summary, so that we can append their updated info
-ev.tv.summary.merge.balkans <-ev.tv.summary.merge[!(ev.tv.summary.merge$study.name=="Neophron percnopterus Bulgaria/Greece"),]
-summary(ev.tv.summary.merge.balkans)
-ev.tv.summary.merge.balkans$end.date.adjusted = as.character(ev.tv.summary.merge.balkans$end.date.adjusted)
-ev.tv.summary.merge.balkans$start.date.adjusted = as.character(ev.tv.summary.merge.balkans$start.date.adjusted)
-
-#merge (vertically)
-ev.tv.summary.merge.balkans = rbind.fill(ev.tv.summary.merge.balkans, balkans.summary)
-summary(ev.tv.summary.merge.balkans)
-head(ev.tv.summary.merge.balkans$start.date.adjusted)
-#ev.tv.summary.merge.balkans$end.date.adjusted = ymd_hms(ev.tv.summary.merge.balkans$end.date.adjusted)
-#ev.tv.summary.merge.balkans$start.date.adjusted = ymd(ev.tv.summary.merge.balkans$start.date.adjusted)
-
-# Order the data frame by id.tag
-ev.tv.summary.merge.balkans = ev.tv.summary.merge.balkans[order(ev.tv.summary.merge.balkans$id.tag),]
-ev.tv.summary.merge = ev.tv.summary.merge[order(ev.tv.summary.merge$id.tag),]
-ev.tv.summary.merge$id.tag == ev.tv.summary.merge.balkans$id.tag
-
-#add n.locs
-names(ev.tv.summary.merge)
-ev.tv.summary.merge.balkans$n.locs = ev.tv.summary.merge$n.locs
-ev.tv.summary.merge.balkans$start.date = ev.tv.summary.merge$start.date
-ev.tv.summary.merge.balkans$end.date = ev.tv.summary.merge$end.date
-
-#check data
-ev.tv.summary.merge.balkans = ev.tv.summary.merge.balkans[order(ev.tv.summary.merge.balkans$id.tag),]
-ev.tv.summary.merge = ev.tv.summary.merge[order(ev.tv.summary.merge$id.tag),]
-any(duplicated(ev.tv.summary.merge.balkans$id.tag))
-unique(ev.tv.summary.merge$id) == unique(ev.tv.summary.merge.balkans$id)
-ev.tv.summary.merge.balkans = ev.tv.summary.merge.balkans[order(ev.tv.summary.merge.balkans$study.name),]
-names(ev.tv.summary.merge.balkans)
-summary(ev.tv.summary.merge.balkans)
-#ev.tv.summary.merge.balkans = ev.tv.summary.merge.balkans[c(1:11,24:25,12:23)]
-
-#write
-write.csv(ev.tv.summary.merge.balkans, "./Outputs/ev.tv.summary.merge.csv", row.names = F)
 
 #################################################
 #merge data from McGrady csv
@@ -515,61 +498,143 @@ write.csv(ev.tv.summary.merge.balkans, "./Outputs/ev.tv.summary.merge.csv", row.
 #Clear workspace
 rm(list = ls())
 
-ev.tv.summary.merge = read.csv("./Outputs/ev.tv.summary.merge.csv")
-mcgrady.summary = read.csv("./Fate summaries/McGrady summaries.csv")
+ev.tv.summary.merged = read.csv("ev.tv.summary.merged.csv", colClasses = "character")
+mcgrady.summary = read.csv("./Fate summaries/McGrady summaries.csv", colClasses = "character")
 
 #rename columns to match
 #mcgrady.summary$start.date.adjusted = dmy(mcgrady.summary$Date.ringed)
 mcgrady.summary$age.at.deployment = mcgrady.summary$Age
 mcgrady.summary$comments = mcgrady.summary$Fate
 mcgrady.summary$id = mcgrady.summary$PTT.ID
-mcgrady.summary$id = as.character(mcgrady.summary$id)
-ev.tv.summary.merge$age.at.deployment = as.character(ev.tv.summary.merge$age.at.deployment)
-mcgrady.summary$comments = as.character(mcgrady.summary$comments)
-ev.tv.summary.merge$comments = as.character(ev.tv.summary.merge$comments)
-#mcgrady.summary$start.date.adjusted = as.character(mcgrady.summary$start.date.adjusted)
-#ev.tv.summary.merge$start.date.adjusted = as.character(ev.tv.summary.merge$start.date.adjusted)
+mcgrady.summary$start.date.adjusted = mcgrady.summary$Date.ringed
+
+#check for duplicates
+which(duplicated(mcgrady.summary$id))
 
 # replace cell values for matching ids
+head(ev.tv.summary.merged)
+head(mcgrady.summary)
+
 for (i in unique(mcgrady.summary$id)) { 
   
-  ev.tv.summary.merge$start.date.adjusted[which(ev.tv.summary.merge$id == i)] = mcgrady.summary$start.date.adjusted[which(mcgrady.summary$id == i)]
-  ev.tv.summary.merge$age.at.deployment[which(ev.tv.summary.merge$id == i)] = mcgrady.summary$age.at.deployment[which(mcgrady.summary$id == i)]
-  ev.tv.summary.merge$comments[which(ev.tv.summary.merge$id == i)] = mcgrady.summary$comments[which(mcgrady.summary$id == i)]
+  ev.tv.summary.merged$start.date.adjusted[which(ev.tv.summary.merged$id == i)] = mcgrady.summary$start.date.adjusted[which(mcgrady.summary$id == i)]
+  ev.tv.summary.merged$age.at.deployment[which(ev.tv.summary.merged$id == i)] = mcgrady.summary$age.at.deployment[which(mcgrady.summary$id == i)]
+  ev.tv.summary.merged$comments[which(ev.tv.summary.merged$id == i)] = mcgrady.summary$comments[which(mcgrady.summary$id == i)]
   
 }
 
 #write
-write.csv(ev.tv.summary.merge, "./Outputs/ev.tv.summary.merge.csv", row.names = F)
+write.csv(ev.tv.summary.merged, "ev.tv.summary.merged.csv", row.names = F)
 
 ####################################################################################
-#standardizing row values
+#standardizing column values
 
-#did some manual cleaning of the dataset and columns here in excel
+d = read.csv("ev.tv.summary.merged.csv")
+summary(d)
+
+#sex
+summary(d$sex)
+d$sex[d$sex == "female"] <- "F"
+d$sex[d$sex == "male"] <- "M"
+d$sex[d$sex == "unknown"] <- NA
+
+#age at deployment
+summary(d$age.at.deployment)
+d$age.at.deployment = as.character(d$age.at.deployment)
+d$age.at.deployment[d$age.at.deployment == "<1"] <- "1"
+d$age.at.deployment[d$age.at.deployment == ">3 adult"] <- "6"
+d$age.at.deployment[d$age.at.deployment == "2cal_year"] <- "2"
+d$age.at.deployment[d$age.at.deployment == "2nd year"] <- "2"
+d$age.at.deployment[d$age.at.deployment == "2nd Year"] <- "2"
+d$age.at.deployment[d$age.at.deployment == "3cal_year"] <- "3"
+d$age.at.deployment[d$age.at.deployment == "3rd year"] <- "3"
+d$age.at.deployment[d$age.at.deployment == "3RD YEAR"] <- "3"
+d$age.at.deployment[d$age.at.deployment == "4cal_year"] <- "4"
+d$age.at.deployment[d$age.at.deployment == "4th winter"] <- "4"
+d$age.at.deployment[d$age.at.deployment == "5th Year"] <- "5"
+d$age.at.deployment[d$age.at.deployment == "A"] <- "6"
+d$age.at.deployment[d$age.at.deployment == "ad"] <- "6"
+d$age.at.deployment[d$age.at.deployment == "adult"] <- "6"
+d$age.at.deployment[d$age.at.deployment == "Adult"] <- "6"
+d$age.at.deployment[d$age.at.deployment == "Adult (5+ years)"] <- "6"
+d$age.at.deployment[d$age.at.deployment == "ADULT (5+ years)"] <- "6"
+d$age.at.deployment[d$age.at.deployment == "Adult 5+"] <- "6"
+d$age.at.deployment[d$age.at.deployment == "AHY"] <- "2"
+d$age.at.deployment[d$age.at.deployment == "ASY"] <- "3"
+d$age.at.deployment[d$age.at.deployment == "ATY"] <- "4"
+d$age.at.deployment[d$age.at.deployment == "chick"] <- "1"
+d$age.at.deployment[d$age.at.deployment == "imm, 1.5 yrt"] <- "2"
+d$age.at.deployment[d$age.at.deployment == "juv"] <- "1"
+d$age.at.deployment[d$age.at.deployment == "juvenile"] <- "1"
+d$age.at.deployment[d$age.at.deployment == "SA"] <- "3"
+d$age.at.deployment[d$age.at.deployment == "SA (2-3 years)"] <- "3"
+d$age.at.deployment[d$age.at.deployment == "SUBADULT (~2.5 YEARS)"] <- "3"
+d$age.at.deployment[d$age.at.deployment == "SY"] <- "2"
+d$age.at.deployment[d$age.at.deployment == "TY"] <- "3"
+d$age.at.deployment[d$age.at.deployment == "unknown"] <- NA
+d$age.at.deployment = as.numeric(d$age.at.deployment)
+summary(d$age.at.deployment)
+d$age.at.deployment[d$age.at.deployment >=365] <- 2
+d$age.at.deployment[d$age.at.deployment >=7] <- 1
+summary(d$age.at.deployment)
+d$age.at.deployment = as.factor(d$age.at.deployment)
+summary(d$age.at.deployment)
+
+#captive.raised
+summary(d$captive.raised)
+d$captive.raised[d$captive.raised == "captive"] <- "Y"
+d$captive.raised[d$captive.raised == "N "] <- "N"
+d$captive.raised[d$captive.raised == "wild"] <- "N"
+summary(d$captive.raised)
+
+#rehabilitated
+summary(d$rehabilitated)
+d$rehabilitated[d$rehabilitated == "N "] <- "N"
+d$rehabilitated[d$rehabilitated == "no"] <- "N"
+d$rehabilitated[d$rehabilitated == "yes"] <- "Y"
+d$rehabilitated[d$rehabilitated == ""] <- NA
+summary(d$rehabilitated)
+
+#fate: alive, confirmed dead, likely dead, confirmed transmitter failure, likely transmitter failure
+summary(d$fate)
+d$fate = as.character(d$fate)
+d$fate[d$fate == ""] <- NA
+d$fate[d$fate == "Alive"] <- "alive"
+d$fate[d$fate == "Almost certainly dead"] <- "likely dead"
+d$fate[d$fate == "Dead"] <- "confirmed dead"
+d$fate[d$fate == "dead"] <- "confirmed dead"
+d$fate[d$fate == "Probably dead"] <- "likely dead"
+d$fate[d$fate == "suspected dead"] <- "likely dead"
+d$fate[d$fate == "suspected mortality"] <- "likely dead"
+d$fate[d$fate == "suspected transmitter failure"] <- "likely transmitter failure"
+d$fate[d$fate == "transmitter failure"] <- "confirmed transmitter failure"
+d$fate[d$fate == "unknown"] <- NA
+d$fate[d$fate == "verified mortality"] <- "confirmed dead"
+d$fate[d$fate == "verified transmitter failure"] <- "confirmed transmitter failure"
+d$fate = as.factor(d$fate)
+summary(d$fate)
+
+#write
+write.csv(d, "ev.tv.summary.merged.csv", row.names = F)
+
 
 #############################################################
 #Figure
-d = read.csv("./Outputs/ev.tv.filtered.csv")
-ev.tv.summary.merge = read.csv("./Outputs/ev.tv.summary.merge.manualcleaning.csv")
-summary(ev.tv.summary.merge)
-summary(d$argos.lat1)
-summary(d$argos.lat2)
-summary(ev.tv.summary.merge$fate)
-summary(ev.tv.summary.merge$captive.raised)
-ev.tv.summary.merge.alive.removed = ev.tv.summary.merge[!ev.tv.summary.merge$fate == "alive", ]
-summary(ev.tv.summary.merge.alive.removed$fate)
+d = read.csv("ev.tv.filtered.csv")
+ev.tv.summary.merged = read.csv("ev.tv.summary.merged.csv")
+ev.tv.summary.merged.alive.removed = ev.tv.summary.merged[!(ev.tv.summary.merged$fate == "alive"),]
 
 #ggplot map
 colourpalette<-c('#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999','#000120')
 colourpalette
-tiff("./Outputs/ev.tracking.overview.alive.removed.tiff", units="cm", width=25, height=20, res=300)
+tiff("tracking.overview.tiff", units="cm", width=25, height=20, res=300)
 map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id), color = '#4daf4a') 
+map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id.tag), color = '#4daf4a', alpha = .5) 
 map.plot = map.plot + geom_point(data = ev.tv.summary.merge, aes(start.long, start.lat, color = "deployment"))  
-map.plot = map.plot + geom_point(data = ev.tv.summary.merge.alive.removed, aes(end.long, end.lat, color = "termination")) + labs(x = "longitude", y = "latitude")
+map.plot = map.plot + geom_point(data = ev.tv.summary.merged.alive.removed, aes(end.long, end.lat, color = "termination")) + labs(x = "longitude", y = "latitude")
 #map.plot = map.plot + geom_segment(data = ev.tv.summary.merge.alive.removed, aes(x = start.long, y = start.lat, xend = end.long, yend = end.lat)) 
 map.plot = map.plot + scale_color_manual(values=c('#377eb8','#e41a1c'))  
 map.plot = map.plot + theme(legend.title = element_blank()) + theme(legend.position="bottom") 
-map.plot = map.plot + ggtitle("Egyptian Vulture Tracking Overview") + theme(plot.title = element_text(hjust = 0.5))
+map.plot = map.plot + ggtitle("EV - TV Tracking Overview") + theme(plot.title = element_text(hjust = 0.5))
 map.plot
 dev.off()
