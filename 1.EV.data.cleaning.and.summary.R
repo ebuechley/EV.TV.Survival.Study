@@ -401,13 +401,16 @@ write.csv(ev.tv.summary, "ev.tv.summary.csv", row.names = FALSE)
 
 #####################################################################
 #merging data summary with coauthor info input in Google Sheet
+#set wd
+setwd("~/Documents/GitHub/EV - TV Survival Study/")
 
 #Clear workspace
 rm(list = ls())
 
 #read final summaries
-gs = read.csv("./Google Sheet/Egyptian Vulture tracking summary - EV summary.csv")
-ev.tv.summary = read.csv("./Outputs/ev.tv.summary.csv")
+ev.gs = read.csv("./Google Sheets/Egyptian Vulture tracking summary - EV summary.csv")
+tv.gs = read.csv("./Google Sheets/Turkey Vulture tracking summary - TV summary.csv")
+ev.tv.summary = read.csv("ev.tv.summary.csv")
 
 #check id's match
 unique(gs$id) #Provence_2016_Ad_wild_EO5018_Salom√©_8P
