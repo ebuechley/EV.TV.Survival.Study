@@ -628,15 +628,14 @@ names(d)
 #ggplot map
 colourpalette<-c('#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999','#000120')
 colourpalette
-tiff("tracking.overview.tiff", units="cm", width=35, height=20, res=300)
+tiff("tracking.overview.tiff", units="cm", width=35, height=19, res=300)
 map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() 
 map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id.tag, color = species), alpha = .5) 
-map.plot
-map.plot = map.plot + geom_point(data = ev.tv.summary.merged, aes(start.long, start.lat, color = "deployment"))  
-map.plot = map.plot + geom_point(data = ev.tv.summary.merged.alive.removed, aes(end.long, end.lat, color = "termination")) 
+map.plot = map.plot + geom_point(data = ev.tv.summary.merged, aes(start.long, start.lat, color = "tag deployment"))  
+map.plot = map.plot + geom_point(data = ev.tv.summary.merged.alive.removed, aes(end.long, end.lat, color = "tag termination")) 
 #map.plot = map.plot + geom_segment(data = ev.tv.summary.merge.alive.removed, aes(x = start.long, y = start.lat, xend = end.long, yend = end.lat)) 
-map.plot = map.plot + scale_color_manual(values=c('#377eb8','#e41a1c','#ffff33','#ff7f00')) + labs(x = "longitude", y = "latitude")
-#map.plot = map.plot + theme(legend.title = element_blank()) 
-map.plot = map.plot + ggtitle("EV - TV Tracking Overview") + theme(plot.title = element_text(hjust = 0.5))
+map.plot = map.plot + scale_color_manual(values=c('#4daf4a','#377eb8','#ffff33','#e41a1c')) + labs(x = "longitude", y = "latitude")
+map.plot = map.plot + theme(legend.title = element_blank()) 
+map.plot = map.plot + ggtitle("vulture tracking, deployment, and termination overview") + theme(plot.title = element_text(hjust = 0.5))
 map.plot
 dev.off()
