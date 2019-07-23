@@ -428,7 +428,7 @@ summary(d)
 summary(d$sex)
 d$sex[d$sex == "female"] <- "F"
 d$sex[d$sex == "male"] <- "M"
-d$sex[d$sex == "unknown"] <- NA
+d$sex[is.na(d$sex)] <- "unknown"
 
 #age at deployment
 summary(d$age.at.deployment)
@@ -463,13 +463,14 @@ d$age.at.deployment[d$age.at.deployment == "SA (2-3 years)"] <- "3"
 d$age.at.deployment[d$age.at.deployment == "SUBADULT (~2.5 YEARS)"] <- "3"
 d$age.at.deployment[d$age.at.deployment == "SY"] <- "2"
 d$age.at.deployment[d$age.at.deployment == "TY"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "unknown"] <- NA
+d$age.at.deployment[is.na(d$age.at.deployment)] <- "unknown"
 d$age.at.deployment = as.numeric(d$age.at.deployment)
 summary(d$age.at.deployment)
 d$age.at.deployment[d$age.at.deployment >=365] <- 2
 d$age.at.deployment[d$age.at.deployment >=7] <- 1
 summary(d$age.at.deployment)
 d$age.at.deployment = as.factor(d$age.at.deployment)
+d$age.at.deployment[is.na(d$age.at.deployment)] <- "unknown"
 summary(d$age.at.deployment)
 
 #captive.raised
@@ -477,6 +478,7 @@ summary(d$captive.raised)
 d$captive.raised[d$captive.raised == "captive"] <- "Y"
 d$captive.raised[d$captive.raised == "N "] <- "N"
 d$captive.raised[d$captive.raised == "wild"] <- "N"
+d$captive.raised[is.na(d$captive.raised)] <- "unknown"
 summary(d$captive.raised)
 
 #rehabilitated
@@ -503,6 +505,7 @@ d$fate[d$fate == "transmitter failure"] <- "confirmed transmitter failure"
 d$fate[d$fate == "unknown"] <- NA
 d$fate[d$fate == "verified mortality"] <- "confirmed dead"
 d$fate[d$fate == "verified transmitter failure"] <- "confirmed transmitter failure"
+d$fate[is.na(d$fate)] <- "unknown"
 d$fate = as.factor(d$fate)
 summary(d$fate)
 
