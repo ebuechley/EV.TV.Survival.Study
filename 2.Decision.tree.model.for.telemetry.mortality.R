@@ -50,6 +50,7 @@ text(d.tree, use.n=TRUE, all=TRUE, cex=.8)
 fit <- ctree(fate ~ mean.GPS.fixrate.last10fixes + mean.GPS.dist.last10fixes + mean.battery.charge.percent.last10fixes, data = d)
 plot(fit, main="Vulture Fates")
 
+
 ###############################################
 #add column of fate to full dataset
 # replace cell values for matching ids
