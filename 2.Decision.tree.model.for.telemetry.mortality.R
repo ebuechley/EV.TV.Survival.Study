@@ -1,5 +1,5 @@
 # decision tree model to predict mortality from telemetry data
-library(rpart)
+library(party)
 
 #Set WD
 setwd("~/Documents/GitHub/EV - TV Survival Study")
@@ -8,14 +8,24 @@ setwd("~/Documents/GitHub/EV - TV Survival Study")
 rm(list = ls())
 
 #read in data
-#d = read.csv("ev.tv.filtered.csv")
+d = read.csv("ev.tv.summary.merged.csv")
 summary(d)
-summ = read.csv("ev.tv.summary.merged.csv")
-summary(summ)
+
+unique(d$fate)
+d<-d[!(d$fate=="likely transmitter failure"),]
+d<-d[!(d$fate=="likely dead"),]
+d<-d[!(d$fate=="unknown"),]
+d<-d[!(d$fate=="captive"),]
+d<-d[!(d$fate=="confirmed transmitter failure"),]
+write.csv(d, "test.csv")
+d = read.csv("test.csv")
+summary(d$fate)
+head(d)
+d
 
 #need to create a data table that summarizes status or change in variables ...
 #for the last 10 days of transmission for each id (per Sergio et al. 2019)
-
+#BOTE --- have started to do this in the previous script
 
 #build decision trees to predict fate of tracked individuals
 #Potential Variables (per Sergio et al. 2019): 
@@ -29,16 +39,24 @@ summary(summ)
 #GPS spatial error --- low spatial error may indicate lack of movement, and thus mortality (??? not sure I buy this)
 #Argos location classes 
 
-#d.tree = rpart(fate ~ dist + dt.days + NSD, data = d, method = "class")
+names(d)
+#rpart
+d.tree = rpart(fate ~ mean.GPS.fixrate.last10fixes + mean.GPS.dist.last10fixes + mean.battery.charge.percent.last10fixes, data = d, method = "class")
+print(d.tree)
+plot(d.tree, uniform=TRUE, main="Vulture Mortality Tree")
+text(d.tree, use.n=TRUE, all=TRUE, cex=.8)
 
+#party
+fit <- ctree(fate ~ mean.GPS.fixrate.last10fixes + mean.GPS.dist.last10fixes + mean.battery.charge.percent.last10fixes, data = d)
+plot(fit, main="Vulture Fates")
 
 ###############################################
 #add column of fate to full dataset
 # replace cell values for matching ids
 d$fate = NA
 
-for (i in unique(summ$id.tag)) { 
-  d$fate[which(d$id.tag == i)] = summ$fate[which(summ$id.tag == i)]
+for (i in unique(d$id.tag)) { 
+  d$fate[which(d$id.tag == i)] = d$fate[which(d$id.tag == i)]
 }
 
 d$fate = as.factor(d$fate)
