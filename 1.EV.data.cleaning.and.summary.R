@@ -162,12 +162,28 @@ write.csv(d, "ev.tv.filtered.csv")
 ########################################
 #convert to data.table to summarize
 d.dt = setDT(d)
-head(d.dt)
-unique(d.dt$id.tag) #note 260 unique id.tag
 
-#create summary
-ev.tv.summary = d.dt[,.(unique(species), unique(study.name), unique(id),unique(tag), min(timestamp), max(timestamp), head(lat,1), head(long,1), tail(lat,1), tail(long,1)), by = .(id.tag)]
-names(ev.tv.summary) = c("id.tag", "species", "study.name", "id", "tag",  "start.date", "end.date", "start.lat", "start.long", "end.lat", "end.long")
+#remove rows that have NA for columns we are summarizing here 
+d.dt = d.dt[!is.na(d.dt$dist),]
+d.dt = d.dt[!is.na(d.dt$dt.days),]
+
+
+head(d.dt)
+summary(d$dist)
+summary(d.dt$NSD)
+summary(d.dt$dt.days)
+names(d.dt)
+mean(tail(d.dt$dt.days,10))
+
+#summarize
+ev.tv.summary = d.dt[,.(unique(species), unique(study.name), unique(id),unique(tag), 
+                        min(timestamp), max(timestamp), head(lat,1), head(long,1), 
+                        tail(lat,1), tail(long,1), tail(dist,1)), by = .(id.tag)]
+
+#add headers
+names(ev.tv.summary) = c("id.tag", "species", "study.name", "id", "tag",  "start.date", 
+                         "end.date", "start.lat", "start.long", "end.lat", "end.long", 
+                         "mean.GPS.dist.last10fixes")
 head(ev.tv.summary)
 summary(ev.tv.summary)
 
