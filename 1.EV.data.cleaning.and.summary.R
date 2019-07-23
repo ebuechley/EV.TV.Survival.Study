@@ -167,23 +167,22 @@ d.dt = setDT(d)
 d.dt = d.dt[!is.na(d.dt$dist),]
 d.dt = d.dt[!is.na(d.dt$dt.days),]
 
-
+#check data
 head(d.dt)
-summary(d$dist)
-summary(d.dt$NSD)
-summary(d.dt$dt.days)
+summary(d.dt)
 names(d.dt)
-mean(tail(d.dt$dt.days,10))
 
 #summarize
 ev.tv.summary = d.dt[,.(unique(species), unique(study.name), unique(id),unique(tag), 
                         min(timestamp), max(timestamp), head(lat,1), head(long,1), 
-                        tail(lat,1), tail(long,1), tail(dist,1)), by = .(id.tag)]
+                        tail(lat,1), tail(long,1), mean(tail(dist,10)), mean(tail(dt.days,10)),
+                        mean(tail(battery.charge.percent,10))),by = .(id.tag)]
 
 #add headers
 names(ev.tv.summary) = c("id.tag", "species", "study.name", "id", "tag",  "start.date", 
                          "end.date", "start.lat", "start.long", "end.lat", "end.long", 
-                         "mean.GPS.dist.last10fixes")
+                         "mean.GPS.dist.last10fixes", "mean.GPS.fixrate.last10fixes",
+                         "mean.battery.charge.percent.last10fixes")
 head(ev.tv.summary)
 summary(ev.tv.summary)
 
@@ -193,7 +192,8 @@ head(ev.tv.summary)
 
 #add fate = alive if still transmitting May 1
 ev.tv.summary = cbind(ev.tv.summary, ifelse(ev.tv.summary$end.date > ymd(20190501), "alive", 'NA'))
-names(ev.tv.summary)[13] = 'fate'
+names(ev.tv.summary)
+names(ev.tv.summary)[16] = 'fate'
 ev.tv.summary$fate = as.factor(ev.tv.summary$fate)
 head(ev.tv.summary)
 
@@ -297,7 +297,7 @@ ev.tv.summary = merge(ev.tv.summary, n.locs, by = "id.tag", all = T)
 head(ev.tv.summary)
 summary(ev.tv.summary)
 names(ev.tv.summary)
-ev.tv.summary = ev.tv.summary[,c(3,2,5,4,1,15,14,16,17,6:11,22,23,12,24,13,18,19,20,21)]
+#ev.tv.summary = ev.tv.summary[,c(3,2,5,4,1,18,17,16,17,6:11,22,23,12,24,13,18,19,20,21)]
 names(ev.tv.summary)
 
 # Order the data frame by study
