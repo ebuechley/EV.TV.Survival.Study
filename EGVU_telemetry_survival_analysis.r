@@ -24,6 +24,7 @@ EV<-fread("Google Sheets\\Egyptian Vulture tracking summary - EV summary.csv")
 
 EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
   filter(!is.na(start)) %>%
+  filter(start<ymd_hm("2019-04-01 12:00")) %>%  ## remove birds only alive for a few months in 2019
   select(id.tag,sex,age.at.deployment,captive.raised,rehabilitated, start, end, fate, how.fate.determined)
 head(EV)
 
@@ -90,22 +91,25 @@ EV.phi.matrix[,2:max(timeseries$col)]<-NA									### NEEDS MANUAL ADJUSTMENT IF
 
 ### FILL MATRICES WITH STATE INFORMATION ###
 
-for(n in CH.telemetry$id.tag){
+for(n in EV.obs.matrix$id.tag){
   xl<-EV %>% filter(id.tag==n)
   mindate<-format(xl$start, format="%m-%Y")
   maxdate<-format(xl$end, format="%m-%Y")
   startcol<-timeseries$col[timeseries$date==mindate]
   stopcol<-timeseries$col[timeseries$date==maxdate]
+  stopcol<-ifelse(stopcol<=startcol,min(startcol+1,max(timeseries$col)),stopcol)
   
   ## ASSIGN OBSERVED STATE
   EV.obs.matrix[EV.obs.matrix$id.tag==n,startcol:(stopcol-1)]<-1
+  if(startcol==stopcol){EV.obs.matrix[EV.obs.matrix$id.tag==n,2:(stopcol-1)]<-NA} ## for the few cases where stopcol-1 is actually before startcol
   EV.obs.matrix[EV.obs.matrix$id.tag==n,stopcol:max(timeseries$col)]<-xl$OS   ## this assumes that state never changes - some birds may have gone off air and then been found dead - this needs manual adjustment!  
   
   ## ASSIGN INITIAL TRUE STATE (to initialise z-matrix of model)
-  EV.state.matrix[EV.state.matrix$id.tag==n,startcol:(stopcol-1)]<-1
-  EV.state.matrix[EV.state.matrix$id.tag==n,stopcol:max(timeseries$col)]<-xl$TS   ## this assumes that state never changes - some birds may have gone off air and then been found dead - this needs manual adjustment!  
+  EV.state.matrix[EV.state.matrix$id.tag==n,(startcol+1):(stopcol-1)]<-2      ## state at first capture is known, hence must be NA in z-matrix
+  EV.state.matrix[EV.state.matrix$id.tag==n,stopcol:max(timeseries$col)]<-xl$TS   ## this assumes that state never changes - some birds may have gone off air and then been found dead - this needs manual adjustment!
+  EV.state.matrix[EV.state.matrix$id.tag==n,2:startcol]<-NA ## error occurs if z at first occ is not NA, so we need to specify that for birds alive for <1 month because stopcol-1 = startcol
   
-  ## ASSIGN SURVIVAL PARAMETERS FOR TRANSITIONS ()
+  ## ASSIGN SURVIVAL PARAMETERS FOR TRANSITIONS (NEEDS MORE WORK!)
   # phi[1]: juvenile survival probability during migration
   # phi[2]: juvenile survival probability during winter
   # phi[3]: immature survival probability during stationary period (winter or summer)
@@ -113,8 +117,10 @@ for(n in CH.telemetry$id.tag){
   # phi[5]: adult survival probability during summer (breeding season)
   # phi[6]: adult survival probability during migration
   # phi[7]: adult survival probability during winter (non-breeding season)
-  EV.phi.matrix[EV.phi.matrix$id.tag==n,startcol:max(timeseries$col)]<-ifelse(xl$captive.raised=="Y",2,1)   ### NEEDS WORK TO SPECIFY PROPERLY BY AGE, MIG, RELEASE STATUS
   
+  ### NEED TO DEFINE SEASONS AND SPECIFY COLUMNS
+  
+  EV.phi.matrix[EV.phi.matrix$id.tag==n,2:max(timeseries$col)]<-rep(1:2,53)   ### NEEDS WORK TO SPECIFY PROPERLY BY AGE, MIG, RELEASE STATUS
 }
 
 
@@ -140,13 +146,9 @@ INPUT.telemetry <- list(y = y.telemetry,
                         f = f.telemetry,
                         nind = dim(y.telemetry)[1],
                         n.occasions = dim(y.telemetry)[2],
-                        phi.mat=phi.mat)
+                        phi.mat=phi.mat,
+                        nsurv=max(phi.mat,na.rm=T))
 #rm(list=setdiff(ls(), "INPUT.telemetry"))
-
-
-
-
-
 
 
 
@@ -192,14 +194,14 @@ model {
   # -------------------------------------------------
   
   # Priors and constraints
-  for (s in 1:2){
-    phi[s] ~ dunif(0.8, 0.9999)   # Equal uninformative prior for all MONTHLY survival probabilities
+  for (s in 1:nsurv){
+    phi[s] ~ dunif(0.5, 0.9999)   # Equal uninformative prior for all MONTHLY survival probabilities
   }
   
   tag.fail ~ dunif(0, 1)   # Prior for MONTHLY tag failure probability
   p.found.dead ~ dunif(0, 1)   # Prior for probability that dead bird carcass is found
   p.seen.alive ~ dunif(0, 1)    # Prior for probability that bird with defunct tag is observed alive
-  p.obs ~ dunif(0.99, 1)       # Prior for probability to 'observe' a bird with functional tag (=should be 1?)
+  p.obs ~ dunif(0.5, 1)       # Prior for probability to 'observe' a bird with functional tag (=should be 1?)
   
   
   
@@ -248,7 +250,7 @@ model {
   # Likelihood 
   for (i in 1:nind){
     # Define latent state at first capture
-    z[i,f[i]] <- y[i,f[i]]
+    z[i,f[i]] <- 2 ## y[i,f[i]]                  ### THIS MAY NEED TO BE FIXED AS THE OBS STATES DO NOT MATCH TRUES STATES
     for (t in (f[i]+1):n.occasions){
       # State process: draw S(t) given S(t-1)
       z[i,t] ~ dcat(ps[z[i,t-1], i, t-1,])
@@ -257,7 +259,7 @@ model {
     } #t
   } #i
 }
-#",fill = TRUE)
+",fill = TRUE)
 sink()
 
 
@@ -272,14 +274,14 @@ parameters.telemetry <- c("phi","p.obs","p.seen.alive","p.found.dead", "tag.fail
 
 # Initial values
 inits.telemetry <- function(){list(z = z.telemetry,
-                                   phi = runif(2, 0, 1),
-                                   p.obs = runif(1, 0.99, 1))}  
+                                   phi = runif(INPUT.telemetry$nsurv, 0.5, 0.999),
+                                   p.obs = runif(1, 0.5, 1))}  
 
 
 # MCMC settings
-ni <- 200
-nt <- 3
-nb <- 50
+ni <- 20000
+nt <- 4
+nb <- 5000
 nc <- 3
 
 # Call JAGS from R

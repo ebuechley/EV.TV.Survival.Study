@@ -32,14 +32,14 @@ model {
   # -------------------------------------------------
   
   # Priors and constraints
-  for (s in 1:2){
-    phi[s] ~ dunif(0.8, 0.9999)   # Equal uninformative prior for all MONTHLY survival probabilities
+  for (s in 1:nsurv){
+    phi[s] ~ dunif(0.5, 0.9999)   # Equal uninformative prior for all MONTHLY survival probabilities
   }
   
   tag.fail ~ dunif(0, 1)   # Prior for MONTHLY tag failure probability
   p.found.dead ~ dunif(0, 1)   # Prior for probability that dead bird carcass is found
   p.seen.alive ~ dunif(0, 1)    # Prior for probability that bird with defunct tag is observed alive
-  p.obs ~ dunif(0.99, 1)       # Prior for probability to 'observe' a bird with functional tag (=should be 1?)
+  p.obs ~ dunif(0.5, 1)       # Prior for probability to 'observe' a bird with functional tag (=should be 1?)
   
   
   
@@ -88,7 +88,7 @@ model {
   # Likelihood 
   for (i in 1:nind){
     # Define latent state at first capture
-    z[i,f[i]] <- y[i,f[i]]
+    z[i,f[i]] <- 2 ## y[i,f[i]]                  ### THIS MAY NEED TO BE FIXED AS THE OBS STATES DO NOT MATCH TRUES STATES
     for (t in (f[i]+1):n.occasions){
       # State process: draw S(t) given S(t-1)
       z[i,t] ~ dcat(ps[z[i,t-1], i, t-1,])
@@ -97,4 +97,4 @@ model {
     } #t
   } #i
 }
-#
+
