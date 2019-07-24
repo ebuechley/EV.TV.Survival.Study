@@ -19,10 +19,12 @@ library(lubridate)
 
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study"), silent=T)
 try(setwd("S:\\ConSci\\DptShare\\SteffenOppel\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study"), silent=T)
-EV<-fread("Google Sheets\\Egyptian Vulture tracking summary - EV summary.csv")
+#EV<-fread("Google Sheets\\Egyptian Vulture tracking summary - EV summary.csv")
+EV<-fread("Google Sheets\\EGVU_fate_summary_Balkans.csv")
 
 
-EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
+#EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
+EV<-EV %>% mutate(start=parse_date_time(start.date, c("dmy", "dmy HM")), end= parse_date_time(end.date, c("dmy", "dmy HM"))) %>%
   filter(!is.na(start)) %>%
   filter(start<ymd_hm("2019-04-01 12:00")) %>%  ## remove birds only alive for a few months in 2019
   select(id.tag,sex,age.at.deployment,captive.raised,rehabilitated, start, end, fate, how.fate.determined)
@@ -45,18 +47,24 @@ head(EV)
 # 5 No signal (=not seen)
 
 unique(EV$how.fate.determined)
+unique(EV$age.at.deployment)
 unique(EV$fate)
 EV %>% filter(is.na(fate))
 
 EV<-EV %>%
   mutate(TS= ifelse(fate=="alive",2,
-                    ifelse(fate %in% c("dead","suspected mortality"),1,3))) %>%
+                    ifelse(fate %in% c("dead","suspected mortality","captive"),1,3))) %>%
+  # mutate(OS= ifelse(fate=="alive",1,
+  #                   ifelse(fate %in% c("unknown","suspected transmitter failure"),5,
+  #                          ifelse(fate=="verified transmitter failure",3,
+  #                                 ifelse(fate=="dead",4,
+  #                                        ifelse(fate=="suspected mortality",2,5)))))) %>%
   mutate(OS= ifelse(fate=="alive",1,
-                    ifelse(fate %in% c("unknown","suspected transmitter failure"),5,
-                           ifelse(fate=="verified transmitter failure",3,
-                                  ifelse(fate=="dead",4,
-                                         ifelse(fate=="suspected mortality",2,5)))))) %>%
-  mutate(TS=ifelse(is.na(TS),3,TS),OS=ifelse(is.na(OS),5,OS))       ## WE SHOULD MAKE SURE THAT THIS IS NOT NEEDED!
+                    ifelse(how.fate.determined %in% c("unknown","suspected transmitter failure","transmission ended"),5,
+                           ifelse(how.fate.determined=="verified transmitter failure",3,
+                                  ifelse(how.fate.determined %in% c("dead","recaptured","retrieved transmitter and carcass","retrieved transmitter and asked locals","found carcass","carcass retrieved","tag retrieved, asked locals","found feathers"),4,
+                                         ifelse(how.fate.determined %in% c("suspected mortality","inferred from transmissions"),2,5)))))) %>%
+  mutate(TS=ifelse(is.na(TS),3,TS),OS=ifelse(is.na(OS),ifelse(TS==1,2,5),OS))       ## WE SHOULD MAKE SURE THAT THIS IS NOT NEEDED!
 
 
 head(EV)
@@ -73,6 +81,7 @@ maxdate<-max(EV$end)
 timeseries<-data.frame(date=seq(mindate, maxdate, "1 month")) %>%
   mutate(month=month(date),year=year(date)) %>%
   mutate(date=format(date, format="%m-%Y")) %>%
+  mutate(season=ifelse(month %in% c(2,3,4,9,10), 'migration',ifelse(month %in% c(11,12,1),"winter","summer"))) %>%
   mutate(col=seq_along(date)+1)
 dim(timeseries)
 
@@ -84,9 +93,6 @@ EV.obs.matrix[,2:max(timeseries$col)]<-NA									### NEEDS MANUAL ADJUSTMENT IF
 
 EV.state.matrix<-EV %>% select(id.tag)
 EV.state.matrix[,2:max(timeseries$col)]<-NA									### NEEDS MANUAL ADJUSTMENT IF REPEATED FOR LONGER TIME SERIES
-
-EV.phi.matrix<-EV %>% select(id.tag)
-EV.phi.matrix[,2:max(timeseries$col)]<-NA									### NEEDS MANUAL ADJUSTMENT IF REPEATED FOR LONGER TIME SERIES
 
 
 ### FILL MATRICES WITH STATE INFORMATION ###
@@ -109,19 +115,57 @@ for(n in EV.obs.matrix$id.tag){
   EV.state.matrix[EV.state.matrix$id.tag==n,stopcol:max(timeseries$col)]<-xl$TS   ## this assumes that state never changes - some birds may have gone off air and then been found dead - this needs manual adjustment!
   EV.state.matrix[EV.state.matrix$id.tag==n,2:startcol]<-NA ## error occurs if z at first occ is not NA, so we need to specify that for birds alive for <1 month because stopcol-1 = startcol
   
-  ## ASSIGN SURVIVAL PARAMETERS FOR TRANSITIONS (NEEDS MORE WORK!)
-  # phi[1]: juvenile survival probability during migration
-  # phi[2]: juvenile survival probability during winter
-  # phi[3]: immature survival probability during stationary period (winter or summer)
-  # phi[4]: immature survival probability during migration
-  # phi[5]: adult survival probability during summer (breeding season)
-  # phi[6]: adult survival probability during migration
-  # phi[7]: adult survival probability during winter (non-breeding season)
-  
-  ### NEED TO DEFINE SEASONS AND SPECIFY COLUMNS
-  
-  EV.phi.matrix[EV.phi.matrix$id.tag==n,2:max(timeseries$col)]<-rep(1:2,53)   ### NEEDS WORK TO SPECIFY PROPERLY BY AGE, MIG, RELEASE STATUS
 }
+
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# CREATE MATRIX OF SURVIVAL PARAMETERS BASED ON AGE AND SEASON
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# phi[1]: juvenile survival probability during migration
+# phi[2]: juvenile survival probability during winter
+# phi[3]: immature survival probability during stationary period (winter or summer)
+# phi[4]: immature survival probability during migration
+# phi[5]: adult survival probability during summer (breeding season)
+# phi[6]: adult survival probability during migration
+# phi[7]: adult survival probability during winter (non-breeding season)
+
+phi.lookup<-data.frame(age=c("juv","imm","adult"),summer=c(1,3,5),migration=c(1,4,6),winter=c(2,3,7))
+age.lookup<-data.frame(month=seq(1:max(timeseries$col)), age=c(rep("juv",10),rep("imm",62),rep("adult",(max(timeseries$col)-72))))
+
+EV.phi.matrix<-EV %>% select(id.tag)
+EV.phi.matrix[,2:max(timeseries$col)]<-NA									### NEEDS MANUAL ADJUSTMENT IF REPEATED FOR LONGER TIME SERIES
+
+
+
+### FILL MATRICES WITH STATE INFORMATION ###
+
+for(n in EV.obs.matrix$id.tag){
+  xl<-EV %>% filter(id.tag==n)
+  mindate<-format(xl$start, format="%m-%Y")
+  maxdate<-format(xl$end, format="%m-%Y")
+  startcol<-timeseries$col[timeseries$date==mindate]
+  startagecat<-ifelse(xl$age.at.deployment=="adult","adult", ifelse(xl$age.at.deployment=="juv","juv","imm")) ### very simplistic assumes all immatures are 25 months old!
+  startagemonth<-ifelse(xl$age.at.deployment=="adult",50, ifelse(xl$age.at.deployment=="juv",1,25)) ### very simplistic assumes all immatures are 25 months old!
+  
+  ## ASSIGN SURVIVAL PARAMETERS FOR FIRST SURVIVAL 
+  EV.phi.matrix[EV.phi.matrix$id.tag==n,startcol]<-phi.lookup[phi.lookup$age==startagecat,match(timeseries$season[timeseries$col==startcol],names(phi.lookup))]
+  
+  ### ASSIGN SURVIVAL PARAMETERS FOR ALL SUBSEQUENT INTERVALS
+  
+  for (col in (startcol+1):max(timeseries$col)){
+    age.progress<-col-startcol
+    curr.age<-if_else(startagecat=="adult","adult",
+                     as.character(age.lookup$age[age.progress+startagemonth]))
+    curr.season<-timeseries$season[timeseries$col==col]
+    EV.phi.matrix[EV.phi.matrix$id.tag==n,col]<-phi.lookup[phi.lookup$age==curr.age,match(curr.season,names(phi.lookup))]
+    
+  } ## end loop over each occasion
+  
+} ## end loop over each animal
+
+
 
 
 
@@ -284,6 +328,58 @@ nt <- 4
 nb <- 5000
 nc <- 3
 
-# Call JAGS from R
+# Call JAGS from R (took 30 min for Balkan data)
 EVsurv <- jags(INPUT.telemetry, inits.telemetry, parameters.telemetry, "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate.jags", n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, n.cores=nc, parallel=T)
+save.image("EGVU_survival_output.RData")
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# EXPORT THE OUTPUT
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+out<-as.data.frame(EVsurv$summary)
+out$parameter<-row.names(EVsurv$summary)
+write.table(out,"EGVU_telemetry_survival_estimates.csv", sep=",", row.names=F)
+
+
+
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PLOT SURVIVAL ESTIMATES 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+phi.labels<-phi.lookup %>% gather(key="season", value="parameter",-age) %>% mutate(label=paste(age,season, sep=".")) %>%
+  arrange(parameter) %>%
+  filter(label!="juv.summer") %>%
+  filter(label!="imm.summer")
+                                                                         
+## retrieve the population projections
+plotdat<-out[(grep("phi",out$parameter)),c(12,1,3,7)] %>%
+  mutate(parameter= phi.labels$label)
+names(plotdat)[1:4]<-c('parm','mean','lcl','ucl')
+
+
+
+### produce plot 
+
+pdf("EV_survival_estimates.pdf", width=10, height=7)
+
+ggplot(plotdat)+
+  geom_point(aes(x=parm, y=mean), size=1,col='darkgrey')+
+  geom_errorbar(aes(x=parm, ymin=lcl, ymax=ucl), width=.1)+
+
+  ## format axis ticks
+  scale_y_continuous(name="monthly survival probability", limits=c(0.7,1),breaks=seq(0.7,1,0.05), labels=seq(0.7,1,0.05))+
+
+  ## beautification of the axes
+  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.y=element_text(size=18, color="black"),
+        axis.text.x=element_text(size=12, color="black",angle=45, vjust = 1, hjust=1), 
+        axis.title=element_text(size=18), 
+        strip.text.x=element_text(size=18, color="black"), 
+        strip.background=element_rect(fill="white", colour="black"))
+
+dev.off()
+
 
