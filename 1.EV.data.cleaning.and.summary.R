@@ -158,7 +158,7 @@ head(d)
 names(d)
 
 #write
-write.csv(d, "ev.tv.filtered.csv")
+write.csv(d, "ev.tv.filtered.csv", row.names = FALSE)
 
 ########################################
 #data summary

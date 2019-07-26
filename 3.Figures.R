@@ -13,6 +13,10 @@ d = read.csv("ev.tv.filtered.csv")
 ev.tv.summary.merged = read.csv("ev.tv.summary.merged.csv")
 ev.tv.summary.merged.alive.removed = ev.tv.summary.merged[!(ev.tv.summary.merged$fate == "alive"),]
 names(d)
+head(d)
+
+#set wd
+setwd("~/Google Drive/Conferences/Dinacon/")
 
 #ggplot map
 colourpalette<-c('#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999','#000120')
@@ -31,21 +35,81 @@ dev.off()
 
 #by EV populations
 d1 = subset(d, d$species == "Neophron percnopterus")
-d1 = d1[,c(3:6)]
+names(d1)
+d1 = d1[,c(2:5,39)]
 head(d1)
 we = subset(d1, d1$population == "western europe")
 it = subset(d1, d1$population == "italy")
 ba = subset(d1, d1$population == "balkans")
 ca = subset(d1, d1$population == "caucasus")
 d2 = rbind(we,it,ba,ca)
-
-#set wd
-setwd("~/Google Drive/Conferences/Dinacon/")
+head(d2)
+#
 write.csv(d2, "ev.all.csv")
 write.csv(we, "ev.western.europe.csv")
+summary(we$id.tag)
 write.csv(it, "ev.italy.csv")
 write.csv(ba, "ev.balkans.csv")
 write.csv(ca, "ev.caucasus.csv")
+
+#all
+svg("ev.all.tracking.overview.svg")
+map.plot = ggplot() + theme_bw() + coord_quickmap()
+map.plot = map.plot + geom_path(data = d2, aes(long,lat, group = id.tag, color = id.tag), alpha = .5) 
+map.plot = map.plot + theme(legend.position = "none",  plot.background = element_blank(), 
+                            panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+                            panel.border = element_blank(), axis.ticks = element_blank(), 
+                            axis.text=element_blank(), axis.title = element_blank())
+map.plot
+dev.off()
+
+#western europe
+summary(we)
+svg("ev.westerneurope.tracking.overview.svg")
+map.plot = ggplot() + theme_bw() + coord_quickmap()
+map.plot = map.plot + geom_path(data = we, aes(long,lat, group = id.tag, color = id.tag), alpha = .5) 
+map.plot = map.plot + theme(legend.position = "none",  plot.background = element_blank(), 
+                            panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+                            panel.border = element_blank(), axis.ticks = element_blank(), 
+                            axis.text=element_blank(), axis.title = element_blank())
+map.plot
+dev.off()
+
+#italy
+summary(it)
+svg("ev.italy.tracking.overview.svg")
+map.plot = ggplot() + theme_bw() + coord_quickmap()
+map.plot = map.plot + geom_path(data = it, aes(long,lat, group = id.tag, color = id.tag), alpha = .5) 
+map.plot = map.plot + theme(legend.position = "none",  plot.background = element_blank(), 
+                            panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+                            panel.border = element_blank(), axis.ticks = element_blank(), 
+                            axis.text=element_blank(), axis.title = element_blank())
+map.plot
+dev.off()
+
+#balkans
+summary(ba)
+svg("ev.balkans.tracking.overview.svg")
+map.plot = ggplot() + theme_bw() + coord_quickmap()
+map.plot = map.plot + geom_path(data = ba, aes(long,lat, group = id.tag, color = id.tag), alpha = .5) 
+map.plot = map.plot + theme(legend.position = "none",  plot.background = element_blank(), 
+                            panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+                            panel.border = element_blank(), axis.ticks = element_blank(), 
+                            axis.text=element_blank(), axis.title = element_blank())
+map.plot
+dev.off()
+
+#caucasus
+summary(ca)
+svg("ev.caucasus.tracking.overview.svg")
+map.plot = ggplot() + theme_bw() + coord_quickmap()
+map.plot = map.plot + geom_path(data = ca, aes(long,lat, group = id.tag, color = id.tag), alpha = .5) 
+map.plot = map.plot + theme(legend.position = "none",  plot.background = element_blank(), 
+                            panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+                            panel.border = element_blank(), axis.ticks = element_blank(), 
+                            axis.text=element_blank(), axis.title = element_blank())
+map.plot
+dev.off()
 
 #all
 tiff("ev.all.tracking.overview.tiff", units="cm", width=35, height=19, res=300)
@@ -60,7 +124,7 @@ dev.off()
 
 #western europe
 summary(we)
-svg("ev.westerneurope.tracking.overview.svg", units="cm", width=35, height=19, res=300)
+tiff("ev.westerneurope.tracking.overview.tiff", units="cm", width=35, height=19, res=300)
 map.plot = ggplot() + theme_bw() + coord_quickmap()
 map.plot = map.plot + geom_path(data = we, aes(long,lat, group = id.tag, color = id.tag), alpha = .5) 
 map.plot = map.plot + theme(legend.position = "none",  plot.background = element_blank(), 
@@ -72,9 +136,9 @@ dev.off()
 
 #italy
 summary(it)
-svg("ev.italy.tracking.overview.svg", units="cm", width=35, height=19, res=300)
+tiff("ev.italy.tracking.overview.tiff", units="cm", width=35, height=19, res=300)
 map.plot = ggplot() + theme_bw() + coord_quickmap()
-map.plot = map.plot + geom_path(data = it, aes(long,lat, group = id.tag, color = id), alpha = .5) 
+map.plot = map.plot + geom_path(data = it, aes(long,lat, group = id.tag, color = id.tag), alpha = .5) 
 map.plot = map.plot + theme(legend.position = "none",  plot.background = element_blank(), 
                             panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
                             panel.border = element_blank(), axis.ticks = element_blank(), 
@@ -84,9 +148,9 @@ dev.off()
 
 #balkans
 summary(ba)
-svg("ev.balkans.tracking.overview.svg", units="cm", width=35, height=19, res=300)
+tiff("ev.balkans.tracking.overview.tiff", units="cm", width=35, height=19, res=300)
 map.plot = ggplot() + theme_bw() + coord_quickmap()
-map.plot = map.plot + geom_path(data = ba, aes(long,lat, group = id.tag, color = id), alpha = .5) 
+map.plot = map.plot + geom_path(data = ba, aes(long,lat, group = id.tag, color = id.tag), alpha = .5) 
 map.plot = map.plot + theme(legend.position = "none",  plot.background = element_blank(), 
                             panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
                             panel.border = element_blank(), axis.ticks = element_blank(), 
@@ -95,10 +159,9 @@ map.plot
 dev.off()
 
 #caucasus
-summary(ca)
-svg("ev.caucasus.tracking.overview.svg", units="cm", width=35, height=19, res=300)
+tiff("ev.caucasus.tracking.overview.tiff", units="cm", width=35, height=19, res=300)
 map.plot = ggplot() + theme_bw() + coord_quickmap()
-map.plot = map.plot + geom_path(data = ca, aes(long,lat, group = id.tag, color = id), alpha = .5) 
+map.plot = map.plot + geom_path(data = ca, aes(long,lat, group = id.tag, color = id.tag), alpha = .5) 
 map.plot = map.plot + theme(legend.position = "none",  plot.background = element_blank(), 
                             panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
                             panel.border = element_blank(), axis.ticks = element_blank(), 

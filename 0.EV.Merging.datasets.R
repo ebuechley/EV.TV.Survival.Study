@@ -247,7 +247,7 @@ summary(ev31)
 
 #merge (vertically) the data, keeping all unique columns
 ev.ISPRA = rbind.fill(ev30,ev31)
-ev.ISPRA$population = "western europe"
+ev.ISPRA$population = "italy"
 ev.ISPRA$study.name = "ISPRA"
 head(ev.ISPRA)
 names(ev.ISPRA)
