@@ -332,7 +332,7 @@ ev.tv = ev.tv[complete.cases(ev.tv[,3:5]),]
 
 #reorder dataframe to have x,y,date,id.tag as first four columns
 names(ev.tv)
-ev.tv = ev.tv[,c(4,5,3,164,1:2,6:163)]
+ev.tv = ev.tv[,c(4,5,3,165,1:2,6:164)]
 names(ev.tv)
 
 # Order the data frame by date
