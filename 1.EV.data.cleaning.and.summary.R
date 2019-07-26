@@ -38,6 +38,7 @@ d = read.csv("ev.tv.1ptperday.csv")
 unique(d$id.tag)
 unique(d$study.name)
 unique(d$species)
+summary(d$population)
 
 #first remove fixes with lat & long = 0
 d<-d[!(d$long==0 & d$lat==0),]
@@ -116,6 +117,7 @@ write.csv(d.filtered, "ev.tv.filtered.csv", row.names=FALSE)
 d = read.csv("ev.tv.filtered.csv")
 head(d)
 names(d)
+unique(d$population)
 unique(d$id.tag) #note 260 unique id.tag
 
 #lubridate
@@ -133,15 +135,15 @@ b
 #R2n == the squared distance between the first relocation of the trajectory and the current relocation (net squared displacement)
 
 #plot ltraj
-plot.ltraj(b[4])
+#plot.ltraj(b[4])
 
 #to look at time interval between locations plot 
 #dt is measrured in second. to conver to days == dt / 3600 / 24 
-plotltr(b[1], "dt/3600/24")
+#plotltr(b[1], "dt/3600/24")
 #dist is measured in meters. convert to km by == / 1000
-plotltr(b[1], which = "dist/1000")
+#plotltr(b[1], which = "dist/1000")
 #plot net [squared] displacement
-plotltr(b[1], which = 'sqrt(R2n)')
+#plotltr(b[1], which = 'sqrt(R2n)')
 
 #save ltraj as dataframe
 d1 <- do.call(rbind, b)
@@ -153,6 +155,7 @@ d$ND <- sqrt(d$NSD)
 d$dist <- d1$dist
 d$dt.days <- d1$dt/3600/24
 head(d)
+names(d)
 
 #write
 write.csv(d, "ev.tv.filtered.csv")
@@ -202,13 +205,6 @@ ev.tv.summary$age.at.deployment = NA
 
 #
 ev.tv.summary$sex = NA
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Agata")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Aneta")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Arianna")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Barabara")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "BatuecasP")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Bianca")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Camaces")]= 'F'
 
 #
 ev.tv.summary$captive.raised = NA
@@ -548,5 +544,21 @@ map.plot = map.plot + geom_point(data = ev.tv.summary.merged.alive.removed, aes(
 map.plot = map.plot + scale_color_manual(values=c('#4daf4a','#377eb8','#ffff33','#e41a1c')) + labs(x = "longitude", y = "latitude")
 map.plot = map.plot + theme(legend.title = element_blank()) 
 map.plot = map.plot + ggtitle("vulture tracking, deployment, and termination overview") + theme(plot.title = element_text(hjust = 0.5))
+map.plot
+dev.off()
+
+#by EV populations
+d = subset(d, d$species == "Neophron percnopterus")
+we = subset(d, d$population == "western europe")
+it = subset(d, d$population == "italy")
+ba = subset(d, d$population == "balkans")
+ca = subset(d, d$population == "caucasus")
+
+#western europe
+summary(we)
+svg("ev.westerneurope.tracking.overview.svg", units="cm", width=35, height=19, res=300)
+map.plot = ggplot() + theme_bw() 
+map.plot = map.plot + geom_path(data = we, aes(long,lat, group = id.tag, color = id), alpha = .5) 
+map.plot = map.plot + theme(legend.title = element_blank()) 
 map.plot
 dev.off()
