@@ -31,15 +31,26 @@ dev.off()
 
 #by EV populations
 d1 = subset(d, d$species == "Neophron percnopterus")
+d1 = d1[,c(3:6)]
+head(d1)
 we = subset(d1, d1$population == "western europe")
 it = subset(d1, d1$population == "italy")
 ba = subset(d1, d1$population == "balkans")
 ca = subset(d1, d1$population == "caucasus")
+d2 = rbind(we,it,ba,ca)
 
-#western europe
-svg("ev.all.tracking.overview.svg", units="cm", width=35, height=19, res=300)
+#set wd
+setwd("~/Google Drive/Conferences/Dinacon/")
+write.csv(d2, "ev.all.csv")
+write.csv(we, "ev.western.europe.csv")
+write.csv(it, "ev.italy.csv")
+write.csv(ba, "ev.balkans.csv")
+write.csv(ca, "ev.caucasus.csv")
+
+#all
+tiff("ev.all.tracking.overview.tiff", units="cm", width=35, height=19, res=300)
 map.plot = ggplot() + theme_bw() + coord_quickmap()
-map.plot = map.plot + geom_path(data = d1, aes(long,lat, group = id.tag, color = id), alpha = .5) 
+map.plot = map.plot + geom_path(data = d2, aes(long,lat, group = id.tag, color = id.tag), alpha = .5) 
 map.plot = map.plot + theme(legend.position = "none",  plot.background = element_blank(), 
                             panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
                             panel.border = element_blank(), axis.ticks = element_blank(), 
@@ -51,7 +62,7 @@ dev.off()
 summary(we)
 svg("ev.westerneurope.tracking.overview.svg", units="cm", width=35, height=19, res=300)
 map.plot = ggplot() + theme_bw() + coord_quickmap()
-map.plot = map.plot + geom_path(data = we, aes(long,lat, group = id.tag, color = id), alpha = .5) 
+map.plot = map.plot + geom_path(data = we, aes(long,lat, group = id.tag, color = id.tag), alpha = .5) 
 map.plot = map.plot + theme(legend.position = "none",  plot.background = element_blank(), 
                             panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
                             panel.border = element_blank(), axis.ticks = element_blank(), 
