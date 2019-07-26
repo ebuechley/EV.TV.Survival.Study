@@ -35,20 +35,35 @@ rm(list = ls())
 
 # read data
 ev1 = read.csv("./Original Data/Egyptian vulture (Neophron percnopterus) in Arribes del Duero (Salamanca) - SALORO.csv")
+ev1$population = "western europe"
 ev2 = read.csv("./Original Data/Egyptian Vulture (Neophron percnopterus), Turkey, Armenia, Ethiopia .csv")
+ev2$population = "caucasus"
 ev3 = read.csv("./Original Data/Egyptian vulture in France (grands Causses-Baronnies).csv")
+ev3$population = "western europe"
 ev4 = read.csv("./Original Data/Egyptian vulture Kobierzycki Gardon .csv")
+ev4$population = "western europe"
 ev5 = read.csv("./Original Data/Egyptian vulture Kobierzycki Pyrenees.csv")
+ev5$population = "western europe"
 ev6 = read.csv("./Original Data/Egyptian vulture Kobierzycki Vaucluse.csv")
+ev6$population = "western europe"
 ev7 = read.csv("./Original Data/Egyptian Vulture wild-birds Israel.csv")
+ev7$population = "middle east"
 ev8 = read.csv("./Original Data/Egyptian vultures Dagestan2.csv")
+ev8$population = "caucasus"
 ev9 = read.csv("./Original Data/Egyptian vultures in Djibouti.csv")
+ev9$population = "horn of africa"
 ev10 = read.csv("./Original Data/Egyptian_Vulture_Reintroduction_Israel.csv")
+ev10$population = "middle east"
 ev11 = read.csv("./Original Data/LIFE_Rupis_EgyptianVultures.csv")
+ev11$population = "western europe"
 ev12 = read.csv("./Original Data/Neophron percnopterus Bulgaria_Greece.csv")
+ev12$population = "balkans"
 ev13 = read.csv("./Original Data/Neophron percnopterus. GREFA. Spain.csv")
+ev13$population = "western europe"
 ev14 = read.csv("./Original Data/Omanvulture.csv")
+ev14$population = "oman"
 ev15 = read.csv("./Original Data/Released Egyptian Vultures in Italy.csv")
+ev15$population = "italy"
 
 ############################################################
 # read and process additional raw (non Movebank) data
@@ -195,6 +210,7 @@ head(ev29)
 
 #merge (vertically) the data, keeping all unique columns
 ev.mcgrady = rbind.fill(ev16,ev17,ev18,ev19,ev20,ev21,ev22,ev23,ev24,ev25,ev26,ev27,ev28,ev29)
+ev.mcgrady$population = "oman"
 head(ev.mcgrady)
 ev.mcgrady$individual.local.identifier = as.factor(ev.mcgrady$individual.local.identifier)
 summary(ev.mcgrady$individual.local.identifier)
@@ -231,6 +247,7 @@ summary(ev31)
 
 #merge (vertically) the data, keeping all unique columns
 ev.ISPRA = rbind.fill(ev30,ev31)
+ev.ISPRA$population = "western europe"
 ev.ISPRA$study.name = "ISPRA"
 head(ev.ISPRA)
 names(ev.ISPRA)
@@ -261,8 +278,11 @@ setwd("~/Google Drive/Research Projects/EV-TV tracking study/Dataset/Final")
 
 # read data
 tv1 = read.csv("./Original Data/Turkey Vulture Acopian Center USA GPS.csv")
+tv1$population = NA
 tv2 = read.csv("./Original Data/Black Vultures and Turkey Vultures Southeastern USA.csv")
+tv2$population = "southeast"
 tv3 = read.csv("./Original Data/Vulture Movements.csv")
+tv3$population = "southeast"
 
 #merge (vertically) the data, keeping all unique columns
 tv.all = rbind.fill(tv1, tv2, tv3)
@@ -338,6 +358,6 @@ write.csv(ev.tv.1ptperday, "ev.tv.1ptperday.csv", row.names=FALSE)
 
 #quick plot of data
 map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = ev.tv.1ptperday, aes(long,lat, group = id.tag)) + labs(x = "longitude", y = "latitude")
+map.plot = map.plot + geom_path(data = ev.tv.1ptperday, aes(long,lat, group = id)) + labs(x = "longitude", y = "latitude")
 map.plot = map.plot + theme(legend.title = element_blank()) 
 map.plot #notice bad fixes in dataset
