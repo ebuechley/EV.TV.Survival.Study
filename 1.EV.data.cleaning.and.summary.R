@@ -523,3 +523,73 @@ summary(d$fate)
 
 #write
 write.csv(d, "ev.tv.summary.merged.csv", row.names = F)
+
+#clean up "how.fate.determined"
+d = read.csv("ev.tv.summary.merged.csv")
+d$how.fate.determined = as.character(d$how.fate.determined)
+d$how.fate.determined.clean = d$how.fate.determined
+unique(d$how.fate.determined.clean)
+d$how.fate.determined.clean[is.na(d$how.fate.determined.clean)] <- "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Transmission ceased at a point where the bird was clearly moving along a trajectory. There was no collection of stationary locations to suggest a specific drop point, thus we suspect transmitter failure."] = "abrupt termination" 
+d$how.fate.determined.clean[d$how.fate.determined.clean == "bird and tag photographed on roadside"] = "resighted" 
+d$how.fate.determined.clean[d$how.fate.determined.clean == "last location in middle of Hwy 331"] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "last location at Pigeon Point roost"] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "last location in Key West neighborhood"] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "last location at Boca Grande Key off Key West, FL"] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmitter recovered from beach"] = "transmitter recovered"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "last location at water surface off FL Keys" ] = "terminated over water"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmitter recovered from dead bird"  ] = "corpse recovered"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 1month before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "sudden transmission stop" ] = "abrupt termination"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission ceased abruptly while bird was moving and transmitter was acting erratic"  ] = "abrupt termination"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over several months before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 30 days before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "bird observed with unit on but missing antenna"] = "resighted"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "failed transmitter recovered from live bird"] = "resighted"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 3 months before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission ceased abruptly while bird was moving and transmitter was 11 years old"] = "abrupt termination"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 5 days before ceasing, last location was on island on migration"  ] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 5 days before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 3 days before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission ceased abruptly while bird was moving" ] = "abrupt termination"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "bird recaptured and transmitter removed"] = "resighted"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 1 month period"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 2 month period"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmisson from same location over a period of time" ] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "" ] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "tag retrieved, asked locals" ] = "transmitter recovered"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "carcass retrieved" ] = "carcass found"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "found feathers" ] = "carcass found"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "found carcass" ] = "carcass found"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission ended"] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "retrieved transmitter and carcass" ] = "carcass found"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "retrieved transmitter and asked locals"] = "transmitter recovered"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "two isolated GPS locations from April 2018 indciated the bird was close to the 2017 nest site after several months of no data_Bird never resighted so fate is unknown"] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "resighted"] = "resighted / recaptured"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "recaptured"] = "resighted / recaptured"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Transmitter detached due to harness failure_Bird was seen incubating at nest several days later identified by colour ring"] = "resighted / recaptured"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Normal movements" ] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Same location for a long period, was searched for 4 months after disapearnace with nothing found"  ] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Last location in a house"] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Transmitted from same location in SA-Iraq border for a few weeks, after roosting on what seems like a military antena"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "GPS on roads after a few days on the ground" ] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "corpse recovered"] = "carcass found"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Seen"] = "resighted / recaptured"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Found"] = "transmitter recovered" 
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Last location very hostile, no data for a long period"] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Same location for 4 months"] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Last location hostile and with good GSM cover, no data for a long period"] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "still transmitting"] = "active"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "telemetry data: still moving"] = "active"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "bird / tag recovery"] = "transmitter recovered"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Transmitter active and moving by \"end date\""] = "active"
+unique(d$how.fate.determined.clean)
+
+#reorder columns
+names(d)
+d = d[,c(2,3,4,5,1,6:11,15:30)]
+d = d[,c(1:5,16:17,14:15,6:11,22:23,12:13,18:21,24:26)]
+d = d[,c(1:9,24,18,10:11,25:26,12:17,19:23)]
+
+summary(d)
+write.csv(d, "ev.tv.summary.merged.csv", row.names = F)
