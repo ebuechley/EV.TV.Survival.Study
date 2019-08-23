@@ -3,9 +3,8 @@ setwd("~/Google Drive/Research Projects/EV-TV tracking study/Dataset/Final/")
 
 ###Load relevant libraries###
 ##install MigrateR
-#install.packages("devtools")
-library(devtools)
 #install_github("dbspitz/migrateR/migrateR", build_vignettes = T)
+library(devtools)
 library(adehabitatLT)
 library(adehabitatHR)
 library(plotrix)
@@ -25,6 +24,8 @@ require(stringr)
 require(reshape2)
 require(ggthemes)
 require(pander)
+library(plyr)
+library(lubridate)
 
 ##Clear workspace
 rm(list = ls())
@@ -264,6 +265,8 @@ ev.all = rbind.fill(ev1,ev2,ev3,ev4,ev5,ev6,ev7,ev8,ev9,ev10,ev11,ev12,ev13,ev14
 head(ev.all)
 names(ev.all)
 unique(ev.all$individual.local.identifier) #note 155 unique id.tag
+ev.all$timestamp = ymd_hms(ev.all$timestamp)
+summary(ev.all$timestamp)
 
 #remove any other species
 ev.all$individual.taxon.canonical.name = as.factor(ev.all$individual.taxon.canonical.name)
@@ -286,6 +289,9 @@ tv3$population = "southeast"
 
 #merge (vertically) the data, keeping all unique columns
 tv.all = rbind.fill(tv1, tv2, tv3)
+head(tv.all)
+tv.all$timestamp = ymd_hms(tv.all$timestamp)
+summary(tv.all$timestamp)
 
 #remove other species
 summary(tv.all$individual.taxon.canonical.name)
@@ -335,28 +341,27 @@ names(ev.tv)
 ev.tv = ev.tv[,c(4,5,3,165,1:2,6:164)]
 names(ev.tv)
 
-# Order the data frame by date
-ev.tv = ev.tv[order(ev.tv$timestamp),]
-
 #add ymdh
 ev.tv$year <- year(ev.tv$timestamp)
 ev.tv$month <- month(ev.tv$timestamp)
 ev.tv$day = day(ev.tv$timestamp)
 ev.tv$hour <- hour(ev.tv$timestamp)
 
+#set wd
+setwd("~/Documents/GitHub/EV - TV Survival Study/")
+
 #write complete dataset
-#write.csv(ev.tv, "ev.tv.all.merged.csv", row.names=FALSE)
+write.csv(ev.tv, "ev.tv.all.merged.csv", row.names=FALSE)
 
 #censor to one point per day 
 #(at least to start, to have a workable dataset, as well as to standardize across transmitter types)
 ev.tv.1ptperday  = ev.tv[!duplicated(ev.tv[,c('id', 'year', 'month', 'day')]),]
 
 #write 1ptperday dataset
-#set wd
-setwd("~/Documents/GitHub/EV - TV Survival Study/")
 write.csv(ev.tv.1ptperday, "ev.tv.1ptperday.csv", row.names=FALSE)
 
 #quick plot of data
+library(ggplot2)
 map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() 
 map.plot = map.plot + geom_path(data = ev.tv.1ptperday, aes(long,lat, group = id)) + labs(x = "longitude", y = "latitude")
 map.plot = map.plot + theme(legend.title = element_blank()) 
