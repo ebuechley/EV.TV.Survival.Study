@@ -45,11 +45,6 @@ summary(d$timestamp)
 d$timestamp = ymd_hms(d$timestamp)
 summary(d$timestamp)
 
-#remove data from before official start date that was provided by coauthors for each tag
-
-
-ev.tv <- subset(ev.tv, timestamp <= as.POSIXct('2019-05-31'))
-
 #remove fixes with lat & long = 0
 d<-d[!(d$long==0 & d$lat==0),]
 d<-d[!(d$long<=-25 & d$species=="Neophron percnopterus"),]
@@ -537,17 +532,12 @@ for (i in unique(mcgrady.summary$id)) {
 write.csv(ev.tv.summary.merged, "ev.tv.summary.merged.csv", row.names = F)
 
 ####################################################################################
-#check dataset and dates
-
-d = read.csv("ev.tv.summary.merged.csv")
-summary(d$start.date.adjusted)
-d$start.date.adjusted = ymd_hms(d$start.date.adjusted)
-d$end.date.adjusted = ymd_hms(d$end.date.adjusted)
-summary(d)
-
 #standardizing column values
 d = read.csv("ev.tv.summary.merged.csv")
 summary(d)
+names(d)
+unique(d$id.tag)
+unique(d$id) #2 more id.tag than id, indicating 2 redeployments of tags on individuals
 
 #sex
 summary(d$sex)
@@ -564,8 +554,8 @@ d$deployment.month = as.factor(d$deployment.month)
 summary(d$deployment.month)
 
 #set age at deployment by year
-summary(d$age.at.deployment)
-d$age.at.deployment.original = d$age.at.deployment
+summary(d$age.at.deployment) # there are 23 EV that we have no age at deployment for -- need to get this info from coauthors
+d$age.at.deployment.original = d$age.at.deployment #save the original determination as seperate column
 d$age.at.deployment = as.character(d$age.at.deployment)
 d$age.at.deployment[d$age.at.deployment == "1"] <- "juv"
 d$age.at.deployment[d$age.at.deployment == "<1"] <- "juv"
@@ -626,7 +616,7 @@ summary(d$age.at.deployment)
 #d$age.at.deployment[d$age.at.deployment >=365] <- 2 # this number is in days. the max value is <700, so less than 2 yrs. So greater than 365 = 2nd year, less than = 1st year.
 #d$age.at.deployment[d$age.at.deployment >=7] <- 1 #greatern than 7 = 1st year (there were no tagged birds <7 days old)
 
-#set age at deployment by month, assuming birth in June #NOT DONE WITH THIS YET
+#set age at deployment by month, assuming birth in June 
 d$age.at.deployment.month = paste(d$age.at.deployment, "-", d$deployment.month)
 d$age.at.deployment.month = as.factor(d$age.at.deployment.month)
 summary(d$age.at.deployment.month)
@@ -682,7 +672,7 @@ d$age.at.deployment.month[d$age.at.deployment.month == "5th yr - 6"] <- "54" # m
 d$age.at.deployment.month[d$age.at.deployment.month == "660 - 4"] <- "22"
 d$age.at.deployment.month[d$age.at.deployment.month == "663 - 4"] <- "23"
 d$age.at.deployment.month[d$age.at.deployment.month == "691 - 4"] <- "24"
-d$age.at.deployment.month[d$age.at.deployment.month == "7 - 3"] <- "54"  # not sure what 7 means here -- need to check with data owner, assuming Adult for now
+d$age.at.deployment.month[d$age.at.deployment.month == "7 - 3"] <- "54"  # 7 = ad
 d$age.at.deployment.month[d$age.at.deployment.month == "701 - 4"] <- "24"
 d$age.at.deployment.month[d$age.at.deployment.month == "ad - 1"] <- "54" # maxing out month count as 5th year adult at 54 months
 d$age.at.deployment.month[d$age.at.deployment.month == "ad - 10"] <- "54" # maxing out month count as 5th year adult at 54 months
@@ -713,6 +703,7 @@ summary(d$captive.raised)
 d$captive.raised[d$captive.raised == "captive"] <- "Y"
 d$captive.raised[d$captive.raised == "N "] <- "N"
 d$captive.raised[d$captive.raised == "wild"] <- "N"
+d$captive.raised[is.na(d$captive.raised)] <- "N"
 summary(d$captive.raised)
 
 #rehabilitated
@@ -720,7 +711,8 @@ summary(d$rehabilitated)
 d$rehabilitated[d$rehabilitated == "N "] <- "N"
 d$rehabilitated[d$rehabilitated == "no"] <- "N"
 d$rehabilitated[d$rehabilitated == "yes"] <- "Y"
-d$rehabilitated[d$rehabilitated == ""] <- NA
+d$rehabilitated[d$rehabilitated == ""] <- "N"
+d$rehabilitated[is.na(d$rehabilitated)] <- "N"
 summary(d$rehabilitated)
 
 #fate: alive, confirmed dead, likely dead, confirmed transmitter failure, likely transmitter failure
@@ -743,11 +735,7 @@ d$fate[is.na(d$fate)] <- "unknown"
 d$fate = as.factor(d$fate)
 summary(d$fate)
 
-#write
-write.csv(d, "ev.tv.summary.merged.csv", row.names = F)
-
 #clean up "how.fate.determined"
-d = read.csv("ev.tv.summary.merged.csv")
 d$how.fate.determined = as.character(d$how.fate.determined)
 d$how.fate.determined.clean = d$how.fate.determined
 unique(d$how.fate.determined.clean)
@@ -805,29 +793,22 @@ d$how.fate.determined.clean[d$how.fate.determined.clean == "still transmitting"]
 d$how.fate.determined.clean[d$how.fate.determined.clean == "telemetry data: still moving"] = "active"
 d$how.fate.determined.clean[d$how.fate.determined.clean == "bird / tag recovery"] = "transmitter recovered"
 d$how.fate.determined.clean[d$how.fate.determined.clean == "Transmitter active and moving by \"end date\""] = "active"
-unique(d$how.fate.determined.clean)
+d$how.fate.determined.clean = as.factor(d$how.fate.determined.clean)
 
 #reorder columns
 names(d)
-d = d[,c(2,3,4,5,1,6:11,12:31)]
+d = d[,c(2:5,1,18,17,19:20,27,6:11,12:16,21:26,28:33)]
 names(d)
-d = d[,c(1:5,17:20,6:16,21:31)]
+#drop uneccessary columns
+d <- d[ -c(28:31) ]
 names(d)
-d = d[,c(1:9,27,10:26,28:31)]
+d = d[,c(1:24,26:29,25)]
 names(d)
-d = d[,c(1:12,28:29,13:16,20:24,17:19,25:27,30:31)]
+d = d[,c(1:16,20:29,17:19)]
 names(d)
+d <- d[ -c(21) ]
 summary(d)
-write.csv(d, "ev.tv.summary.merged.csv", row.names = F)
 
-############################################################
-d = read.csv("ev.tv.summary.merged.csv")
-summary(d)
-names(d)
-summary(d$fate)
-summary(d$how.fate.determined.clean)
-
-#assign age.at.deployment by month
-summary(d$age.at.deployment.original)
-summary(d$age.at.deployment)
+#write final summary
+write.csv(d, "ev.tv.summary.merged.final.csv", row.names = F)
 
