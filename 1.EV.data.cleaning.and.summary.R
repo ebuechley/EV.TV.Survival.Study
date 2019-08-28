@@ -310,6 +310,21 @@ map.plot = map.plot + theme(legend.title = element_blank())
 map.plot
 
 #####################################################################
+#fix date times in all files
+#set wd
+setwd("~/Documents/GitHub/EV - TV Survival Study/")
+
+#Clear workspace
+rm(list = ls())
+
+#
+ev.gs = read.csv("./Google Sheets/Egyptian Vulture tracking summary - EV summary.csv")
+tv.gs = read.csv("./Google Sheets/Turkey Vulture tracking summary - TV summary.csv")
+ev.tv.summary = read.csv("ev.tv.summary.csv")
+balkans = read.csv("./Fate summaries/EGVU_fate_summary_Balkans.csv")
+mcgrady.summary = read.csv("./Fate summaries/McGrady summaries.csv")
+
+#####################################################################
 #merging data summary with coauthor info input in Google Sheet
 #set wd
 setwd("~/Documents/GitHub/EV - TV Survival Study/")
@@ -322,9 +337,11 @@ ev.gs = read.csv("./Google Sheets/Egyptian Vulture tracking summary - EV summary
 tv.gs = read.csv("./Google Sheets/Turkey Vulture tracking summary - TV summary.csv", colClasses = "character")
 ev.tv.summary = read.csv("ev.tv.summary.csv", colClasses = "character")
 
-#check id's match, manually correct
-unique(ev.gs$id) #Provence_2016_Ad_wild_EO5018_Salom√©_8P
+#check id's match
+unique(ev.gs$id) #Provence_2016_Ad_wild_EO5018_Salome_8P
 unique(ev.tv.summary$id) # Provence_2016_Ad_wild_EO5018_Salomé_8P
+ev.tv.summary$id[ev.tv.summary$id == "Provence_2016_Ad_wild_EO5018_Salomé_8P"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P"
+unique(ev.tv.summary$id)
 
 #check for duplicates
 summary(ev.gs$id)
@@ -364,6 +381,10 @@ for (i in unique(tv.gs$id.tag)) {
 }
 
 write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
+
+#read data
+ev.tv.summary = read.csv("ev.tv.summary.merged.csv")
+summary(ev.tv.summary)
 
 ##################################################################
 #merge with Blakans sheet
@@ -432,7 +453,6 @@ write.csv(ev.tv.summary.merged, "ev.tv.summary.merged.csv", row.names = F)
 
 ####################################################################################
 #standardizing column values
-
 d = read.csv("ev.tv.summary.merged.csv")
 summary(d)
 
@@ -441,56 +461,165 @@ summary(d$sex)
 d$sex[d$sex == "female"] <- "F"
 d$sex[d$sex == "male"] <- "M"
 d$sex[is.na(d$sex)] <- "unknown"
+summary(d$sex)
 
-#age at deployment
+#lubridate
+summary(d$start.date)
+d$start.date = ymd_hms(d$start.date)
+d$deployment.month = month(d$start.date)
+d$deployment.month = as.factor(d$deployment.month)
+summary(d$deployment.month)
+
+#set age at deployment by year
 summary(d$age.at.deployment)
+d$age.at.deployment.original = d$age.at.deployment
 d$age.at.deployment = as.character(d$age.at.deployment)
-d$age.at.deployment[d$age.at.deployment == "<1"] <- "1"
-d$age.at.deployment[d$age.at.deployment == ">3 adult"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "2cal_year"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "2nd year"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "2nd Year"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "3cal_year"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "3rd year"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "3RD YEAR"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "4cal_year"] <- "4"
-d$age.at.deployment[d$age.at.deployment == "4th winter"] <- "4"
-d$age.at.deployment[d$age.at.deployment == "5th Year"] <- "5"
-d$age.at.deployment[d$age.at.deployment == "A"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "ad"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "adult"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "Adult"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "Adult (5+ years)"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "ADULT (5+ years)"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "Adult 5+"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "AHY"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "ASY"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "ATY"] <- "4"
-d$age.at.deployment[d$age.at.deployment == "chick"] <- "1"
-d$age.at.deployment[d$age.at.deployment == "imm, 1.5 yrt"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "juv"] <- "1"
-d$age.at.deployment[d$age.at.deployment == "juvenile"] <- "1"
-d$age.at.deployment[d$age.at.deployment == "SA"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "SA (2-3 years)"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "SUBADULT (~2.5 YEARS)"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "SY"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "TY"] <- "3"
+d$age.at.deployment[d$age.at.deployment == "1"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == "<1"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == ">3 adult"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "2cal_year"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "2nd year"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "2nd Year"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "3cal_year"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "3rd year"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "3RD YEAR"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "4cal_year"] <- "4th yr"
+d$age.at.deployment[d$age.at.deployment == "4th winter"] <- "4th yr"
+d$age.at.deployment[d$age.at.deployment == "5th Year"] <- "5th yr"
+d$age.at.deployment[d$age.at.deployment == "A"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "ad"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "adult"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "Adult"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "Adult (5+ years)"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "ADULT (5+ years)"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "Adult 5+"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "AHY"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "ASY"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "ATY"] <- "4th yr"
+d$age.at.deployment[d$age.at.deployment == "chick"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == "Chick"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == "imm, 1.5 yrt"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "juv"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == "juvenile"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == "SA"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (2-3 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SUBADULT (~2.5 YEARS)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SY"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "TY"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "imm, 1.5 yr"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
 d$age.at.deployment[is.na(d$age.at.deployment)] <- "unknown"
-d$age.at.deployment = as.numeric(d$age.at.deployment)
-summary(d$age.at.deployment)
-d$age.at.deployment[d$age.at.deployment >=365] <- 2
-d$age.at.deployment[d$age.at.deployment >=7] <- 1
-summary(d$age.at.deployment)
 d$age.at.deployment = as.factor(d$age.at.deployment)
-d$age.at.deployment[is.na(d$age.at.deployment)] <- "unknown"
 summary(d$age.at.deployment)
+#d$age.at.deployment[d$age.at.deployment >=365] <- 2 # this number is in days. the max value is <700, so less than 2 yrs. So greater than 365 = 2nd year, less than = 1st year.
+#d$age.at.deployment[d$age.at.deployment >=7] <- 1 #greatern than 7 = 1st year (there were no tagged birds <7 days old)
+
+#set age at deployment by month, assuming birth in June #NOT DONE WITH THIS YET
+d$age.at.deployment.month = paste(d$age.at.deployment, "-", d$deployment.month)
+d$age.at.deployment.month = as.factor(d$age.at.deployment.month)
+summary(d$age.at.deployment.month)
+d$age.at.deployment.month = as.character(d$age.at.deployment.month)
+d$age.at.deployment.month[d$age.at.deployment.month == "155 - 10"] <- "6" #155/30 = 5.2, i.e. more than 5 months
+d$age.at.deployment.month[d$age.at.deployment.month == "171 - 12"] <- "6" #171/30 = 5.7
+d$age.at.deployment.month[d$age.at.deployment.month == "182 - 12"] <- "7"
+d$age.at.deployment.month[d$age.at.deployment.month == "207 - 12"] <- "7"
+d$age.at.deployment.month[d$age.at.deployment.month == "208 - 12"] <- "7"
+d$age.at.deployment.month[d$age.at.deployment.month == "219 - 12"] <- "8"
+d$age.at.deployment.month[d$age.at.deployment.month == "223 - 12"] <- "8"
+d$age.at.deployment.month[d$age.at.deployment.month == "224 - 7"] <- "8"
+d$age.at.deployment.month[d$age.at.deployment.month == "292 - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "293 - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "297 - 11"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "297 - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "298 - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "299 - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 1"] <- "7"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 11"] <- "17"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 12"] <- "18"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 5"] <- "11"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 7"] <- "13"
+d$age.at.deployment.month[d$age.at.deployment.month == "302 - 4"] <- "11"
+d$age.at.deployment.month[d$age.at.deployment.month == "305 - 4"] <- "11"
+d$age.at.deployment.month[d$age.at.deployment.month == "312 - 4"] <- "11"
+d$age.at.deployment.month[d$age.at.deployment.month == "324 - 4"] <- "11"
+d$age.at.deployment.month[d$age.at.deployment.month == "370 - 3"] <- "13"
+d$age.at.deployment.month[d$age.at.deployment.month == "392 - 3"] <- "14"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 1"] <- "19"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 10"] <- "28"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 11"] <- "29"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 12"] <- "30"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 2"] <- "20"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 4"] <- "22"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 6"] <- "24"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 7"] <- "25"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 8"] <- "26"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 9"] <- "27"
+d$age.at.deployment.month[d$age.at.deployment.month == "4th yr - 1"] <- "31"
+d$age.at.deployment.month[d$age.at.deployment.month == "4th yr - 4"] <- "34"
+d$age.at.deployment.month[d$age.at.deployment.month == "4th yr - 7"] <- "37"
+d$age.at.deployment.month[d$age.at.deployment.month == "543 - 12"] <- "19"
+d$age.at.deployment.month[d$age.at.deployment.month == "545 - 12"] <- "19"
+d$age.at.deployment.month[d$age.at.deployment.month == "549 - 12"] <- "19"
+d$age.at.deployment.month[d$age.at.deployment.month == "550 - 12"] <- "19"
+d$age.at.deployment.month[d$age.at.deployment.month == "551 - 12"] <- "20"
+d$age.at.deployment.month[d$age.at.deployment.month == "570 - 12"] <- "20"
+d$age.at.deployment.month[d$age.at.deployment.month == "577 - 12"] <- "20"
+d$age.at.deployment.month[d$age.at.deployment.month == "582 - 12"] <- "21"
+d$age.at.deployment.month[d$age.at.deployment.month == "5th yr - 6"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "660 - 4"] <- "22"
+d$age.at.deployment.month[d$age.at.deployment.month == "663 - 4"] <- "23"
+d$age.at.deployment.month[d$age.at.deployment.month == "691 - 4"] <- "24"
+d$age.at.deployment.month[d$age.at.deployment.month == "7 - 3"] <- "54"  # not sure what 7 means here -- need to check with data owner, assuming Adult for now
+d$age.at.deployment.month[d$age.at.deployment.month == "701 - 4"] <- "24"
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 1"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 10"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 11"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 12"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 2"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 3"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 4"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 5"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 6"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 7"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 8"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 9"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "juv - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "juv - 6"] <- "1"
+d$age.at.deployment.month[d$age.at.deployment.month == "juv - 7"] <- "1"
+d$age.at.deployment.month[d$age.at.deployment.month == "juv - 8"] <- "2"
+d$age.at.deployment.month[d$age.at.deployment.month == "juv - 9"] <- "3"
+d$age.at.deployment.month[d$age.at.deployment.month == "unknown - 1"] <- NA #need to see if i can get info on these from data owner
+d$age.at.deployment.month[d$age.at.deployment.month == "unknown - 7"] <- NA
+d$age.at.deployment.month[d$age.at.deployment.month == "unknown - 8"] <- NA
+d$age.at.deployment.month[d$age.at.deployment.month == "unknown - 9"] <- NA
+d$age.at.deployment.month = as.factor(d$age.at.deployment.month)
+summary(d$age.at.deployment.month)
 
 #captive.raised
 summary(d$captive.raised)
 d$captive.raised[d$captive.raised == "captive"] <- "Y"
 d$captive.raised[d$captive.raised == "N "] <- "N"
 d$captive.raised[d$captive.raised == "wild"] <- "N"
-d$captive.raised[is.na(d$captive.raised)] <- "unknown"
 summary(d$captive.raised)
 
 #rehabilitated
@@ -587,9 +716,25 @@ unique(d$how.fate.determined.clean)
 
 #reorder columns
 names(d)
-d = d[,c(2,3,4,5,1,6:11,15:30)]
-d = d[,c(1:5,16:17,14:15,6:11,22:23,12:13,18:21,24:26)]
-d = d[,c(1:9,24,18,10:11,25:26,12:17,19:23)]
-
+d = d[,c(2,3,4,5,1,6:11,12:31)]
+names(d)
+d = d[,c(1:5,17:20,6:16,21:31)]
+names(d)
+d = d[,c(1:9,27,10:26,28:31)]
+names(d)
+d = d[,c(1:12,28:29,13:16,20:24,17:19,25:27,30:31)]
+names(d)
 summary(d)
 write.csv(d, "ev.tv.summary.merged.csv", row.names = F)
+
+############################################################
+d = read.csv("ev.tv.summary.merged.csv")
+summary(d)
+names(d)
+summary(d$fate)
+summary(d$how.fate.determined.clean)
+
+#assign age.at.deployment by month
+summary(d$age.at.deployment.original)
+summary(d$age.at.deployment)
+
