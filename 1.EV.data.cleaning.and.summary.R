@@ -40,7 +40,17 @@ unique(d$study.name)
 unique(d$species)
 summary(d$population)
 
-#first remove fixes with lat & long = 0
+#lubridate
+summary(d$timestamp)
+d$timestamp = ymd_hms(d$timestamp)
+summary(d$timestamp)
+
+#remove data from before official start date that was provided by coauthors for each tag
+
+
+ev.tv <- subset(ev.tv, timestamp <= as.POSIXct('2019-05-31'))
+
+#remove fixes with lat & long = 0
 d<-d[!(d$long==0 & d$lat==0),]
 d<-d[!(d$long<=-25 & d$species=="Neophron percnopterus"),]
 d<-d[!(d$long>=70 & d$species=="Neophron percnopterus"),]
@@ -85,18 +95,18 @@ summary(tr$spd)
 
 #plot with censored
 plot(tr)
-#plot(tr[tr$spd,], col = 'green', add = T)
-#lines(tr[tr$spd,])
-#maps::map("world", add = TRUE)
-#axis(1)
-#axis(2)
+plot(tr[tr$spd,], col = 'green', add = T)
+lines(tr[tr$spd,])
+maps::map("world", add = TRUE)
+axis(1)
+axis(2)
 
 #convert to spdf for plotting
 b = as(tr, "SpatialPointsDataFrame")
 b2 = subset(b, b$spd == "TRUE")
-plot(b2)
+#plot(b2)
 b1 = subset(b, b$spd == "FALSE")
-plot(b1, color = "red", add = T)
+#plot(b1, color = "red", add = T)
 
 #save as df
 d.filtered = as.data.frame(b2)
@@ -301,6 +311,8 @@ ev.tv.summary = ev.tv.summary[order(ev.tv.summary$study.name),]
 
 #write 
 head(ev.tv.summary)
+summary(ev.tv.summary$start.date)
+summary(ev.tv.summary$end.date)
 write.csv(ev.tv.summary, "ev.tv.summary.csv", row.names = FALSE)
 
 #quick plot of data
@@ -317,12 +329,52 @@ setwd("~/Documents/GitHub/EV - TV Survival Study/")
 #Clear workspace
 rm(list = ls())
 
-#
+#load files
 ev.gs = read.csv("./Google Sheets/Egyptian Vulture tracking summary - EV summary.csv")
 tv.gs = read.csv("./Google Sheets/Turkey Vulture tracking summary - TV summary.csv")
 ev.tv.summary = read.csv("ev.tv.summary.csv")
 balkans = read.csv("./Fate summaries/EGVU_fate_summary_Balkans.csv")
 mcgrady.summary = read.csv("./Fate summaries/McGrady summaries.csv")
+
+#check date formats
+#
+summary(ev.gs$start.date.adjusted)
+ev.gs$start.date.adjusted = ymd(ev.gs$start.date.adjusted)
+hour(ev.gs$start.date.adjusted) = 12:00
+summary(ev.gs$start.date.adjusted)
+#
+summary(ev.gs$end.date.adjusted)
+head(ev.gs)
+#
+names(tv.gs)
+tv.gs$start.date.adjusted = NA
+tv.gs$end.date.adjusted = NA
+summary(tv.gs$start.date.adjusted)
+summary(tv.gs$end.date.adjusted)
+#
+ev.tv.summary$start.date.adjusted = NA
+ev.tv.summary$end.date.adjusted = NA
+summary(ev.tv.summary$end.date.adjusted)
+summary(ev.tv.summary$start.date.adjusted)
+#
+summary(balkans$start.date.adjusted)
+balkans$start.date.adjusted = dmy_hm(balkans$start.date.adjusted)
+summary(balkans$start.date.adjusted)
+#
+summary(balkans$end.date.adjusted)
+balkans$end.date.adjusted = dmy_hm(balkans$end.date.adjusted)
+summary(balkans$end.date.adjusted)
+#
+summary(mcgrady.summary$Date.ringed)
+mcgrady.summary$start.date.adjusted = mdy_hm(mcgrady.summary$Date.ringed)
+summary(mcgrady.summary$start.date.adjusted)
+
+#write files with fixed date structure
+write.csv(ev.gs, "./Google Sheets/Egyptian Vulture tracking summary - EV summary.csv", row.names = FALSE)
+write.csv(tv.gs, "./Google Sheets/Turkey Vulture tracking summary - TV summary.csv", row.names = FALSE)
+write.csv(balkans, "./Fate summaries/EGVU_fate_summary_Balkans_FINAL.csv", row.names = FALSE)
+write.csv(mcgrady.summary, "./Fate summaries/McGrady summaries.csv", row.names = FALSE)
+write.csv(ev.tv.summary, "ev.tv.summary.csv", row.names = FALSE)
 
 #####################################################################
 #merging data summary with coauthor info input in Google Sheet
@@ -334,8 +386,18 @@ rm(list = ls())
 
 #read final summaries
 ev.gs = read.csv("./Google Sheets/Egyptian Vulture tracking summary - EV summary.csv", colClasses = "character")
+unique(ev.gs$start.date.adjusted)
+unique(ev.gs$end.date.adjusted)
+ev.gs$start.date.adjusted = ymd_hms(ev.gs$start.date.adjusted)
+summary(ev.gs$start.date.adjusted)
+ev.gs$start.date.adjusted = as.character(ev.gs$start.date.adjusted)
+unique(ev.gs$start.date.adjusted)
 tv.gs = read.csv("./Google Sheets/Turkey Vulture tracking summary - TV summary.csv", colClasses = "character")
+unique(tv.gs$start.date.adjusted)
+unique(tv.gs$end.date.adjusted)
 ev.tv.summary = read.csv("ev.tv.summary.csv", colClasses = "character")
+unique(ev.tv.summary$end.date.adjusted)
+unique(ev.tv.summary$start.date.adjusted)
 
 #check id's match
 unique(ev.gs$id) #Provence_2016_Ad_wild_EO5018_Salome_8P
@@ -343,8 +405,11 @@ unique(ev.tv.summary$id) # Provence_2016_Ad_wild_EO5018_Salomé_8P
 ev.tv.summary$id[ev.tv.summary$id == "Provence_2016_Ad_wild_EO5018_Salomé_8P"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P"
 unique(ev.tv.summary$id)
 
+#
+ev.tv.summary$start
+
 #check for duplicates
-summary(ev.gs$id)
+unique(ev.gs$id)
 which(duplicated(ev.gs$id))
 
 #remove rows that have NA for study. These are id that Guido put in the Sheet, 
@@ -380,6 +445,8 @@ for (i in unique(tv.gs$id.tag)) {
   
 }
 
+head(ev.tv.summary)
+
 write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
 
 #read data
@@ -391,7 +458,15 @@ summary(ev.tv.summary)
 
 #read data
 ev.tv.summary = read.csv("ev.tv.summary.merged.csv", colClasses = "character")
+unique(ev.tv.summary$start.date.adjusted)
 balkans = read.csv("./Fate summaries/EGVU_fate_summary_Balkans.csv", colClasses = "character")
+unique(balkans$start.date.adjusted)
+unique(balkans$end.date.adjusted)
+balkans$start.date.adjusted = dmy_hm(balkans$start.date.adjusted)
+balkans$end.date.adjusted = dmy_hm(balkans$end.date.adjusted)
+balkans$start.date.adjusted = as.character(balkans$start.date.adjusted)
+balkans$end.date.adjusted = as.character(balkans$end.date.adjusted)
+head(balkans)
 
 #check for duplicates
 which(duplicated(balkans$id))
@@ -414,8 +489,9 @@ for (i in unique(balkans$id.tag)) {
   
 }
 
-write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
+head(ev.tv.summary)
 
+write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
 
 #################################################
 #merge data from McGrady csv
@@ -424,14 +500,23 @@ write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
 rm(list = ls())
 
 ev.tv.summary.merged = read.csv("ev.tv.summary.merged.csv", colClasses = "character")
+unique(ev.tv.summary.merged$start.date.adjusted)
+unique(ev.tv.summary.merged$end.date.adjusted)
 mcgrady.summary = read.csv("./Fate summaries/McGrady summaries.csv", colClasses = "character")
+unique(mcgrady.summary$start.date.adjusted)
+mcgrady.summary$start.date.adjusted = ymd(mcgrady.summary$start.date.adjusted)
+hour(mcgrady.summary$start.date.adjusted) = 12:00
+summary(mcgrady.summary$start.date.adjusted)
+mcgrady.summary$start.date.adjusted = as.character(mcgrady.summary$start.date.adjusted)
+unique(mcgrady.summary$end.date.adjusted)
+mcgrady.summary$end.date.adjusted = NA
+mcgrady.summary$end.date.adjusted = as.character(mcgrady.summary$end.date.adjusted)
 
 #rename columns to match
 #mcgrady.summary$start.date.adjusted = dmy(mcgrady.summary$Date.ringed)
 mcgrady.summary$age.at.deployment = mcgrady.summary$Age
 mcgrady.summary$comments = mcgrady.summary$Fate
 mcgrady.summary$id = mcgrady.summary$PTT.ID
-mcgrady.summary$start.date.adjusted = mcgrady.summary$Date.ringed
 
 #check for duplicates
 which(duplicated(mcgrady.summary$id))
@@ -452,6 +537,14 @@ for (i in unique(mcgrady.summary$id)) {
 write.csv(ev.tv.summary.merged, "ev.tv.summary.merged.csv", row.names = F)
 
 ####################################################################################
+#check dataset and dates
+
+d = read.csv("ev.tv.summary.merged.csv")
+summary(d$start.date.adjusted)
+d$start.date.adjusted = ymd_hms(d$start.date.adjusted)
+d$end.date.adjusted = ymd_hms(d$end.date.adjusted)
+summary(d)
+
 #standardizing column values
 d = read.csv("ev.tv.summary.merged.csv")
 summary(d)
