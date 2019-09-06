@@ -334,7 +334,7 @@ mcgrady.summary = read.csv("./Fate summaries/McGrady summaries.csv")
 #check date formats
 #
 summary(ev.gs$start.date.adjusted)
-ev.gs$start.date.adjusted = ymd(ev.gs$start.date.adjusted)
+ev.gs$start.date.adjusted = ymd_hms(ev.gs$start.date.adjusted)
 hour(ev.gs$start.date.adjusted) = 12:00
 summary(ev.gs$start.date.adjusted)
 #
@@ -449,7 +449,7 @@ ev.tv.summary = read.csv("ev.tv.summary.merged.csv")
 summary(ev.tv.summary)
 
 ##################################################################
-#merge with Blakans sheet
+#merge with Balkans sheet
 
 #read data
 ev.tv.summary = read.csv("ev.tv.summary.merged.csv", colClasses = "character")
@@ -538,6 +538,26 @@ summary(d)
 names(d)
 unique(d$id.tag)
 unique(d$id) #2 more id.tag than id, indicating 2 redeployments of tags on individuals
+
+#check captive raised and age at deployment against Google Sheet
+#Aneta: Captive raised = y, and age.at.deployment =  <1
+#Carmen: Captive raised = y, and age.at.deployment =  <1
+#Provence: Rehabilitated = y, and age.at.deployment =  Ad
+#Tobia: Captive raised = y, and age.at.deployment =  <1
+unique(d$id)
+summary(d$captive.raised)
+d$captive.raised[which(d$id == "Aneta")] = "Y"
+d$captive.raised[which(d$id == "Carmen")] = "Y"
+d$captive.raised[which(d$id == "Tobia")] = "Y"
+summary(d$rehabilitated)
+d$rehabilitated[which(d$id == "Provence_2016_Ad_wild_EO5018_Salome_8P")] = "Y"
+summary(d$age.at.deployment)
+d$age.at.deployment[which(d$id == "Aneta")] = "<1"
+d$age.at.deployment[which(d$id == "Carmen")] = "<1"
+d$age.at.deployment[which(d$id == "Tobia")] = "<1"
+d$age.at.deployment = as.character(d$age.at.deployment)
+d$age.at.deployment[which(d$id == "Provence_2016_Ad_wild_EO5018_Salome_8P")] = "ad"
+d$age.at.deployment = as.factor(d$age.at.deployment)
 
 #sex
 summary(d$sex)
@@ -810,5 +830,7 @@ d <- d[ -c(21) ]
 summary(d)
 
 #write final summary
-write.csv(d, "ev.tv.summary.merged.final.csv", row.names = F)
+#write.csv(d, "ev.tv.summary.merged.final.csv", row.names = F)
+
+# did some minor manual editing of final summary here, incorporating coauthor input
 

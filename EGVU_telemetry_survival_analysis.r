@@ -22,6 +22,8 @@ try(setwd("S:\\ConSci\\DptShare\\SteffenOppel\\RSPB\\Bulgaria\\Analysis\\Surviva
 #EV<-fread("Google Sheets\\Egyptian Vulture tracking summary - EV summary.csv")
 EV<-fread("Google Sheets\\EGVU_fate_summary_Balkans.csv")
 
+setwd("~/Documents/GitHub/EV - TV Survival Study/")
+EV<-read.csv("Google Sheets/EGVU_fate_summary_Balkans.csv")
 
 #EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
 EV<-EV %>% mutate(start=parse_date_time(start.date, c("dmy", "dmy HM")), end= parse_date_time(end.date, c("dmy", "dmy HM"))) %>%
