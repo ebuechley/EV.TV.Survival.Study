@@ -10,10 +10,14 @@ setwd("~/Documents/GitHub/EV - TV Survival Study/")
 
 #read data
 d = read.csv("ev.tv.filtered.csv")
+summary(d)
+d$timestamp = ymd_hms(d$timestamp)
+summary(d$ND)
+unique(d$id.tag)
 
 #plot net displacement
-tiff("ev.tv.tracking.nd.overview.tiff", units="cm", width=50, height=40, res=300)
-plot = ggplot(d, aes(timestamp, ND)) + geom_line() + facet_wrap(~ id)
+tiff("./overview.plots/ev.tv.tracking.nd.overview.tiff", units="cm", width=70, height=40, res=300)
+plot = ggplot(d, aes(timestamp, ND)) + geom_line() + facet_wrap(~ id.tag)
 plot = plot + labs(x = "date", y = "net displacement (degrees)") + theme_bw() 
 plot 
 dev.off()
@@ -22,22 +26,22 @@ dev.off()
 # create for loop to produce ggplot2 graphs 
 library(gridExtra)
 
-for (i in unique(d$id)) { 
+for (i in unique(d$id.tag)) { 
   
   #net displacement
   plot1 <- 
-    ggplot(aes(timestamp, ND), data = subset(d, id ==  i))  + 
+    ggplot(aes(timestamp, ND), data = subset(d, id.tag ==  i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "net displacement (degrees)") 
   
   #fix rate
   plot2 <- 
-    ggplot(aes(timestamp, dt.days), data = subset(d, id == i))  + 
+    ggplot(aes(timestamp, dt.days), data = subset(d, id.tag == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "time between fixes (days)") 
   
   #tracks
   plot3 <- 
     ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() +
-    geom_path(data = subset(d, id ==  i), aes(long,lat)) + labs(x = "longitude", y = "latitude") + 
+    geom_path(data = subset(d, id.tag ==  i), aes(long,lat)) + labs(x = "longitude", y = "latitude") + 
     theme(legend.title = element_blank()) +
     ggtitle(paste(i)) + theme(plot.title = element_text(hjust = 0.5))
   
@@ -61,35 +65,35 @@ for (i in unique(d$id)) {
 #summary(d$Solar.voltage)
 
 #battery charge
-for (i in unique(d$id)) { 
+for (i in unique(d$id.tag)) { 
   
   b1 <- 
-    ggplot(aes(timestamp, battery.charge.percent), data = subset(d, id ==  i))  + 
+    ggplot(aes(timestamp, battery.charge.percent), data = subset(d, id.tag ==  i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "battery.charge.percent") 
   b2 <- 
-    ggplot(aes(timestamp, battery.charging.current), data = subset(d, id == i))  + 
+    ggplot(aes(timestamp, battery.charging.current), data = subset(d, id.tag == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "battery.charging.current") +
     ggtitle(paste(i)) + theme(plot.title = element_text(hjust = 0.5))
   b3 <- 
-    ggplot(aes(timestamp, tag.voltage), data = subset(d, id == i))  + 
+    ggplot(aes(timestamp, tag.voltage), data = subset(d, id.tag == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "tag.voltage") 
   b5 <- 
-    ggplot(aes(timestamp, eobs.battery.voltage), data = subset(d, id == i))  + 
+    ggplot(aes(timestamp, eobs.battery.voltage), data = subset(d, id.tag == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "eobs.battery.voltage") 
   b6 <- 
-    ggplot(aes(timestamp, eobs.fix.battery.voltage), data = subset(d, id == i))  + 
+    ggplot(aes(timestamp, eobs.fix.battery.voltage), data = subset(d, id.tag == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "eobs.fix.battery.voltage") 
   b7 <- 
-    ggplot(aes(timestamp, U_bat_mV), data = subset(d, id == i))  + 
+    ggplot(aes(timestamp, U_bat_mV), data = subset(d, id.tag == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "U_bat_mV")
   b8 <- 
-    ggplot(aes(timestamp, bat_soc_pct), data = subset(d, id == i))  + 
+    ggplot(aes(timestamp, bat_soc_pct), data = subset(d, id.tag == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "bat_soc_pct")
   b9 <- 
-    ggplot(aes(timestamp, Battery.voltage), data = subset(d, id == i))  + 
+    ggplot(aes(timestamp, Battery.voltage), data = subset(d, id.tag == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "Battery.voltage")
   b10 <- 
-    ggplot(aes(timestamp, Solar.voltage), data = subset(d, id == i))  + 
+    ggplot(aes(timestamp, Solar.voltage), data = subset(d, id.tag == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "Solar.voltage")
   
   #arrange
@@ -112,7 +116,7 @@ for (i in unique(d$id)) {
 #Sarygush - possible mortality or dropped tx?
 #Sharka - only 3 points!
 
-#Carmen looks to have died at see and tx floated long after
+#Carmen looks to have died at sea and tx floated long after
 #NeoPer_Poiares has a straight shot back from Africa to Spain
 #Provence_2016_Ad_wild has a straight shot from Africa back to France
 #White 08 has a random point in the Med
