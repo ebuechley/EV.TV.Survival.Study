@@ -68,6 +68,13 @@ summary(d$height.above.ellipsoid)
 summary(d[1:4])
 #d = d[complete.cases(d[,1:4]),] 
 
+#quick plot of data
+library(ggplot2)
+map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() 
+map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id)) + labs(x = "longitude", y = "latitude")
+map.plot = map.plot + theme(legend.title = element_blank()) 
+map.plot #notice bad fixes in dataset
+
 #speed filter from 'trip' package
 library(trip)
 
@@ -75,14 +82,14 @@ library(trip)
 tr = trip(d)
 
 #plot trip
-#plot(tr)
-##lines(tr)
-#maps::map("world", add = TRUE)
+plot(tr)
+lines(tr)
+maps::map("world", add = TRUE)
 
 #run a speed filter and add a column to the data, max speed in km/hr
 #?speedfilter
 #?sda
-tr$spd = speedfilter(tr, max.speed = 17)
+tr$spd = speedfilter(tr, max.speed = 15)
 
 #what % are not filtered out? (not clear how this works...)
 mean(tr$spd)
@@ -123,7 +130,7 @@ d = read.csv("ev.tv.filtered.csv")
 head(d)
 names(d)
 unique(d$population)
-unique(d$id.tag) #note 260 unique id.tag
+unique(d$id.tag) #note 267 unique id.tag
 
 #lubridate
 summary(d$timestamp)
@@ -828,9 +835,10 @@ d = d[,c(1:16,20:29,17:19)]
 names(d)
 d <- d[ -c(21) ]
 summary(d)
+names(d)
 
 #write final summary
-#write.csv(d, "ev.tv.summary.merged.final.csv", row.names = F)
+write.csv(d, "ev.tv.summary.merged.final.csv", row.names = F)
 
 # did some minor manual editing of final summary here, incorporating coauthor input
 

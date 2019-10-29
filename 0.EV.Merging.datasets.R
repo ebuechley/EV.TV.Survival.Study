@@ -1,5 +1,5 @@
 #Set WD
-setwd("~/Google Drive/Research Projects/EV-TV tracking study/Dataset/Final/")
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/")
 
 ###Load relevant libraries###
 ##install MigrateR
@@ -65,9 +65,11 @@ ev14 = read.csv("./Original Data/Omanvulture.csv")
 ev14$population = "oman"
 ev15 = read.csv("./Original Data/Released Egyptian Vultures in Italy.csv")
 ev15$population = "italy"
+ev32 = read.csv("./Original Data/Egyptian vulture EB Terra Natura UA Spain.csv")
+ev32$population = "western europe"
 
 #merge (vertically) the data, keeping all unique columns
-ev.movebank = rbind.fill(ev1,ev2,ev3,ev4,ev5,ev6,ev7,ev8,ev9,ev10,ev11,ev12,ev13,ev14,ev15)
+ev.movebank = rbind.fill(ev1,ev2,ev3,ev4,ev5,ev6,ev7,ev8,ev9,ev10,ev11,ev12,ev13,ev14,ev15,ev32)
 names(ev.movebank)
 summary(ev.movebank$timestamp)
 ev.movebank$timestamp = ymd_hms(ev.movebank$timestamp)
@@ -287,9 +289,6 @@ ev.all$individual.taxon.canonical.name = "Neophron percnopterus" #standardize th
 ########################################################
 #TV
 ########################################################
-#Set WD
-setwd("~/Google Drive/Research Projects/EV-TV tracking study/Dataset/Final")
-
 # read data
 tv1 = read.csv("./Original Data/Turkey Vulture Acopian Center USA GPS.csv")
 tv1$population = NA
@@ -375,10 +374,7 @@ setwd("~/Documents/GitHub/EV - TV Survival Study/")
 
 #censor to one point per day 
 #(at least to start, to have a workable dataset, as well as to standardize across transmitter types)
-ev.tv.1ptperday  = ev.tv[!duplicated(ev.tv[,c('id', 'year', 'month', 'day')]),]
-
-#write 1ptperday dataset
-write.csv(ev.tv.1ptperday, "ev.tv.1ptperday.csv", row.names=FALSE)
+ev.tv.1ptperday = ev.tv[!duplicated(ev.tv[,c('id', 'year', 'month', 'day')]),]
 
 #quick plot of data
 library(ggplot2)
@@ -386,3 +382,6 @@ map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_
 map.plot = map.plot + geom_path(data = ev.tv.1ptperday, aes(long,lat, group = id)) + labs(x = "longitude", y = "latitude")
 map.plot = map.plot + theme(legend.title = element_blank()) 
 map.plot #notice bad fixes in dataset
+
+#write 1ptperday dataset
+write.csv(ev.tv.1ptperday, "ev.tv.1ptperday.csv", row.names=FALSE)
