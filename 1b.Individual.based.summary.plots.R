@@ -1,7 +1,6 @@
 #################################################################################
 #Individual-based summary plots
 #################################################################################
-
 #Clear workspace
 rm(list = ls())
 
@@ -14,6 +13,7 @@ summary(d)
 d$timestamp = ymd_hms(d$timestamp)
 summary(d$ND)
 unique(d$id.tag)
+names(d)
 
 #plot net displacement
 tiff("./overview.plots/ev.tv.tracking.nd.overview.tiff", units="cm", width=70, height=40, res=300)
@@ -45,11 +45,16 @@ for (i in unique(d$id.tag)) {
     theme(legend.title = element_blank()) +
     ggtitle(paste(i)) + theme(plot.title = element_text(hjust = 0.5))
   
-  #arrange
-  plot4 = grid.arrange(plot3, plot1, plot2, ncol = 2, nrow = 2, 
-                       widths = c(1,1), layout_matrix = rbind(c(1, 2), c(1,3)))
+  #distance
+  plot4 <- 
+    ggplot(aes(timestamp, dist), data = subset(d, id.tag ==  i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "distance (degrees)") 
   
-  ggsave(filename = sprintf('./overview.plots/%s.png', i), plot = plot4, width = 30, height = 20, units = c("cm"),dpi = 300)
+  #arrange
+  plot5 = grid.arrange(plot3, plot1, plot4, plot2, ncol = 2, nrow = 2, 
+                       widths = c(1,1), layout_matrix = rbind(c(1, 2), c(3,4)))
+  
+  ggsave(filename = sprintf('./overview.plots/%s.png', i), plot = plot5, width = 30, height = 20, units = c("cm"),dpi = 300)
 }
 
 #check battery charge fields
@@ -121,3 +126,8 @@ for (i in unique(d$id.tag)) {
 #Provence_2016_Ad_wild has a straight shot from Africa back to France
 #White 08 has a random point in the Med
 #Yellow 04 has what looks like erroneous points in the Med
+
+#summarize the summary
+d = read.csv("ev.tv.summary.proofed.csv")
+
+summary(d)

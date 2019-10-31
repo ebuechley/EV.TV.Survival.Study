@@ -11,25 +11,48 @@ setwd("~/Documents/GitHub/EV - TV Survival Study/")
 
 #read data
 d = read.csv("ev.tv.filtered.csv")
-ev.tv.summary.merged = read.csv("ev.tv.summary.merged.csv")
-ev.tv.summary.merged.alive.removed = ev.tv.summary.merged[!(ev.tv.summary.merged$fate == "alive"),]
+d.summ= read.csv("ev.tv.summary.proofed.csv")
+summary(d.summ)
 names(d)
 head(d)
+tv.summ = subset(d.summ, d.summ$species == "Cathartes aura")
+ev.summ = subset(d.summ, d.summ$species == "Neophron percnopterus")
+tv = subset(d, d$species == "Cathartes aura")
+ev = subset(d, d$species == "Neophron percnopterus")
 
-#ggplot map
 colourpalette<-c('#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999','#000120')
 colourpalette
-tiff("tracking.overview.tiff", units="cm", width=35, height=19, res=300)
-map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id.tag, color = species), alpha = .5) 
-map.plot = map.plot + geom_point(data = ev.tv.summary.merged, aes(start.long, start.lat, color = "tag deployment"))  
-map.plot = map.plot + geom_point(data = ev.tv.summary.merged.alive.removed, aes(end.long, end.lat, color = "tag termination")) 
-#map.plot = map.plot + geom_segment(data = ev.tv.summary.merged.alive.removed, aes(x = start.long, y = start.lat, xend = end.long, yend = end.lat)) 
-map.plot = map.plot + scale_color_manual(values=c('#4daf4a','#377eb8','#ffff33','#e41a1c')) + labs(x = "longitude", y = "latitude")
-map.plot = map.plot + theme(legend.title = element_blank()) 
-map.plot = map.plot + ggtitle("vulture tracking, deployment, and termination overview") + theme(plot.title = element_text(hjust = 0.5))
-map.plot
+
+#tv figure
+tv.summ$fate <- factor(tv.summ$fate, levels = c("alive","confirmed dead","likely dead","confirmed transmitter failure","likely transmitter failure","unknown"))
+ev.summ$fate <- factor(ev.summ$fate, levels = c("alive","confirmed dead","likely dead","confirmed transmitter failure","likely transmitter failure","unknown"))
+
+tiff("tv.overview.tiff", units="cm", width=20, height=20, res=300)
+tv.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() +
+  geom_path(data = tv, aes(long,lat, group = id.tag), alpha = .5, show.legend = FALSE) + 
+  geom_point(data = tv.summ, aes(end.long, end.lat, color = fate)) + 
+  scale_color_manual(values=c('#4daf4a','#e41a1c','#ff7f00','#377eb8','#984ea3','#ffff33'), name = "fate") + 
+  ggtitle("turkey vulture") + theme(plot.title = element_text(hjust = 0.5)) + labs(x = "longitude", y = "latitude") 
+tv.plot
 dev.off()
+
+tiff("ev.overview.tiff", units="cm", width=35, height=20, res=300)
+ev.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() +
+  geom_path(data = ev, aes(long,lat, group = id.tag), alpha = .5, show.legend = FALSE) + 
+  geom_point(data = ev.summ, aes(end.long, end.lat, color = fate)) + 
+  scale_color_manual(values=c('#4daf4a','#e41a1c','#ff7f00','#377eb8','#984ea3','#ffff33'), name = "fate") + 
+  ggtitle("egyptian vulture") + theme(plot.title = element_text(hjust = 0.5)) + labs(x = "longitude", y = "latitude")
+ev.plot
+dev.off()
+
+tiff("all.overview.tiff", units="cm", width=35, height=20, res=300)
+combined <- grid.arrange(tv.plot, ev.plot, nrow = 1, ncol=2)
+dev.off()
+
+#map.plot = map.plot + geom_point(data = d.summ, aes(start.long, start.lat, color = "tag deployment"))  
+#map.plot = map.plot + theme(legend.title = element_blank()) 
+#map.plot = map.plot + geom_segment(data = ev.tv.summary.merged.alive.removed, aes(x = start.long, y = start.lat, xend = end.long, yend = end.lat)) 
+
 
 #by EV populations
 d1 = subset(d, d$species == "Neophron percnopterus")
