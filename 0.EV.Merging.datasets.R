@@ -67,9 +67,11 @@ ev15 = read.csv("./Original Data/Released Egyptian Vultures in Italy.csv")
 ev15$population = "italy"
 ev32 = read.csv("./Original Data/Egyptian vulture EB Terra Natura UA Spain.csv")
 ev32$population = "western europe"
+ev33 = read.csv("./Original Data/_Egyptian Vulture in Spain - Migra Program in Spain.csv")
+ev33$population = "western europe"
 
 #merge (vertically) the data, keeping all unique columns
-ev.movebank = rbind.fill(ev1,ev2,ev3,ev4,ev5,ev6,ev7,ev8,ev9,ev10,ev11,ev12,ev13,ev14,ev15,ev32)
+ev.movebank = rbind.fill(ev1,ev2,ev3,ev4,ev5,ev6,ev7,ev8,ev9,ev10,ev11,ev12,ev13,ev14,ev15,ev32,ev33)
 names(ev.movebank)
 summary(ev.movebank$timestamp)
 ev.movebank$timestamp = ymd_hms(ev.movebank$timestamp)

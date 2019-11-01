@@ -82,9 +82,9 @@ library(trip)
 tr = trip(d)
 
 #plot trip
-plot(tr)
-lines(tr)
-maps::map("world", add = TRUE)
+#plot(tr)
+#lines(tr)
+#maps::map("world", add = TRUE)
 
 #run a speed filter and add a column to the data, max speed in km/hr
 #?speedfilter
@@ -96,12 +96,12 @@ mean(tr$spd)
 summary(tr$spd)
 
 #plot with censored
-plot(tr)
-plot(tr[tr$spd,], col = 'green', add = T)
-lines(tr[tr$spd,])
-maps::map("world", add = TRUE)
-axis(1)
-axis(2)
+#plot(tr)
+#plot(tr[tr$spd,], col = 'green', add = T)
+#lines(tr[tr$spd,])
+#maps::map("world", add = TRUE)
+#axis(1)
+#axis(2)
 
 #convert to spdf for plotting
 b = as(tr, "SpatialPointsDataFrame")
