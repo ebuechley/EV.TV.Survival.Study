@@ -2,6 +2,7 @@
 #Figure
 library(ggplot2)
 library("gridExtra")
+library(lubridate)
 
 #Clear workspace
 rm(list = ls())
@@ -12,7 +13,11 @@ setwd("~/Documents/GitHub/EV - TV Survival Study/")
 #read data
 d = read.csv("ev.tv.filtered.csv")
 d.summ= read.csv("ev.tv.summary.proofed.csv")
+d.summ$start.date = mdy_hm(d.summ$start.date)
+
+#summary stats for study
 summary(d.summ)
+unique(d.summ$study.name)
 names(d)
 head(d)
 tv.summ = subset(d.summ, d.summ$species == "Cathartes aura")
