@@ -32,6 +32,10 @@ try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study
 #EV<-fread("Google Sheets\\EGVU_fate_summary_Balkans.csv")
 EV<-fread("ev.tv.summary.proofed.csv")
 
+setwd("~/Documents/GitHub/EV - TV Survival Study/")
+#EV<-read.csv("Google Sheets/EGVU_fate_summary_Balkans.csv")
+EV<-read.csv("ev.tv.summary.merged.final.csv")
+summary(EV)
 
 #EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
 EV<-EV %>% mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= parse_date_time(end.date, c("mdy", "mdy HM"))) %>%
@@ -78,6 +82,11 @@ EV<-EV %>%
 # 4 Dead bird recovered
 # 5 No signal (=not seen)
   mutate(OS= ifelse(fate=="alive",1,
+                    ifelse(how.fate.determined.clean %in% c("unknown","suspected transmitter failure","transmission ended"),5,
+                           ifelse(how.fate.determined.clean =="verified transmitter failure",3,
+                                  ifelse(how.fate.determined.clean %in% c("dead","recaptured","retrieved transmitter and carcass","retrieved transmitter and asked locals","found carcass","carcass retrieved","tag retrieved, asked locals","found feathers"),4,
+                                         ifelse(how.fate.determined.clean %in% c("suspected mortality","inferred from transmissions"),2,5)))))) %>%
+  mutate(TS=ifelse(is.na(TS),3,TS),OS=ifelse(is.na(OS),ifelse(TS==1,2,5),OS))       ## WE SHOULD MAKE SURE THAT THIS IS NOT NEEDED!
                     ifelse(fate %in% c("unknown","likely transmitter failure"),5,
                            ifelse(fate=="confirmed transmitter failure",3,
                                   ifelse(how.fate.determined.clean %in% c("carcass found","resighted / recaptured","transmitter recovered"),4,2)))))

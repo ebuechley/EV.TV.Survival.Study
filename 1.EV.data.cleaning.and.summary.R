@@ -38,8 +38,14 @@ d = read.csv("ev.tv.1ptperday.csv")
 unique(d$id.tag)
 unique(d$study.name)
 unique(d$species)
+summary(d$population)
 
-#first remove fixes with lat & long = 0
+#lubridate
+summary(d$timestamp)
+d$timestamp = ymd_hms(d$timestamp)
+summary(d$timestamp)
+
+#remove fixes with lat & long = 0
 d<-d[!(d$long==0 & d$lat==0),]
 d<-d[!(d$long<=-25 & d$species=="Neophron percnopterus"),]
 d<-d[!(d$long>=70 & d$species=="Neophron percnopterus"),]
@@ -62,6 +68,13 @@ summary(d$height.above.ellipsoid)
 summary(d[1:4])
 #d = d[complete.cases(d[,1:4]),] 
 
+#quick plot of data
+library(ggplot2)
+map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() 
+map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id)) + labs(x = "longitude", y = "latitude")
+map.plot = map.plot + theme(legend.title = element_blank()) 
+map.plot #notice bad fixes in dataset
+
 #speed filter from 'trip' package
 library(trip)
 
@@ -70,20 +83,20 @@ tr = trip(d)
 
 #plot trip
 #plot(tr)
-##lines(tr)
+#lines(tr)
 #maps::map("world", add = TRUE)
 
 #run a speed filter and add a column to the data, max speed in km/hr
 #?speedfilter
 #?sda
-tr$spd = speedfilter(tr, max.speed = 17)
+tr$spd = speedfilter(tr, max.speed = 15)
 
 #what % are not filtered out? (not clear how this works...)
 mean(tr$spd)
 summary(tr$spd)
 
 #plot with censored
-plot(tr)
+#plot(tr)
 #plot(tr[tr$spd,], col = 'green', add = T)
 #lines(tr[tr$spd,])
 #maps::map("world", add = TRUE)
@@ -93,9 +106,9 @@ plot(tr)
 #convert to spdf for plotting
 b = as(tr, "SpatialPointsDataFrame")
 b2 = subset(b, b$spd == "TRUE")
-plot(b2)
+#plot(b2)
 b1 = subset(b, b$spd == "FALSE")
-plot(b1, color = "red", add = T)
+#plot(b1, color = "red", add = T)
 
 #save as df
 d.filtered = as.data.frame(b2)
@@ -116,7 +129,8 @@ write.csv(d.filtered, "ev.tv.filtered.csv", row.names=FALSE)
 d = read.csv("ev.tv.filtered.csv")
 head(d)
 names(d)
-unique(d$id.tag) #note 260 unique id.tag
+unique(d$population)
+unique(d$id.tag) #note 267 unique id.tag
 
 #lubridate
 summary(d$timestamp)
@@ -133,15 +147,15 @@ b
 #R2n == the squared distance between the first relocation of the trajectory and the current relocation (net squared displacement)
 
 #plot ltraj
-plot.ltraj(b[4])
+#plot.ltraj(b[4])
 
 #to look at time interval between locations plot 
 #dt is measrured in second. to conver to days == dt / 3600 / 24 
-plotltr(b[1], "dt/3600/24")
+#plotltr(b[1], "dt/3600/24")
 #dist is measured in meters. convert to km by == / 1000
-plotltr(b[1], which = "dist/1000")
+#plotltr(b[1], which = "dist/1000")
 #plot net [squared] displacement
-plotltr(b[1], which = 'sqrt(R2n)')
+#plotltr(b[1], which = 'sqrt(R2n)')
 
 #save ltraj as dataframe
 d1 <- do.call(rbind, b)
@@ -153,9 +167,10 @@ d$ND <- sqrt(d$NSD)
 d$dist <- d1$dist
 d$dt.days <- d1$dt/3600/24
 head(d)
+names(d)
 
 #write
-write.csv(d, "ev.tv.filtered.csv")
+write.csv(d, "ev.tv.filtered.csv", row.names = FALSE)
 
 ########################################
 #data summary
@@ -202,13 +217,6 @@ ev.tv.summary$age.at.deployment = NA
 
 #
 ev.tv.summary$sex = NA
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Agata")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Aneta")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Arianna")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Barabara")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "BatuecasP")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Bianca")]= 'F'
-#ev.tv.summary$sex[which(ev.tv.summary$id == "Camaces")]= 'F'
 
 #
 ev.tv.summary$captive.raised = NA
@@ -305,6 +313,8 @@ ev.tv.summary = ev.tv.summary[order(ev.tv.summary$study.name),]
 
 #write 
 head(ev.tv.summary)
+summary(ev.tv.summary$start.date)
+summary(ev.tv.summary$end.date)
 write.csv(ev.tv.summary, "ev.tv.summary.csv", row.names = FALSE)
 
 #quick plot of data
@@ -312,6 +322,61 @@ map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "
 map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id.tag), alpha = .5) + labs(x = "longitude", y = "latitude")
 map.plot = map.plot + theme(legend.title = element_blank()) 
 map.plot
+
+#####################################################################
+#fix date times in all files
+#set wd
+setwd("~/Documents/GitHub/EV - TV Survival Study/")
+
+#Clear workspace
+rm(list = ls())
+
+#load files
+ev.gs = read.csv("./Google Sheets/Egyptian Vulture tracking summary - EV summary.csv")
+tv.gs = read.csv("./Google Sheets/Turkey Vulture tracking summary - TV summary.csv")
+ev.tv.summary = read.csv("ev.tv.summary.csv")
+balkans = read.csv("./Fate summaries/EGVU_fate_summary_Balkans.csv")
+mcgrady.summary = read.csv("./Fate summaries/McGrady summaries.csv")
+
+#check date formats
+#
+summary(ev.gs$start.date.adjusted)
+ev.gs$start.date.adjusted = ymd_hms(ev.gs$start.date.adjusted)
+hour(ev.gs$start.date.adjusted) = 12:00
+summary(ev.gs$start.date.adjusted)
+#
+summary(ev.gs$end.date.adjusted)
+head(ev.gs)
+#
+names(tv.gs)
+tv.gs$start.date.adjusted = NA
+tv.gs$end.date.adjusted = NA
+summary(tv.gs$start.date.adjusted)
+summary(tv.gs$end.date.adjusted)
+#
+ev.tv.summary$start.date.adjusted = NA
+ev.tv.summary$end.date.adjusted = NA
+summary(ev.tv.summary$end.date.adjusted)
+summary(ev.tv.summary$start.date.adjusted)
+#
+summary(balkans$start.date.adjusted)
+balkans$start.date.adjusted = dmy_hm(balkans$start.date.adjusted)
+summary(balkans$start.date.adjusted)
+#
+summary(balkans$end.date.adjusted)
+balkans$end.date.adjusted = dmy_hm(balkans$end.date.adjusted)
+summary(balkans$end.date.adjusted)
+#
+summary(mcgrady.summary$Date.ringed)
+mcgrady.summary$start.date.adjusted = mdy_hm(mcgrady.summary$Date.ringed)
+summary(mcgrady.summary$start.date.adjusted)
+
+#write files with fixed date structure
+write.csv(ev.gs, "./Google Sheets/Egyptian Vulture tracking summary - EV summary.csv", row.names = FALSE)
+write.csv(tv.gs, "./Google Sheets/Turkey Vulture tracking summary - TV summary.csv", row.names = FALSE)
+write.csv(balkans, "./Fate summaries/EGVU_fate_summary_Balkans_FINAL.csv", row.names = FALSE)
+write.csv(mcgrady.summary, "./Fate summaries/McGrady summaries.csv", row.names = FALSE)
+write.csv(ev.tv.summary, "ev.tv.summary.csv", row.names = FALSE)
 
 #####################################################################
 #merging data summary with coauthor info input in Google Sheet
@@ -323,15 +388,30 @@ rm(list = ls())
 
 #read final summaries
 ev.gs = read.csv("./Google Sheets/Egyptian Vulture tracking summary - EV summary.csv", colClasses = "character")
+unique(ev.gs$start.date.adjusted)
+unique(ev.gs$end.date.adjusted)
+ev.gs$start.date.adjusted = ymd_hms(ev.gs$start.date.adjusted)
+summary(ev.gs$start.date.adjusted)
+ev.gs$start.date.adjusted = as.character(ev.gs$start.date.adjusted)
+unique(ev.gs$start.date.adjusted)
 tv.gs = read.csv("./Google Sheets/Turkey Vulture tracking summary - TV summary.csv", colClasses = "character")
+unique(tv.gs$start.date.adjusted)
+unique(tv.gs$end.date.adjusted)
 ev.tv.summary = read.csv("ev.tv.summary.csv", colClasses = "character")
+unique(ev.tv.summary$end.date.adjusted)
+unique(ev.tv.summary$start.date.adjusted)
 
-#check id's match, manually correct
-unique(ev.gs$id) #Provence_2016_Ad_wild_EO5018_Salom√©_8P
+#check id's match
+unique(ev.gs$id) #Provence_2016_Ad_wild_EO5018_Salome_8P
 unique(ev.tv.summary$id) # Provence_2016_Ad_wild_EO5018_Salomé_8P
+ev.tv.summary$id[ev.tv.summary$id == "Provence_2016_Ad_wild_EO5018_Salomé_8P"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P"
+unique(ev.tv.summary$id)
+
+#
+ev.tv.summary$start
 
 #check for duplicates
-summary(ev.gs$id)
+unique(ev.gs$id)
 which(duplicated(ev.gs$id))
 
 #remove rows that have NA for study. These are id that Guido put in the Sheet, 
@@ -367,14 +447,28 @@ for (i in unique(tv.gs$id.tag)) {
   
 }
 
+head(ev.tv.summary)
+
 write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
 
+#read data
+ev.tv.summary = read.csv("ev.tv.summary.merged.csv")
+summary(ev.tv.summary)
+
 ##################################################################
-#merge with Blakans sheet
+#merge with Balkans sheet
 
 #read data
 ev.tv.summary = read.csv("ev.tv.summary.merged.csv", colClasses = "character")
+unique(ev.tv.summary$start.date.adjusted)
 balkans = read.csv("./Fate summaries/EGVU_fate_summary_Balkans.csv", colClasses = "character")
+unique(balkans$start.date.adjusted)
+unique(balkans$end.date.adjusted)
+balkans$start.date.adjusted = dmy_hm(balkans$start.date.adjusted)
+balkans$end.date.adjusted = dmy_hm(balkans$end.date.adjusted)
+balkans$start.date.adjusted = as.character(balkans$start.date.adjusted)
+balkans$end.date.adjusted = as.character(balkans$end.date.adjusted)
+head(balkans)
 
 #check for duplicates
 which(duplicated(balkans$id))
@@ -397,8 +491,9 @@ for (i in unique(balkans$id.tag)) {
   
 }
 
-write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
+head(ev.tv.summary)
 
+write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
 
 #################################################
 #merge data from McGrady csv
@@ -407,14 +502,23 @@ write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
 rm(list = ls())
 
 ev.tv.summary.merged = read.csv("ev.tv.summary.merged.csv", colClasses = "character")
+unique(ev.tv.summary.merged$start.date.adjusted)
+unique(ev.tv.summary.merged$end.date.adjusted)
 mcgrady.summary = read.csv("./Fate summaries/McGrady summaries.csv", colClasses = "character")
+unique(mcgrady.summary$start.date.adjusted)
+mcgrady.summary$start.date.adjusted = ymd(mcgrady.summary$start.date.adjusted)
+hour(mcgrady.summary$start.date.adjusted) = 12:00
+summary(mcgrady.summary$start.date.adjusted)
+mcgrady.summary$start.date.adjusted = as.character(mcgrady.summary$start.date.adjusted)
+unique(mcgrady.summary$end.date.adjusted)
+mcgrady.summary$end.date.adjusted = NA
+mcgrady.summary$end.date.adjusted = as.character(mcgrady.summary$end.date.adjusted)
 
 #rename columns to match
 #mcgrady.summary$start.date.adjusted = dmy(mcgrady.summary$Date.ringed)
 mcgrady.summary$age.at.deployment = mcgrady.summary$Age
 mcgrady.summary$comments = mcgrady.summary$Fate
 mcgrady.summary$id = mcgrady.summary$PTT.ID
-mcgrady.summary$start.date.adjusted = mcgrady.summary$Date.ringed
 
 #check for duplicates
 which(duplicated(mcgrady.summary$id))
@@ -436,65 +540,197 @@ write.csv(ev.tv.summary.merged, "ev.tv.summary.merged.csv", row.names = F)
 
 ####################################################################################
 #standardizing column values
-
 d = read.csv("ev.tv.summary.merged.csv")
 summary(d)
+names(d)
+unique(d$id.tag)
+unique(d$id) #2 more id.tag than id, indicating 2 redeployments of tags on individuals
+
+#check captive raised and age at deployment against Google Sheet
+#Aneta: Captive raised = y, and age.at.deployment =  <1
+#Carmen: Captive raised = y, and age.at.deployment =  <1
+#Provence: Rehabilitated = y, and age.at.deployment =  Ad
+#Tobia: Captive raised = y, and age.at.deployment =  <1
+unique(d$id)
+summary(d$captive.raised)
+d$captive.raised[which(d$id == "Aneta")] = "Y"
+d$captive.raised[which(d$id == "Carmen")] = "Y"
+d$captive.raised[which(d$id == "Tobia")] = "Y"
+summary(d$rehabilitated)
+d$rehabilitated[which(d$id == "Provence_2016_Ad_wild_EO5018_Salome_8P")] = "Y"
+summary(d$age.at.deployment)
+d$age.at.deployment[which(d$id == "Aneta")] = "<1"
+d$age.at.deployment[which(d$id == "Carmen")] = "<1"
+d$age.at.deployment[which(d$id == "Tobia")] = "<1"
+d$age.at.deployment = as.character(d$age.at.deployment)
+d$age.at.deployment[which(d$id == "Provence_2016_Ad_wild_EO5018_Salome_8P")] = "ad"
+d$age.at.deployment = as.factor(d$age.at.deployment)
 
 #sex
 summary(d$sex)
 d$sex[d$sex == "female"] <- "F"
 d$sex[d$sex == "male"] <- "M"
 d$sex[is.na(d$sex)] <- "unknown"
+summary(d$sex)
 
-#age at deployment
-summary(d$age.at.deployment)
+#lubridate
+summary(d$start.date)
+d$start.date = ymd_hms(d$start.date)
+d$deployment.month = month(d$start.date)
+d$deployment.month = as.factor(d$deployment.month)
+summary(d$deployment.month)
+
+#set age at deployment by year
+summary(d$age.at.deployment) # there are 23 EV that we have no age at deployment for -- need to get this info from coauthors
+d$age.at.deployment.original = d$age.at.deployment #save the original determination as seperate column
 d$age.at.deployment = as.character(d$age.at.deployment)
-d$age.at.deployment[d$age.at.deployment == "<1"] <- "1"
-d$age.at.deployment[d$age.at.deployment == ">3 adult"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "2cal_year"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "2nd year"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "2nd Year"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "3cal_year"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "3rd year"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "3RD YEAR"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "4cal_year"] <- "4"
-d$age.at.deployment[d$age.at.deployment == "4th winter"] <- "4"
-d$age.at.deployment[d$age.at.deployment == "5th Year"] <- "5"
-d$age.at.deployment[d$age.at.deployment == "A"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "ad"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "adult"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "Adult"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "Adult (5+ years)"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "ADULT (5+ years)"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "Adult 5+"] <- "6"
-d$age.at.deployment[d$age.at.deployment == "AHY"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "ASY"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "ATY"] <- "4"
-d$age.at.deployment[d$age.at.deployment == "chick"] <- "1"
-d$age.at.deployment[d$age.at.deployment == "imm, 1.5 yrt"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "juv"] <- "1"
-d$age.at.deployment[d$age.at.deployment == "juvenile"] <- "1"
-d$age.at.deployment[d$age.at.deployment == "SA"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "SA (2-3 years)"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "SUBADULT (~2.5 YEARS)"] <- "3"
-d$age.at.deployment[d$age.at.deployment == "SY"] <- "2"
-d$age.at.deployment[d$age.at.deployment == "TY"] <- "3"
+d$age.at.deployment[d$age.at.deployment == "1"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == "<1"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == ">3 adult"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "2cal_year"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "2nd year"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "2nd Year"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "3cal_year"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "3rd year"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "3RD YEAR"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "4cal_year"] <- "4th yr"
+d$age.at.deployment[d$age.at.deployment == "4th winter"] <- "4th yr"
+d$age.at.deployment[d$age.at.deployment == "5th Year"] <- "5th yr"
+d$age.at.deployment[d$age.at.deployment == "A"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "ad"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "adult"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "Adult"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "Adult (5+ years)"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "ADULT (5+ years)"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "Adult 5+"] <- "ad"
+d$age.at.deployment[d$age.at.deployment == "AHY"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "ASY"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "ATY"] <- "4th yr"
+d$age.at.deployment[d$age.at.deployment == "chick"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == "Chick"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == "imm, 1.5 yrt"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "juv"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == "juvenile"] <- "juv"
+d$age.at.deployment[d$age.at.deployment == "SA"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (2-3 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SUBADULT (~2.5 YEARS)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SY"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "TY"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "imm, 1.5 yr"] <- "2nd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
+d$age.at.deployment[d$age.at.deployment == "SA (3-4 years)"] <- "3rd yr"
 d$age.at.deployment[is.na(d$age.at.deployment)] <- "unknown"
-d$age.at.deployment = as.numeric(d$age.at.deployment)
-summary(d$age.at.deployment)
-d$age.at.deployment[d$age.at.deployment >=365] <- 2
-d$age.at.deployment[d$age.at.deployment >=7] <- 1
-summary(d$age.at.deployment)
 d$age.at.deployment = as.factor(d$age.at.deployment)
-d$age.at.deployment[is.na(d$age.at.deployment)] <- "unknown"
 summary(d$age.at.deployment)
+#d$age.at.deployment[d$age.at.deployment >=365] <- 2 # this number is in days. the max value is <700, so less than 2 yrs. So greater than 365 = 2nd year, less than = 1st year.
+#d$age.at.deployment[d$age.at.deployment >=7] <- 1 #greatern than 7 = 1st year (there were no tagged birds <7 days old)
+
+#set age at deployment by month, assuming birth in June 
+d$age.at.deployment.month = paste(d$age.at.deployment, "-", d$deployment.month)
+d$age.at.deployment.month = as.factor(d$age.at.deployment.month)
+summary(d$age.at.deployment.month)
+d$age.at.deployment.month = as.character(d$age.at.deployment.month)
+d$age.at.deployment.month[d$age.at.deployment.month == "155 - 10"] <- "6" #155/30 = 5.2, i.e. more than 5 months
+d$age.at.deployment.month[d$age.at.deployment.month == "171 - 12"] <- "6" #171/30 = 5.7
+d$age.at.deployment.month[d$age.at.deployment.month == "182 - 12"] <- "7"
+d$age.at.deployment.month[d$age.at.deployment.month == "207 - 12"] <- "7"
+d$age.at.deployment.month[d$age.at.deployment.month == "208 - 12"] <- "7"
+d$age.at.deployment.month[d$age.at.deployment.month == "219 - 12"] <- "8"
+d$age.at.deployment.month[d$age.at.deployment.month == "223 - 12"] <- "8"
+d$age.at.deployment.month[d$age.at.deployment.month == "224 - 7"] <- "8"
+d$age.at.deployment.month[d$age.at.deployment.month == "292 - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "293 - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "297 - 11"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "297 - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "298 - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "299 - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 1"] <- "7"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 11"] <- "17"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 12"] <- "18"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 5"] <- "11"
+d$age.at.deployment.month[d$age.at.deployment.month == "2nd yr - 7"] <- "13"
+d$age.at.deployment.month[d$age.at.deployment.month == "302 - 4"] <- "11"
+d$age.at.deployment.month[d$age.at.deployment.month == "305 - 4"] <- "11"
+d$age.at.deployment.month[d$age.at.deployment.month == "312 - 4"] <- "11"
+d$age.at.deployment.month[d$age.at.deployment.month == "324 - 4"] <- "11"
+d$age.at.deployment.month[d$age.at.deployment.month == "370 - 3"] <- "13"
+d$age.at.deployment.month[d$age.at.deployment.month == "392 - 3"] <- "14"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 1"] <- "19"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 10"] <- "28"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 11"] <- "29"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 12"] <- "30"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 2"] <- "20"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 4"] <- "22"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 6"] <- "24"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 7"] <- "25"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 8"] <- "26"
+d$age.at.deployment.month[d$age.at.deployment.month == "3rd yr - 9"] <- "27"
+d$age.at.deployment.month[d$age.at.deployment.month == "4th yr - 1"] <- "31"
+d$age.at.deployment.month[d$age.at.deployment.month == "4th yr - 4"] <- "34"
+d$age.at.deployment.month[d$age.at.deployment.month == "4th yr - 7"] <- "37"
+d$age.at.deployment.month[d$age.at.deployment.month == "543 - 12"] <- "19"
+d$age.at.deployment.month[d$age.at.deployment.month == "545 - 12"] <- "19"
+d$age.at.deployment.month[d$age.at.deployment.month == "549 - 12"] <- "19"
+d$age.at.deployment.month[d$age.at.deployment.month == "550 - 12"] <- "19"
+d$age.at.deployment.month[d$age.at.deployment.month == "551 - 12"] <- "20"
+d$age.at.deployment.month[d$age.at.deployment.month == "570 - 12"] <- "20"
+d$age.at.deployment.month[d$age.at.deployment.month == "577 - 12"] <- "20"
+d$age.at.deployment.month[d$age.at.deployment.month == "582 - 12"] <- "21"
+d$age.at.deployment.month[d$age.at.deployment.month == "5th yr - 6"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "660 - 4"] <- "22"
+d$age.at.deployment.month[d$age.at.deployment.month == "663 - 4"] <- "23"
+d$age.at.deployment.month[d$age.at.deployment.month == "691 - 4"] <- "24"
+d$age.at.deployment.month[d$age.at.deployment.month == "7 - 3"] <- "54"  # 7 = ad
+d$age.at.deployment.month[d$age.at.deployment.month == "701 - 4"] <- "24"
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 1"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 10"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 11"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 12"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 2"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 3"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 4"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 5"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 6"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 7"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 8"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "ad - 9"] <- "54" # maxing out month count as 5th year adult at 54 months
+d$age.at.deployment.month[d$age.at.deployment.month == "juv - 4"] <- "10"
+d$age.at.deployment.month[d$age.at.deployment.month == "juv - 6"] <- "1"
+d$age.at.deployment.month[d$age.at.deployment.month == "juv - 7"] <- "1"
+d$age.at.deployment.month[d$age.at.deployment.month == "juv - 8"] <- "2"
+d$age.at.deployment.month[d$age.at.deployment.month == "juv - 9"] <- "3"
+d$age.at.deployment.month[d$age.at.deployment.month == "unknown - 1"] <- NA #need to see if i can get info on these from data owner
+d$age.at.deployment.month[d$age.at.deployment.month == "unknown - 7"] <- NA
+d$age.at.deployment.month[d$age.at.deployment.month == "unknown - 8"] <- NA
+d$age.at.deployment.month[d$age.at.deployment.month == "unknown - 9"] <- NA
+d$age.at.deployment.month = as.factor(d$age.at.deployment.month)
+summary(d$age.at.deployment.month)
 
 #captive.raised
 summary(d$captive.raised)
 d$captive.raised[d$captive.raised == "captive"] <- "Y"
 d$captive.raised[d$captive.raised == "N "] <- "N"
 d$captive.raised[d$captive.raised == "wild"] <- "N"
-d$captive.raised[is.na(d$captive.raised)] <- "unknown"
+d$captive.raised[is.na(d$captive.raised)] <- "N"
 summary(d$captive.raised)
 
 #rehabilitated
@@ -502,7 +738,8 @@ summary(d$rehabilitated)
 d$rehabilitated[d$rehabilitated == "N "] <- "N"
 d$rehabilitated[d$rehabilitated == "no"] <- "N"
 d$rehabilitated[d$rehabilitated == "yes"] <- "Y"
-d$rehabilitated[d$rehabilitated == ""] <- NA
+d$rehabilitated[d$rehabilitated == ""] <- "N"
+d$rehabilitated[is.na(d$rehabilitated)] <- "N"
 summary(d$rehabilitated)
 
 #fate: alive, confirmed dead, likely dead, confirmed transmitter failure, likely transmitter failure
@@ -525,28 +762,83 @@ d$fate[is.na(d$fate)] <- "unknown"
 d$fate = as.factor(d$fate)
 summary(d$fate)
 
-#write
-write.csv(d, "ev.tv.summary.merged.csv", row.names = F)
+#clean up "how.fate.determined"
+d$how.fate.determined = as.character(d$how.fate.determined)
+d$how.fate.determined.clean = d$how.fate.determined
+unique(d$how.fate.determined.clean)
+d$how.fate.determined.clean[is.na(d$how.fate.determined.clean)] <- "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Transmission ceased at a point where the bird was clearly moving along a trajectory. There was no collection of stationary locations to suggest a specific drop point, thus we suspect transmitter failure."] = "abrupt termination" 
+d$how.fate.determined.clean[d$how.fate.determined.clean == "bird and tag photographed on roadside"] = "resighted" 
+d$how.fate.determined.clean[d$how.fate.determined.clean == "last location in middle of Hwy 331"] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "last location at Pigeon Point roost"] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "last location in Key West neighborhood"] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "last location at Boca Grande Key off Key West, FL"] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmitter recovered from beach"] = "transmitter recovered"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "last location at water surface off FL Keys" ] = "terminated over water"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmitter recovered from dead bird"  ] = "corpse recovered"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 1month before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "sudden transmission stop" ] = "abrupt termination"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission ceased abruptly while bird was moving and transmitter was acting erratic"  ] = "abrupt termination"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over several months before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 30 days before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "bird observed with unit on but missing antenna"] = "resighted"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "failed transmitter recovered from live bird"] = "resighted"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 3 months before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission ceased abruptly while bird was moving and transmitter was 11 years old"] = "abrupt termination"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 5 days before ceasing, last location was on island on migration"  ] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 5 days before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 3 days before ceasing"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission ceased abruptly while bird was moving" ] = "abrupt termination"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "bird recaptured and transmitter removed"] = "resighted"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 1 month period"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission from same location over 2 month period"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmisson from same location over a period of time" ] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "" ] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "tag retrieved, asked locals" ] = "transmitter recovered"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "carcass retrieved" ] = "carcass found"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "found feathers" ] = "carcass found"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "found carcass" ] = "carcass found"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "transmission ended"] = "undetermined"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "retrieved transmitter and carcass" ] = "carcass found"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "retrieved transmitter and asked locals"] = "transmitter recovered"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "two isolated GPS locations from April 2018 indciated the bird was close to the 2017 nest site after several months of no data_Bird never resighted so fate is unknown"] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "resighted"] = "resighted / recaptured"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "recaptured"] = "resighted / recaptured"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Transmitter detached due to harness failure_Bird was seen incubating at nest several days later identified by colour ring"] = "resighted / recaptured"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Normal movements" ] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Same location for a long period, was searched for 4 months after disapearnace with nothing found"  ] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Last location in a house"] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Transmitted from same location in SA-Iraq border for a few weeks, after roosting on what seems like a military antena"] = "static transmission"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "GPS on roads after a few days on the ground" ] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "corpse recovered"] = "carcass found"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Seen"] = "resighted / recaptured"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Found"] = "transmitter recovered" 
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Last location very hostile, no data for a long period"] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Same location for 4 months"] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Last location hostile and with good GSM cover, no data for a long period"] = "inferred from transmissions"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "still transmitting"] = "active"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "telemetry data: still moving"] = "active"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "bird / tag recovery"] = "transmitter recovered"
+d$how.fate.determined.clean[d$how.fate.determined.clean == "Transmitter active and moving by \"end date\""] = "active"
+d$how.fate.determined.clean = as.factor(d$how.fate.determined.clean)
 
-
-#############################################################
-#Figure
-d = read.csv("ev.tv.filtered.csv")
-ev.tv.summary.merged = read.csv("ev.tv.summary.merged.csv")
-ev.tv.summary.merged.alive.removed = ev.tv.summary.merged[!(ev.tv.summary.merged$fate == "alive"),]
+#reorder columns
+names(d)
+d = d[,c(2:5,1,18,17,19:20,27,6:11,12:16,21:26,28:33)]
+names(d)
+#drop uneccessary columns
+d <- d[ -c(28:31) ]
+names(d)
+d = d[,c(1:24,26:29,25)]
+names(d)
+d = d[,c(1:16,20:29,17:19)]
+names(d)
+d <- d[ -c(21) ]
+summary(d)
 names(d)
 
-#ggplot map
-colourpalette<-c('#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999','#000120')
-colourpalette
-tiff("tracking.overview.tiff", units="cm", width=35, height=19, res=300)
-map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id.tag, color = species), alpha = .5) 
-map.plot = map.plot + geom_point(data = ev.tv.summary.merged, aes(start.long, start.lat, color = "tag deployment"))  
-map.plot = map.plot + geom_point(data = ev.tv.summary.merged.alive.removed, aes(end.long, end.lat, color = "tag termination")) 
-#map.plot = map.plot + geom_segment(data = ev.tv.summary.merge.alive.removed, aes(x = start.long, y = start.lat, xend = end.long, yend = end.lat)) 
-map.plot = map.plot + scale_color_manual(values=c('#4daf4a','#377eb8','#ffff33','#e41a1c')) + labs(x = "longitude", y = "latitude")
-map.plot = map.plot + theme(legend.title = element_blank()) 
-map.plot = map.plot + ggtitle("vulture tracking, deployment, and termination overview") + theme(plot.title = element_text(hjust = 0.5))
-map.plot
-dev.off()
+#write final summary
+write.csv(d, "ev.tv.summary.merged.final.csv", row.names = F)
+
+# did some minor manual editing of final summary here, incorporating coauthor input
+

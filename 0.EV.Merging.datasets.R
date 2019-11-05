@@ -1,11 +1,10 @@
 #Set WD
-setwd("~/Google Drive/Research Projects/EV-TV tracking study/Dataset/Final/")
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/")
 
 ###Load relevant libraries###
 ##install MigrateR
-#install.packages("devtools")
-library(devtools)
 #install_github("dbspitz/migrateR/migrateR", build_vignettes = T)
+library(devtools)
 library(adehabitatLT)
 library(adehabitatHR)
 library(plotrix)
@@ -25,6 +24,8 @@ require(stringr)
 require(reshape2)
 require(ggthemes)
 require(pander)
+library(plyr)
+library(lubridate)
 
 ##Clear workspace
 rm(list = ls())
@@ -35,20 +36,45 @@ rm(list = ls())
 
 # read data
 ev1 = read.csv("./Original Data/Egyptian vulture (Neophron percnopterus) in Arribes del Duero (Salamanca) - SALORO.csv")
+ev1$population = "western europe"
 ev2 = read.csv("./Original Data/Egyptian Vulture (Neophron percnopterus), Turkey, Armenia, Ethiopia .csv")
+ev2$population = "caucasus"
 ev3 = read.csv("./Original Data/Egyptian vulture in France (grands Causses-Baronnies).csv")
+ev3$population = "western europe"
 ev4 = read.csv("./Original Data/Egyptian vulture Kobierzycki Gardon .csv")
+ev4$population = "western europe"
 ev5 = read.csv("./Original Data/Egyptian vulture Kobierzycki Pyrenees.csv")
+ev5$population = "western europe"
 ev6 = read.csv("./Original Data/Egyptian vulture Kobierzycki Vaucluse.csv")
+ev6$population = "western europe"
 ev7 = read.csv("./Original Data/Egyptian Vulture wild-birds Israel.csv")
+ev7$population = "middle east"
 ev8 = read.csv("./Original Data/Egyptian vultures Dagestan2.csv")
+ev8$population = "caucasus"
 ev9 = read.csv("./Original Data/Egyptian vultures in Djibouti.csv")
+ev9$population = "horn of africa"
 ev10 = read.csv("./Original Data/Egyptian_Vulture_Reintroduction_Israel.csv")
+ev10$population = "middle east"
 ev11 = read.csv("./Original Data/LIFE_Rupis_EgyptianVultures.csv")
+ev11$population = "western europe"
 ev12 = read.csv("./Original Data/Neophron percnopterus Bulgaria_Greece.csv")
+ev12$population = "balkans"
 ev13 = read.csv("./Original Data/Neophron percnopterus. GREFA. Spain.csv")
+ev13$population = "western europe"
 ev14 = read.csv("./Original Data/Omanvulture.csv")
+ev14$population = "oman"
 ev15 = read.csv("./Original Data/Released Egyptian Vultures in Italy.csv")
+ev15$population = "italy"
+ev32 = read.csv("./Original Data/Egyptian vulture EB Terra Natura UA Spain.csv")
+ev32$population = "western europe"
+ev33 = read.csv("./Original Data/_Egyptian Vulture in Spain - Migra Program in Spain.csv")
+ev33$population = "western europe"
+
+#merge (vertically) the data, keeping all unique columns
+ev.movebank = rbind.fill(ev1,ev2,ev3,ev4,ev5,ev6,ev7,ev8,ev9,ev10,ev11,ev12,ev13,ev14,ev15,ev32,ev33)
+names(ev.movebank)
+summary(ev.movebank$timestamp)
+ev.movebank$timestamp = ymd_hms(ev.movebank$timestamp)
 
 ############################################################
 # read and process additional raw (non Movebank) data
@@ -195,7 +221,9 @@ head(ev29)
 
 #merge (vertically) the data, keeping all unique columns
 ev.mcgrady = rbind.fill(ev16,ev17,ev18,ev19,ev20,ev21,ev22,ev23,ev24,ev25,ev26,ev27,ev28,ev29)
+ev.mcgrady$population = "oman"
 head(ev.mcgrady)
+summary(ev.mcgrady$timestamp)
 ev.mcgrady$individual.local.identifier = as.factor(ev.mcgrady$individual.local.identifier)
 summary(ev.mcgrady$individual.local.identifier)
 ev.mcgrady$tag.local.identifier = ev.mcgrady$individual.local.identifier
@@ -207,7 +235,6 @@ write.csv(ev.mcgrady, "./Original Data/ev.mcgrady.meyburg.all.csv")
 
 ###################################################################
 # read and process additional raw (non Movebank) data
-
 ev30 = read.csv("./Original Data/ISPRA.Italy.CaptiveRaised/AF5AF11F_2018_EV_Italy.csv")
 names(ev30)
 names(ev30)[1] = "individual.local.identifier"
@@ -231,6 +258,7 @@ summary(ev31)
 
 #merge (vertically) the data, keeping all unique columns
 ev.ISPRA = rbind.fill(ev30,ev31)
+ev.ISPRA$population = "italy"
 ev.ISPRA$study.name = "ISPRA"
 head(ev.ISPRA)
 names(ev.ISPRA)
@@ -242,11 +270,18 @@ write.csv(ev.ISPRA, "./Original Data/ev.ISPRA.all.csv")
 ########################################################
 #Merge
 
+#check that timestamp is clean
+summary(ev.movebank$timestamp)
+summary(ev.mcgrady$timestamp)
+summary(ev.ISPRA$timestamp)
+
 #merge (vertically) the data, keeping all unique columns
-ev.all = rbind.fill(ev1,ev2,ev3,ev4,ev5,ev6,ev7,ev8,ev9,ev10,ev11,ev12,ev13,ev14,ev15,ev.mcgrady,ev.ISPRA)
+ev.all = rbind.fill(ev.movebank,ev.mcgrady,ev.ISPRA)
 head(ev.all)
 names(ev.all)
 unique(ev.all$individual.local.identifier) #note 155 unique id.tag
+ev.all$timestamp = ymd_hms(ev.all$timestamp)
+summary(ev.all$timestamp)
 
 #remove any other species
 ev.all$individual.taxon.canonical.name = as.factor(ev.all$individual.taxon.canonical.name)
@@ -256,16 +291,27 @@ ev.all$individual.taxon.canonical.name = "Neophron percnopterus" #standardize th
 ########################################################
 #TV
 ########################################################
-#Set WD
-setwd("~/Google Drive/Research Projects/EV-TV tracking study/Dataset/Final")
-
 # read data
 tv1 = read.csv("./Original Data/Turkey Vulture Acopian Center USA GPS.csv")
+tv1$population = NA
 tv2 = read.csv("./Original Data/Black Vultures and Turkey Vultures Southeastern USA.csv")
+tv2$population = "southeast"
 tv3 = read.csv("./Original Data/Vulture Movements.csv")
+tv3$population = "southeast"
+
+#check and set timestamp
+summary(tv1$timestamp)
+tv1$timestamp = ymd_hms(tv1$timestamp)
+summary(tv2$timestamp)
+tv2$timestamp = ymd_hms(tv2$timestamp)
+summary(tv3$timestamp)
+tv3$timestamp = ymd_hms(tv3$timestamp)
 
 #merge (vertically) the data, keeping all unique columns
 tv.all = rbind.fill(tv1, tv2, tv3)
+head(tv.all)
+tv.all$timestamp = ymd_hms(tv.all$timestamp)
+summary(tv.all$timestamp)
 
 #remove other species
 summary(tv.all$individual.taxon.canonical.name)
@@ -278,8 +324,12 @@ unique(tv.all$individual.local.identifier) #note 104 unique id
 ########################################################
 #Merge EV & TV
 ########################################################
+
 #merge (vertically) the data, keeping all unique columns
+summary(ev.all$timestamp)
+summary(tv.all$timestamp)
 ev.tv = rbind.fill(ev.all,tv.all)
+summary(ev.tv$timestamp)
 head(ev.tv)
 names(ev.tv)
 unique(ev.tv$individual.local.identifier) #note 259 unique id
@@ -296,10 +346,7 @@ ev.tv$id.tag <- c(paste(ev.tv$id,ev.tv$tag,sep="_"))
 ev.tv$id.tag <- as.factor(ev.tv$id.tag) 
 
 #lubridate
-summary(ev.tv$timestamp)
-tail(ev.tv$timestamp)
 ev.tv$timestamp = ymd_hms(ev.tv$timestamp)
-summary(ev.tv$timestamp)
 
 #remove data from after May 31, 2019 (setting a cutoff point for the study data)
 ev.tv <- subset(ev.tv, timestamp <= as.POSIXct('2019-05-31'))
@@ -312,11 +359,8 @@ ev.tv = ev.tv[complete.cases(ev.tv[,3:5]),]
 
 #reorder dataframe to have x,y,date,id.tag as first four columns
 names(ev.tv)
-ev.tv = ev.tv[,c(4,5,3,164,1:2,6:163)]
+ev.tv = ev.tv[,c(4,5,3,165,1:2,6:164)]
 names(ev.tv)
-
-# Order the data frame by date
-ev.tv = ev.tv[order(ev.tv$timestamp),]
 
 #add ymdh
 ev.tv$year <- year(ev.tv$timestamp)
@@ -324,20 +368,22 @@ ev.tv$month <- month(ev.tv$timestamp)
 ev.tv$day = day(ev.tv$timestamp)
 ev.tv$hour <- hour(ev.tv$timestamp)
 
-#write complete dataset
+#set wd
+setwd("~/Documents/GitHub/EV - TV Survival Study/")
+
+#write complete dataset --- this is a 5GB file!!!
 #write.csv(ev.tv, "ev.tv.all.merged.csv", row.names=FALSE)
 
 #censor to one point per day 
 #(at least to start, to have a workable dataset, as well as to standardize across transmitter types)
-ev.tv.1ptperday  = ev.tv[!duplicated(ev.tv[,c('id', 'year', 'month', 'day')]),]
-
-#write 1ptperday dataset
-#set wd
-setwd("~/Documents/GitHub/EV - TV Survival Study/")
-write.csv(ev.tv.1ptperday, "ev.tv.1ptperday.csv", row.names=FALSE)
+ev.tv.1ptperday = ev.tv[!duplicated(ev.tv[,c('id', 'year', 'month', 'day')]),]
 
 #quick plot of data
+library(ggplot2)
 map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = ev.tv.1ptperday, aes(long,lat, group = id.tag)) + labs(x = "longitude", y = "latitude")
+map.plot = map.plot + geom_path(data = ev.tv.1ptperday, aes(long,lat, group = id)) + labs(x = "longitude", y = "latitude")
 map.plot = map.plot + theme(legend.title = element_blank()) 
 map.plot #notice bad fixes in dataset
+
+#write 1ptperday dataset
+write.csv(ev.tv.1ptperday, "ev.tv.1ptperday.csv", row.names=FALSE)
