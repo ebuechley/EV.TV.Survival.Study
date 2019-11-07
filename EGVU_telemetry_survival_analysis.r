@@ -408,12 +408,13 @@ save.image("TUVU_EGVU_survival_output.RData")
 
 
 
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # EXPORT THE OUTPUT
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-out<-as.data.frame(EVsurv$summary)
-out$parameter<-row.names(EVsurv$summary)
-write.table(out,"EGVU_telemetry_survival_estimates.csv", sep=",", row.names=F)
+out<-as.data.frame(TV_EVsurv$summary)
+out$parameter<-row.names(TV_EVsurv$summary)
+write.table(out,"TUVU_EGVU_telemetry_survival_estimates.csv", sep=",", row.names=F)
 
 
 
@@ -423,25 +424,27 @@ write.table(out,"EGVU_telemetry_survival_estimates.csv", sep=",", row.names=F)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PLOT SURVIVAL ESTIMATES 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-phi.labels<-phi.lookup %>% gather(key="season", value="parameter",-age,-species) %>% mutate(label=paste(species,age,season, sep=".")) %>%
+phi.labels<-phi.lookup %>% gather(key="season", value="parameter",-age,-species) %>% mutate(label=paste(age,season, sep=".")) %>%
   arrange(parameter) %>%
-  filter(label!="juv.summer") %>%
-  filter(label!="imm.summer")
+  filter(!grepl("juv.summer",label)) %>%
+  filter(!grepl("imm.summer",label))
                                                                          
 ## retrieve the population projections
 plotdat<-out[(grep("phi",out$parameter)),c(12,1,3,7)] %>%
-  mutate(parameter= phi.labels$label)
+  mutate(parameter= phi.labels$label) %>%
+  mutate(species= phi.labels$species)
 names(plotdat)[1:4]<-c('parm','mean','lcl','ucl')
 
 
 
 ### produce plot 
 
-pdf("EV_survival_estimates.pdf", width=10, height=7)
+pdf("TV_EV_survival_estimates.pdf", width=7, height=10)
 
 ggplot(plotdat)+
   geom_point(aes(x=parm, y=mean), size=1,col='darkgrey')+
   geom_errorbar(aes(x=parm, ymin=lcl, ymax=ucl), width=.1)+
+  facet_wrap(~species, ncol=1, scales="fixed") +
 
   ## format axis ticks
   scale_y_continuous(name="monthly survival probability", limits=c(0.7,1),breaks=seq(0.7,1,0.05), labels=seq(0.7,1,0.05))+
