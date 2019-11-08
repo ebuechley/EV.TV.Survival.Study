@@ -31,6 +31,7 @@ try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study
 #EV<-fread("Google Sheets\\Egyptian Vulture tracking summary - EV summary.csv")
 #EV<-fread("Google Sheets\\EGVU_fate_summary_Balkans.csv")
 EV<-fread("ev.tv.summary.proofed.csv")
+names(EV)[1]<-'species'
 
 
 #EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
