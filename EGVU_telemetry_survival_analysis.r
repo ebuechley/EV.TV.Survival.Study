@@ -14,6 +14,11 @@
 ## add tag loss probability (tag ok, not moving, but bird is alive because it lost the tag)
 
 
+## UPDATE 1 NOV 2019: after discussion with Evan decided t focus on EV first
+## re-write model with linear predictor for survival to vary with (1) age, (2) migration, and (3) captive status
+## build full model first, then consider interactions and/or parameter selection
+
+
 library(jagsUI)
 library(tidyverse)
 library(data.table)
