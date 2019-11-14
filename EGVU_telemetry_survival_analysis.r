@@ -253,19 +253,13 @@ INPUT.telemetry <- list(y = y.telemetry,
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Specify model in BUGS language
-sink("EGVU_telemetry_multistate_tagfail.jags")
+sink("EGVU_telemetry_multistate_tagfail_phi_lp.jags")
 cat("
 model {
   
   # -------------------------------------------------
   # Parameters:
-  # phi[1]: juvenile survival probability during migration
-  # phi[2]: juvenile survival probability during winter
-  # phi[3]: immature survival probability during stationary period (winter or summer)
-  # phi[4]: immature survival probability during migration
-  # phi[5]: adult survival probability during summer (breeding season)
-  # phi[6]: adult survival probability during migration
-  # phi[7]: adult survival probability during winter (non-breeding season)
+  # phi: monthly survival probability intercept
   # tag.fail: probability that tag will fail
   # tag.loss: probability that tag will fall off - not identifiable, so not included
   
@@ -289,15 +283,28 @@ model {
   # -------------------------------------------------
   
   # Priors and constraints
-  for (s in 1:nsurv){
-    phi[s] ~ dunif(0.5, 0.9999)   # Equal uninformative prior for all MONTHLY survival probabilities
-  }
+
+
+  # MONTHLY SURVIVAL PROBABILITY
+  for (i in 1:nind){
+    for (t in f[i]:(n.occasions)){
+        logit(phi[i,t]) <- base.obs + b.phi.age*(t-l[i]) + obs.error[t]   #### probability of observation GIVEN THAT TAG IS WORKING is reciprocal to time since last good record
+    } #t
+    } #i
+  #for (s in 1:nsurv){
+    mean.phi ~ dunif(0.5, 0.9999)   # uninformative prior for all MONTHLY survival probabilities
+  #}
   
-  #tag.fail ~ dunif(0, 1)   # Prior for MONTHLY tag failure probability
-  #tag.loss ~ dunif(0, 1)   # Prior for MONTHLY tag loss probability - this will be very difficult to resolve
-  p.found.dead ~ dunif(0, 1)   # Prior for probability that dead bird carcass is found
-  p.seen.alive ~ dunif(0, 1)    # Prior for probability that bird with defunct or lost tag is observed alive
-  #p.obs ~ dunif(0.5, 1)       # Prior for probability to 'observe' a bird with functional tag (=should be 1?)
+
+
+  # SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
+	b.phi.age ~ dnorm(0, 0.001)                # Prior for intercept of observation probability on logit scale
+  b.phi.mig ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
+  b.phi.capt ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for obs prob with time since
+    beta2 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tag age
+    beta3 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tage movement during last 10 GPS fixes
+    sigma ~ dunif(0, 10)                     # Prior on standard deviation for random error term
+    tau <- pow(sigma, -2)
 
 
   # TAG FAILURE AND LOSS PROBABILITY
@@ -307,10 +314,13 @@ model {
       logit(tag.fail[i,t]) <- base.fail + beta2*tag.age[i,t] + beta3*tfail[i] + tag.fail.error[t]     #### probability of TAG FAILURE is influenced by tag type and tag age
       } #t
    } #i
+
   for (t in 1:(n.occasions)){
     tag.fail.error[t] ~ dnorm(0, tau)
     obs.error[t] ~ dnorm(0, tau)
   }
+
+  # SLOPE PARAMETERS FOR OBSERVATION PROBABILITY
 	base.obs ~ dnorm(0, 0.001)                # Prior for intercept of observation probability on logit scale
 	base.fail ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
 	beta1 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for obs prob with time since
@@ -318,6 +328,11 @@ model {
 	beta3 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tage movement during last 10 GPS fixes
 	sigma ~ dunif(0, 10)                     # Prior on standard deviation for random error term
 	tau <- pow(sigma, -2)
+
+  p.found.dead ~ dunif(0, 1)   # Prior for probability that dead bird carcass is found
+  p.seen.alive ~ dunif(0, 1)    # Prior for probability that bird with defunct or lost tag is observed alive
+    #p.obs ~ dunif(0.5, 1)       # Prior for probability to 'observe' a bird with functional tag (=should be 1?)
+
 
   
   # Define state-transition and observation matrices 
