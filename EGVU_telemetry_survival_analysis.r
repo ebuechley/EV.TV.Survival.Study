@@ -236,8 +236,11 @@ tag.fail.indicator<-EV$mean.GPS.dist.last10fixes.degrees
 INPUT.telemetry <- list(y = y.telemetry,
                         f = f.telemetry,
                         l = l.telemetry,
-				tfail = tag.fail.indicator,
-				tag.age = as.matrix(tag.age[,2:max(timeseries$col)]),
+                        age = as.matrix(tag.age[,2:max(timeseries$col)]),
+                        mig = as.matrix(tag.age[,2:max(timeseries$col)]),
+                        capt = sample(c(0,1), replace=TRUE, size=dim(y.telemetry)[1]),
+				                tfail = tag.fail.indicator,
+				                tag.age = as.matrix(tag.age[,2:max(timeseries$col)]),
                         nind = dim(y.telemetry)[1],
                         n.occasions = dim(y.telemetry)[2],
                         phi.mat=phi.mat,
@@ -288,23 +291,17 @@ model {
   # MONTHLY SURVIVAL PROBABILITY
   for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
-        logit(phi[i,t]) <- base.obs + b.phi.age*(t-l[i]) + obs.error[t]   #### probability of observation GIVEN THAT TAG IS WORKING is reciprocal to time since last good record
+        logit(phi[i,t]) <- lp.mean + b.phi.age*(age[i,t]) + b.phi.mig*(mig[i,t])+ b.phi.capt*(capt[i])   #### probability of monthly survival dependent on age, migration status, and captive origin
     } #t
-    } #i
-  #for (s in 1:nsurv){
-    mean.phi ~ dunif(0.5, 0.9999)   # uninformative prior for all MONTHLY survival probabilities
-  #}
+  } #i
   
 
-
-  # SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
-	b.phi.age ~ dnorm(0, 0.001)                # Prior for intercept of observation probability on logit scale
-  b.phi.mig ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
-  b.phi.capt ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for obs prob with time since
-    beta2 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tag age
-    beta3 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tage movement during last 10 GPS fixes
-    sigma ~ dunif(0, 10)                     # Prior on standard deviation for random error term
-    tau <- pow(sigma, -2)
+  #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
+  mean.phi ~ dunif(0.5, 0.9999)   # uninformative prior for all MONTHLY survival probabilities
+  lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
+  b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
+  b.phi.mig ~ dnorm(0, 0.001)               # Prior for slope of migration on survival probability on logit scale
+  b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of captive origin on survival probability on logit scale
 
 
   # TAG FAILURE AND LOSS PROBABILITY
@@ -346,13 +343,13 @@ model {
       ps[1,i,t,2]<-0
       ps[1,i,t,3]<-0
       
-      ps[2,i,t,1]<-(1-phi[phi.mat[i,t]])
-      ps[2,i,t,2]<-phi[phi.mat[i,t]] * (1-tag.fail[i,t])
-      ps[2,i,t,3]<-phi[phi.mat[i,t]] * tag.fail[i,t]
+      ps[2,i,t,1]<-(1-phi[i,t])
+      ps[2,i,t,2]<-phi[i,t] * (1-tag.fail[i,t])
+      ps[2,i,t,3]<-phi[i,t] * tag.fail[i,t]
       
-      ps[3,i,t,1]<-(1-phi[phi.mat[i,t]])
-      ps[3,i,t,2]<-0 ###phi[phi.mat[i,t]] * (1-tag.fail[i,t]) ### since we do not have a monthly transition matrix this transition is not possible
-      ps[3,i,t,3]<-phi[phi.mat[i,t]] ###* tag.fail[i,t]
+      ps[3,i,t,1]<-(1-phi[i,t])
+      ps[3,i,t,2]<-0 ###phi[i,t] * (1-tag.fail[i,t]) ### since we do not have a monthly transition matrix this transition is not possible
+      ps[3,i,t,3]<-phi[i,t] ###* tag.fail[i,t]
       
       # Define probabilities of O(t) [last dim] given S(t)  [first dim]
       
@@ -399,7 +396,7 @@ sink()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Parameters monitored
-parameters.telemetry <- c("phi","p.seen.alive","p.found.dead")
+parameters.telemetry <- c("mean.phi","p.seen.alive","p.found.dead","b.phi.age","b.phi.mig","b.phi.capt")
 
 # Initial values
 #inits.telemetry <- function(){list(z = z.telemetry,
@@ -407,7 +404,7 @@ parameters.telemetry <- c("phi","p.seen.alive","p.found.dead")
 #                                   p.obs = runif(1, 0.5, 1))}  
 
 inits.telemetry <- function(){list(z = z.telemetry,
-                                   phi = runif(INPUT.telemetry$nsurv, 0.5, 0.999),
+                                   mean.phi = runif(1, 0.5, 0.999),
 					     base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
 						base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
 						beta1 = rnorm(1,0, 0.001),         # Prior for slope parameter for obs prob with time since
@@ -415,15 +412,15 @@ inits.telemetry <- function(){list(z = z.telemetry,
 						beta3 = rnorm(1,0, 0.001))} 
 
 # MCMC settings
-ni <- 20000
+ni <- 200
 nt <- 4
-nb <- 5000
+nb <- 50
 nc <- 3
 
 # Call JAGS from R (took 30 min for Balkan data)
-TV_EVsurv <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-			"C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail.jags",
-			n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T,#n.iter = ni, 
+TV_EVsurv <- jags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+			"C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp.jags",
+			n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T,n.iter = ni) 
 			max.iter=150.000)
 save.image("TUVU_EGVU_survival_output.RData")
 
