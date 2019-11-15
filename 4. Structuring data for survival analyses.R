@@ -48,6 +48,10 @@ d$sum.monthly.dist = ave(d$dist, d$id.tag.yr.mo, FUN = sum)
 head(d)
 summary(d)
 
+#mean.monthly.latitude
+d$mean.monthly.lat = ave(d$lat, d$id.tag.yr.mo, FUN = mean)
+summary(d)
+
 #age in months
 #append age.at.deployment.month to each id
 head(d)
@@ -96,7 +100,7 @@ monnb <- function(d) {  lt <- as.POSIXlt(as.Date(d, origin="1900-01-01")); lt$ye
 mondf <- function(d1, d2) { monnb(d2) - monnb(d1) }
 # calcvulate on dataset
 d$months.from.tagging = mondf(d$deployment.date,d$timestamp)
-d[,c("timestamp","deployment.date", "time.from.tagging.months")] #checked and looks good
+d[,c("timestamp","deployment.date", "months.from.tagging")] #checked and looks good
 summary(d)
 head(d)
 
@@ -114,6 +118,7 @@ d$month = as.factor(d$month)
 ggplot(d, aes(month,mean.monthly.ND)) + geom_boxplot()
 ggplot(d, aes(month,mean.monthly.dist)) + geom_boxplot()
 ggplot(d, aes(month,sum.monthly.dist)) + geom_boxplot()
+ggplot(d, aes(month,mean.monthly.lat)) + geom_boxplot()
 hist(d$sum.monthly.dist)
 hist(d$age.at.deployment.month)
 hist(d$age.in.months.capped)
