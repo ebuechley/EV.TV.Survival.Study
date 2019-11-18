@@ -534,7 +534,7 @@ save.image("EGVU_survival_output_v2.RData")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 out<-as.data.frame(EVsurv$summary)
 out$parameter<-row.names(EVsurv$summary)
-write.table(out,"EGVU_telemetry_survival_estimates.csv", sep=",", row.names=F)
+write.table(out,"EGVU_telemetry_parameter_estimates.csv", sep=",", row.names=F)
 
 
 
@@ -550,6 +550,7 @@ out %>% filter(grepl("phi",parameter)) %>%
 ggplot()+
   geom_point(aes(x=parameter, y=mean))+
   geom_errorbar(aes(x=parameter, ymin=`2.5%`, ymax=`97.5%`), width=.1) +
+  geom_hline(aes(yintercept=0), colour="darkgrey") +
   
   ## format axis ticks
   xlab("Parameter") +
@@ -563,6 +564,8 @@ ggplot()+
         strip.text.x=element_text(size=18, color="black"), 
         strip.background=element_rect(fill="white", colour="black"))
 
+
+ggsave("EGVU_surv_parameter_estimates.pdf")
 
 
 
@@ -650,7 +653,7 @@ expand.grid(lat=unique(as.numeric(lat.mat), na.rm=T), capt=c(0,1)) %>%
   
   ## format axis ticks
   scale_x_continuous(name="Latitude", limits=c(1,45), breaks=seq(0,45,10), labels=seq(0,45,10)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0.3,1), breaks=seq(0.3,1,0.1), labels=seq(0.3,1,0.1)) +
+  scale_y_continuous(name="Monthly survival probability", limits=c(0,0.8), breaks=seq(00,0.8,0.1), labels=seq(0,0.8,0.1)) +
   
   ## beautification of the axes
   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -666,44 +669,44 @@ ggsave("EGVU_surv_by_latitude.pdf")
 
 
 
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PLOT SURVIVAL ESTIMATES 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-phi.labels<-phi.lookup %>% gather(key="season", value="parameter",-age,-species) %>% mutate(label=paste(age,season, sep=".")) %>%
-  arrange(parameter) %>%
-  filter(!grepl("juv.summer",label)) %>%
-  filter(!grepl("imm.summer",label))
-                                                                         
-## retrieve the population projections
-plotdat<-out[(grep("phi",out$parameter)),c(12,1,3,7)] %>%
-  mutate(parameter= phi.labels$label) %>%
-  mutate(species= phi.labels$species)
-names(plotdat)[1:4]<-c('parm','mean','lcl','ucl')
-
-
-
-### produce plot 
-
-pdf("TV_EV_survival_estimates.pdf", width=7, height=10)
-
-ggplot(plotdat)+
-  geom_point(aes(x=parm, y=mean), size=1,col='darkgrey')+
-  geom_errorbar(aes(x=parm, ymin=lcl, ymax=ucl), width=.1)+
-  facet_wrap(~species, ncol=1, scales="fixed") +
-
-  ## format axis ticks
-  scale_y_continuous(name="monthly survival probability", limits=c(0.7,1),breaks=seq(0.7,1,0.05), labels=seq(0.7,1,0.05))+
-
-  ## beautification of the axes
-  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        axis.text.y=element_text(size=18, color="black"),
-        axis.text.x=element_text(size=12, color="black",angle=45, vjust = 1, hjust=1), 
-        axis.title=element_text(size=18), 
-        strip.text.x=element_text(size=18, color="black"), 
-        strip.background=element_rect(fill="white", colour="black"))
-
-dev.off()
-
-
+# 
+# 
+# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# # PLOT SURVIVAL ESTIMATES 
+# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# phi.labels<-phi.lookup %>% gather(key="season", value="parameter",-age,-species) %>% mutate(label=paste(age,season, sep=".")) %>%
+#   arrange(parameter) %>%
+#   filter(!grepl("juv.summer",label)) %>%
+#   filter(!grepl("imm.summer",label))
+#                                                                          
+# ## retrieve the population projections
+# plotdat<-out[(grep("phi",out$parameter)),c(12,1,3,7)] %>%
+#   mutate(parameter= phi.labels$label) %>%
+#   mutate(species= phi.labels$species)
+# names(plotdat)[1:4]<-c('parm','mean','lcl','ucl')
+# 
+# 
+# 
+# ### produce plot 
+# 
+# pdf("TV_EV_survival_estimates.pdf", width=7, height=10)
+# 
+# ggplot(plotdat)+
+#   geom_point(aes(x=parm, y=mean), size=1,col='darkgrey')+
+#   geom_errorbar(aes(x=parm, ymin=lcl, ymax=ucl), width=.1)+
+#   facet_wrap(~species, ncol=1, scales="fixed") +
+# 
+#   ## format axis ticks
+#   scale_y_continuous(name="monthly survival probability", limits=c(0.7,1),breaks=seq(0.7,1,0.05), labels=seq(0.7,1,0.05))+
+# 
+#   ## beautification of the axes
+#   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+#         axis.text.y=element_text(size=18, color="black"),
+#         axis.text.x=element_text(size=12, color="black",angle=45, vjust = 1, hjust=1), 
+#         axis.title=element_text(size=18), 
+#         strip.text.x=element_text(size=18, color="black"), 
+#         strip.background=element_rect(fill="white", colour="black"))
+# 
+# dev.off()
+# 
+# 
