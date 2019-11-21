@@ -39,19 +39,6 @@ d$yr.mo = format(as.Date(d$timestamp), "%Y-%m")
 d$id.tag.yr.mo = c(paste(d$id.tag,d$yr.mo,sep=" - ")) 
 head(d)
 
-#mean monthly ND
-d$mean.monthly.ND = ave(d$ND, d$id.tag.yr.mo)
-
-#mean.monthly dist
-d$mean.monthly.dist = ave(d$dist, d$id.tag.yr.mo, FUN = mean)
-d$sum.monthly.dist = ave(d$dist, d$id.tag.yr.mo, FUN = sum)
-head(d)
-summary(d)
-
-#mean.monthly.latitude
-d$mean.monthly.lat = ave(d$lat, d$id.tag.yr.mo, FUN = mean)
-summary(d)
-
 #age in months
 #append age.at.deployment.month to each id
 head(d)
@@ -93,6 +80,21 @@ for (i in unique(ev.summary$id.tag)) {
 summary(d)
 head(d)
 
+#add column with mortality date for each individual
+d$mortality.date = d$timestamp
+ev.summary$mortality.date = mdy_hm(ev.summary$mortality.date)
+summary(ev.summary$mortality.date)
+
+for (i in unique(ev.summary$id.tag)) { 
+  d$mortality.date[which(d$id.tag == i)] = ev.summary$mortality.date[which(ev.summary$id.tag == i)]
+}
+summary(d)
+head(d)
+
+#censor data to mortality date
+d = subset(d, d$timestamp <= d$mortality.date)
+summary(d)
+
 #calculate # months from tagging (pulled this function from: https://stackoverflow.com/questions/1995933/number-of-months-between-two-dates/1996404)
 # turn a date into a 'monthnumber' relative to an origin
 monnb <- function(d) {  lt <- as.POSIXlt(as.Date(d, origin="1900-01-01")); lt$year*12 + lt$mon } 
@@ -111,6 +113,20 @@ d[,c("age.in.months","age.at.deployment.month", "months.from.tagging")]
 
 d$age.in.months.capped = d$age.in.months
 d$age.in.months.capped[d$age.in.months.capped>=54] <- 54
+summary(d)
+
+#mean monthly ND
+d$mean.monthly.ND = ave(d$ND, d$id.tag.yr.mo)
+
+#mean.monthly dist
+d$mean.monthly.dist = ave(d$dist, d$id.tag.yr.mo, FUN = mean)
+d$sum.monthly.dist = ave(d$dist, d$id.tag.yr.mo, FUN = sum)
+head(d)
+summary(d)
+
+#mean.monthly.latitude
+d$mean.monthly.lat = ave(d$lat, d$id.tag.yr.mo, FUN = mean)
+d$mean.monthly.lomg = ave(d$long, d$id.tag.yr.mo, FUN = mean)
 summary(d)
 
 #explore data structure
