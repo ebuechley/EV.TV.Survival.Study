@@ -20,6 +20,9 @@
 
 ## UPDATE 17 NOV 2019: included new data sent by Evan
 
+## UPDATE 22 NOV 2019: included new data sent by Evan and additional covariates as discussed by collaborators
+## mean daily movement distance, latitude quadratic effect, age only continuous for subadults, latitude x movement interaction, longitude
+
 
 library(jagsUI)
 library(tidyverse)
@@ -245,7 +248,7 @@ mig.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
   mutate(yr.mo=format(timestamp, format="%m-%Y")) %>%
   mutate(col=timeseries$col[match(yr.mo,timeseries$date)]) %>%
   group_by(id.tag,col) %>%
-  summarise(mig=mean(sum.monthly.dist)) %>%
+  summarise(mig=mean(mean.monthly.dist)) %>%
   spread(key=col,value=mig) %>%
   arrange(id.tag)
 
@@ -259,7 +262,25 @@ lat.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
   spread(key=col,value=lat) %>%
   arrange(id.tag)
 
+## CREATE LONGITUDE MATRIX
+long.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
+  mutate(timestamp=ymd_hms(timestamp)) %>%
+  mutate(yr.mo=format(timestamp, format="%m-%Y")) %>%
+  mutate(col=timeseries$col[match(yr.mo,timeseries$date)]) %>%
+  group_by(id.tag,col) %>%
+  summarise(lat=mean(mean.monthly.long)) %>%
+  spread(key=col,value=lat) %>%
+  arrange(id.tag)
 
+## AGE SINCE TAGGING
+free.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
+  mutate(timestamp=ymd_hms(timestamp)) %>%
+  mutate(yr.mo=format(timestamp, format="%m-%Y")) %>%
+  mutate(col=timeseries$col[match(yr.mo,timeseries$date)]) %>%
+  group_by(id.tag,col) %>%
+  summarise(lat=mean(months.from.tagging)) %>%
+  spread(key=col,value=lat) %>%
+  arrange(id.tag)
 
 ### THE ABOVE MATRICES HAVE GAPS
 ### FILL GAPS IN MATRICES BY LOOPING ###
@@ -277,7 +298,9 @@ for(n in EV.obs.matrix$id.tag){
   for (col in (endcol+1):max(timeseries$col)){
     age.matrix[age.matrix$id.tag==n,col]<-min((age.matrix[age.matrix$id.tag==n,(col-1)]+1),54)
     lat.matrix[lat.matrix$id.tag==n,col]<-lat.matrix[lat.matrix$id.tag==n,(col-1)]
-    mig.matrix[age.matrix$id.tag==n,col]<-mig.matrix[mig.matrix$id.tag==n,(col-1)]
+    mig.matrix[mig.matrix$id.tag==n,col]<-mig.matrix[mig.matrix$id.tag==n,(col-1)]
+    long.matrix[long.matrix$id.tag==n,col]<-long.matrix[long.matrix$id.tag==n,(col-1)]
+    free.matrix[free.matrix$id.tag==n,col]<-min((free.matrix[free.matrix$id.tag==n,(col-1)]+1),54)
 
   } ## end loop over each occasion
   
@@ -289,7 +312,9 @@ for(n in EV.obs.matrix$id.tag){
   for (col in misscol){
     age.matrix[age.matrix$id.tag==n,col]<-min((age.matrix[age.matrix$id.tag==n,(col-1)]+1),54)
     lat.matrix[lat.matrix$id.tag==n,col]<-lat.matrix[lat.matrix$id.tag==n,(col-1)]
-    mig.matrix[age.matrix$id.tag==n,col]<-mig.matrix[mig.matrix$id.tag==n,(col-1)]
+    mig.matrix[mig.matrix$id.tag==n,col]<-mig.matrix[mig.matrix$id.tag==n,(col-1)]
+    long.matrix[long.matrix$id.tag==n,col]<-long.matrix[long.matrix$id.tag==n,(col-1)]
+    free.matrix[free.matrix$id.tag==n,col]<-min((free.matrix[free.matrix$id.tag==n,(col-1)]+1),54)
     
   } ## end loop over each occasion
 
@@ -317,11 +342,12 @@ for(n in EV.obs.matrix$id.tag){
 #### Convert to numeric matrices that JAGS can loop over
 y.telemetry<-as.matrix(EV.obs.matrix[,2:max(timeseries$col)])
 z.telemetry<-as.matrix(EV.state.matrix[,2:max(timeseries$col)])
-phi.mat<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
+#phi.mat<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
 age.mat<-as.matrix(age.matrix[,2:max(timeseries$col)])
 mig.mat<-as.matrix(mig.matrix[,2:max(timeseries$col)])
 lat.mat<-as.matrix(lat.matrix[,2:max(timeseries$col)])
-
+free.mat<-as.matrix(free.matrix[,2:max(timeseries$col)])
+long.mat<-as.matrix(long.matrix[,2:max(timeseries$col)])
 
 #### create vector of first marking and of last alive record
 get.first.telemetry<-function(x)min(which(!is.na(x)))
@@ -337,15 +363,18 @@ INPUT.telemetry <- list(y = y.telemetry,
                         f = f.telemetry,
                         l = l.telemetry,
                         age = age.mat,
+                        adult = ifelse(age.mat>54,0,1), ### provide a simple classification for adults and non-adults
                         mig = mig.mat,
                         lat = lat.mat,
+                        long = long.mat,
                         capt = ifelse(EV$captive.raised=="N",0,1),
+                        free = free.mat,
 				                tfail = as.numeric(tag.fail.indicator),
 				                tag.age = as.matrix(tag.age[,2:max(timeseries$col)]),
                         nind = dim(y.telemetry)[1],
-                        n.occasions = dim(y.telemetry)[2],
+                        n.occasions = dim(y.telemetry)[2])
                         #phi.mat=phi.mat,
-                        nsurv=max(phi.mat,na.rm=T))
+                        #nsurv=max(phi.mat,na.rm=T))
 #rm(list=setdiff(ls(), "INPUT.telemetry"))
 
 
@@ -392,18 +421,26 @@ model {
   # MONTHLY SURVIVAL PROBABILITY
   for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
-        logit(phi[i,t]) <- lp.mean + b.phi.age*(age[i,t]) + b.phi.mig*(mig[i,t])+ b.phi.capt*(capt[i]) + b.phi.lat*(lat[i,t])  #### probability of monthly survival dependent on age, migration status, and captive origin
+        logit(phi[i,t]) <- lp.mean[adult[i,t]+1] + b.phi.age*(age[i,t])*(adult[i,t])  +   ### age category-specific intercept and slope for non-adult bird to increase survival with age
+                            b.phi.mig*(mig[i,t]) +                                        ### survival dependent on mean daily movement distance averaged over month
+                            b.phi.capt*(capt[i]) + b.phi.free*(free[i,t])*(capt[i]) +     ### survival dependent on captive-release and time since the captive bird was released
+                            b.phi.lat*(lat[i,t]) + b.phi.lat2 * pow((lat[i,t]),2) + b.phi.long*(long[i,t])   #### probability of monthly survival dependent on latitude and longitude
     } #t
   } #i
   
 
   #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
-  mean.phi ~ dunif(0.5, 0.9999)   # uninformative prior for all MONTHLY survival probabilities
-  lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
+  for(agecat in 1:2){
+      mean.phi[agecat] ~ dunif(0.5, 0.999999)   # uninformative prior for all MONTHLY survival probabilities
+      lp.mean[agecat] <- log(mean.phi[agecat]/(1 - mean.phi[agecat]))    # logit transformed survival intercept
+  }
   b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
   b.phi.mig ~ dnorm(0, 0.001)               # Prior for slope of migration on survival probability on logit scale
   b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of captive origin on survival probability on logit scale
-  b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of captive origin on survival probability on logit scale
+  b.phi.free ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
+  b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
+  b.phi.lat2 ~ dnorm(0, 0.001)         # Prior for slope of quadratic effect of latitude on survival probability on logit scale
+  b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
 
 
   # TAG FAILURE AND LOSS PROBABILITY
@@ -498,7 +535,7 @@ sink()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Parameters monitored
-parameters.telemetry <- c("mean.phi","p.seen.alive","p.found.dead","b.phi.age","b.phi.mig","b.phi.capt","b.phi.lat")
+parameters.telemetry <- c("mean.phi","p.seen.alive","p.found.dead","b.phi.age","b.phi.mig","b.phi.capt","b.phi.lat","b.phi.lat2","b.phi.long","b.phi.free")
 
 # Initial values
 #inits.telemetry <- function(){list(z = z.telemetry,
