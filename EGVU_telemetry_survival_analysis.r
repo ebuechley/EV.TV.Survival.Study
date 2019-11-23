@@ -455,7 +455,7 @@ model {
         logit(phi[i,t]) <- lp.mean[adult[i,t]+1] + b.phi.age*(age[i,t])*(adult[i,t])  +   ### age category-specific intercept and slope for non-adult bird to increase survival with age
                             b.phi.mig*(mig[i,t]) * (resid[i]) +                           ### survival dependent on mean daily movement distance averaged over month for migratory populations
                             b.phi.capt*(capt[i]) + b.phi.free*(free[i,t])*(capt[i])*(adult[i,t])   +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
-                            b.phi.lat*(lat[i,t]) + b.phi.lat2 * pow((lat[i,t]),2) + ## b.phi.long*(long[i]) +  #### probability of monthly survival dependent on latitude and longitude
+                            b.phi.lat*(lat[i,t]) + b.phi.lat2 * pow((lat[i,t]),2) + b.phi.long*(long[i]) +  #### probability of monthly survival dependent on latitude and longitude
                             b.phi.resident* (resid[i])                                    ### survival depending on whether population is resident
     } #t
   } #i
@@ -472,7 +472,7 @@ model {
   b.phi.free ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
   b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
   b.phi.lat2 ~ dnorm(0, 0.001)         # Prior for slope of quadratic effect of latitude on survival probability on logit scale
-  #b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
+  b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
   b.phi.resident ~ dnorm(0, 0.001)         # Prior for resident/mig population on survival probability on logit scale
 
 
@@ -568,7 +568,7 @@ sink()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Parameters monitored
-parameters.telemetry <- c("mean.phi","p.seen.alive","p.found.dead","b.phi.age","b.phi.mig","b.phi.capt","b.phi.lat","b.phi.lat2","b.phi.resident","b.phi.free")
+parameters.telemetry <- c("mean.phi","p.seen.alive","p.found.dead","b.phi.age","b.phi.mig","b.phi.capt","b.phi.lat","b.phi.lat2","b.phi.resident","b.phi.free","b.phi.long")
 
 # Initial values
 #inits.telemetry <- function(){list(z = z.telemetry,
@@ -585,14 +585,14 @@ inits.telemetry <- function(){list(z = z.telemetry,
 
 # MCMC settings
 ni <- 10
-nt <- 1
-nb <- 5
+nt <- 5
+nb <- 1000
 nc <- 4
 
 # Call JAGS from R (took 30 min for Balkan data)
-EVsurv <- jags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+EVsurv <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
 			"C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp.jags",
-			n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T, n.iter = ni)
+			n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
 save.image("EGVU_survival_output_v2.RData")
 
