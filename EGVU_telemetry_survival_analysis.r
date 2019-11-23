@@ -272,6 +272,13 @@ long.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
   spread(key=col,value=lat) %>%
   arrange(id.tag)
 
+long.orig<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
+  mutate(timestamp=ymd_hms(timestamp)) %>%
+  arrange(id.tag,timestamp) %>%
+  group_by(id.tag) %>%
+  summarise(long=first(mean.monthly.long)) %>%
+  arrange(id.tag)
+
 ## AGE SINCE TAGGING
 free.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
   mutate(timestamp=ymd_hms(timestamp)) %>%
@@ -279,6 +286,7 @@ free.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
   mutate(col=timeseries$col[match(yr.mo,timeseries$date)]) %>%
   group_by(id.tag,col) %>%
   summarise(lat=mean(months.from.tagging)) %>%
+  mutate(lat=ifelse(lat>53,54,lat)) %>%
   spread(key=col,value=lat) %>%
   arrange(id.tag)
 
@@ -301,6 +309,7 @@ for(n in EV.obs.matrix$id.tag){
     mig.matrix[mig.matrix$id.tag==n,col]<-mig.matrix[mig.matrix$id.tag==n,(col-1)]
     long.matrix[long.matrix$id.tag==n,col]<-long.matrix[long.matrix$id.tag==n,(col-1)]
     free.matrix[free.matrix$id.tag==n,col]<-min((free.matrix[free.matrix$id.tag==n,(col-1)]+1),54)
+    free.matrix[free.matrix$id.tag==n,col]<-ifelse(EV$captive.raised[EV$id.tag==n]=="N",0,free.matrix[free.matrix$id.tag==n,col]) ## set value to 0 for all wild birds
 
   } ## end loop over each occasion
   
@@ -315,6 +324,7 @@ for(n in EV.obs.matrix$id.tag){
     mig.matrix[mig.matrix$id.tag==n,col]<-mig.matrix[mig.matrix$id.tag==n,(col-1)]
     long.matrix[long.matrix$id.tag==n,col]<-long.matrix[long.matrix$id.tag==n,(col-1)]
     free.matrix[free.matrix$id.tag==n,col]<-min((free.matrix[free.matrix$id.tag==n,(col-1)]+1),54)
+    free.matrix[free.matrix$id.tag==n,col]<-ifelse(EV$captive.raised[EV$id.tag==n]=="N",0,free.matrix[free.matrix$id.tag==n,col]) ## set value to 0 for all wild birds
     
   } ## end loop over each occasion
 
@@ -349,6 +359,13 @@ lat.mat<-as.matrix(lat.matrix[,2:max(timeseries$col)])
 free.mat<-as.matrix(free.matrix[,2:max(timeseries$col)])
 long.mat<-as.matrix(long.matrix[,2:max(timeseries$col)])
 
+range(age.mat, na.rm=T)
+range(mig.mat, na.rm=T)
+range(lat.mat, na.rm=T)
+range(long.mat, na.rm=T)
+range(free.mat, na.rm=T)
+free.matrix %>% gather(key=occ, value=free,-id.tag) %>% filter(free>50) %>% group_by(id.tag) %>% summarise(start=min(occ))
+
 #### create vector of first marking and of last alive record
 get.first.telemetry<-function(x)min(which(!is.na(x)))
 get.last.telemetry<-function(x)max(which(!is.na(x) & x==1))
@@ -365,8 +382,9 @@ INPUT.telemetry <- list(y = y.telemetry,
                         age = age.mat,
                         adult = ifelse(age.mat>54,0,1), ### provide a simple classification for adults and non-adults
                         mig = mig.mat,
+                        resid = ifelse(EV$population %in% c("unknown","oman","horn of africa"),0,1),
                         lat = lat.mat,
-                        long = long.mat,
+                        long = long.orig$long, ##long.mat,      ### if we want this as a continuous pop definition we would need to use just one value per bird, not a monthly value
                         capt = ifelse(EV$captive.raised=="N",0,1),
                         free = free.mat,
 				                tfail = as.numeric(tag.fail.indicator),
@@ -422,9 +440,10 @@ model {
   for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
         logit(phi[i,t]) <- lp.mean[adult[i,t]+1] + b.phi.age*(age[i,t])*(adult[i,t])  +   ### age category-specific intercept and slope for non-adult bird to increase survival with age
-                            b.phi.mig*(mig[i,t]) +                                        ### survival dependent on mean daily movement distance averaged over month
-                            b.phi.capt*(capt[i]) + b.phi.free*(free[i,t])*(capt[i]) +     ### survival dependent on captive-release and time since the captive bird was released
-                            b.phi.lat*(lat[i,t]) + b.phi.lat2 * pow((lat[i,t]),2) + b.phi.long*(long[i,t])   #### probability of monthly survival dependent on latitude and longitude
+                            b.phi.mig*(mig[i,t]) * (resid[i]) +                           ### survival dependent on mean daily movement distance averaged over month for migratory populations
+                            b.phi.capt*(capt[i]) + b.phi.free*(free[i,t])*(capt[i])*(adult[i,t])   +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
+                            b.phi.lat*(lat[i,t]) + b.phi.lat2 * pow((lat[i,t]),2) + ## b.phi.long*(long[i]) +  #### probability of monthly survival dependent on latitude and longitude
+                            b.phi.resident* (resid[i])                                    ### survival depending on whether population is resident
     } #t
   } #i
   
@@ -440,7 +459,8 @@ model {
   b.phi.free ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
   b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
   b.phi.lat2 ~ dnorm(0, 0.001)         # Prior for slope of quadratic effect of latitude on survival probability on logit scale
-  b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
+  #b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
+  b.phi.resident ~ dnorm(0, 0.001)         # Prior for resident/mig population on survival probability on logit scale
 
 
   # TAG FAILURE AND LOSS PROBABILITY
@@ -535,7 +555,7 @@ sink()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Parameters monitored
-parameters.telemetry <- c("mean.phi","p.seen.alive","p.found.dead","b.phi.age","b.phi.mig","b.phi.capt","b.phi.lat","b.phi.lat2","b.phi.long","b.phi.free")
+parameters.telemetry <- c("mean.phi","p.seen.alive","p.found.dead","b.phi.age","b.phi.mig","b.phi.capt","b.phi.lat","b.phi.lat2","b.phi.resident","b.phi.free")
 
 # Initial values
 #inits.telemetry <- function(){list(z = z.telemetry,
@@ -551,15 +571,15 @@ inits.telemetry <- function(){list(z = z.telemetry,
 						beta3 = rnorm(1,0, 0.001))} 
 
 # MCMC settings
-ni <- 5
-nt <- 4
-nb <- 100
+ni <- 15
+nt <- 1
+nb <- 10
 nc <- 4
 
 # Call JAGS from R (took 30 min for Balkan data)
-EVsurv <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+EVsurv <- jags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
 			"C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp.jags",
-			n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni) 
+			n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T, n.iter = ni)
 
 save.image("EGVU_survival_output_v2.RData")
 
