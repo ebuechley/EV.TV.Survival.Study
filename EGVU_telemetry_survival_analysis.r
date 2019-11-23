@@ -366,6 +366,19 @@ range(long.mat, na.rm=T)
 range(free.mat, na.rm=T)
 free.matrix %>% gather(key=occ, value=free,-id.tag) %>% filter(free>50) %>% group_by(id.tag) %>% summarise(start=min(occ))
 
+
+
+#### Standardise lat and long because lat^2 results in extremely large numerical values
+mean.lat<-mean(lat.mat, na.rm=T)
+sd.lat<-sd(lat.mat, na.rm=T)
+lat.mat.st<-(lat.mat-mean.lat)/sd.lat
+
+mean.long<-mean(long.orig$long, na.rm=T)
+sd.long<-sd(long.mat, na.rm=T)
+long.st<-(long.orig$long-mean.long)/sd.long
+
+
+
 #### create vector of first marking and of last alive record
 get.first.telemetry<-function(x)min(which(!is.na(x)))
 get.last.telemetry<-function(x)max(which(!is.na(x) & x==1))
@@ -383,8 +396,8 @@ INPUT.telemetry <- list(y = y.telemetry,
                         adult = ifelse(age.mat>54,0,1), ### provide a simple classification for adults and non-adults
                         mig = mig.mat,
                         resid = ifelse(EV$population %in% c("unknown","oman","horn of africa"),0,1),
-                        lat = lat.mat,
-                        long = long.orig$long, ##long.mat,      ### if we want this as a continuous pop definition we would need to use just one value per bird, not a monthly value
+                        lat = lat.mat.st,
+                        long = long.st, ##long.mat,      ### if we want this as a continuous pop definition we would need to use just one value per bird, not a monthly value
                         capt = ifelse(EV$captive.raised=="N",0,1),
                         free = free.mat,
 				                tfail = as.numeric(tag.fail.indicator),
@@ -571,9 +584,9 @@ inits.telemetry <- function(){list(z = z.telemetry,
 						beta3 = rnorm(1,0, 0.001))} 
 
 # MCMC settings
-ni <- 15
+ni <- 10
 nt <- 1
-nb <- 10
+nb <- 5
 nc <- 4
 
 # Call JAGS from R (took 30 min for Balkan data)
