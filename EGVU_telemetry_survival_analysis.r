@@ -594,7 +594,7 @@ EVsurv <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
 			"C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp.jags",
 			n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
-save.image("EGVU_survival_output_v2.RData")
+save.image("EGVU_survival_output_v3.RData")
 
 
 
@@ -642,10 +642,10 @@ ggsave("EGVU_surv_parameter_estimates.pdf")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PLOT MONTHLY SURVIVAL PROBABILITIES ON REAL SCALE ACROSS RANGE OF COVARIATES
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## CREATE DATAFRAME OF AGE RANGE AND PLOT
+## CREATE DATAFRAME OF AGE RANGE FOR SUBADULTS AND PLOT
 expand.grid(age=unique(as.numeric(age.mat, na.rm=T)), capt=c(0,1)) %>%
   filter(!is.na(age)) %>%
-  mutate(logit.surv=out$mean[out$parameter=="mean.phi"]+ out$mean[out$parameter=="b.phi.age"]*age+ out$mean[out$parameter=="b.phi.capt"]*capt) %>%
+  mutate(logit.surv=out$mean[out$parameter=="mean.phi[1]"]+ out$mean[out$parameter=="b.phi.age"]*age+ out$mean[out$parameter=="b.phi.capt"]*capt) %>%
   mutate(lcl.surv=out[out$parameter=="mean.phi",3]+ out[out$parameter=="b.phi.age",3]*age+out[out$parameter=="b.phi.capt",3]*capt) %>%
   mutate(ucl.surv=out[out$parameter=="mean.phi",7]+ out[out$parameter=="b.phi.age",7]*age+ out[out$parameter=="b.phi.capt",7]*capt) %>%
   mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
@@ -677,9 +677,9 @@ ggsave("EGVU_surv_by_age.pdf")
 ## CREATE DATAFRAME OF MOVEMENT RANGE AND PLOT
 expand.grid(mig=unique(as.numeric(mig.mat, na.rm=T)), capt=c(0,1)) %>%
   filter(!is.na(mig)) %>%
-  mutate(logit.surv=out$mean[out$parameter=="mean.phi"]+ out$mean[out$parameter=="b.phi.mig"]*mig+ out$mean[out$parameter=="b.phi.capt"]*capt) %>%
-  mutate(lcl.surv=out[out$parameter=="mean.phi",3]+ out[out$parameter=="b.phi.mig",3]*mig+out[out$parameter=="b.phi.capt",3]*capt) %>%
-  mutate(ucl.surv=out[out$parameter=="mean.phi",7]+ out[out$parameter=="b.phi.mig",7]*mig+ out[out$parameter=="b.phi.capt",7]*capt) %>%
+  mutate(logit.surv=out$mean[out$parameter=="mean.phi[2]"]+ out$mean[out$parameter=="b.phi.mig"]*mig+ out$mean[out$parameter=="b.phi.capt"]*capt) %>%
+  mutate(lcl.surv=out[out$parameter=="mean.phi[2]",3]+ out[out$parameter=="b.phi.mig",3]*mig+out[out$parameter=="b.phi.capt",3]*capt) %>%
+  mutate(ucl.surv=out[out$parameter=="mean.phi[2]",7]+ out[out$parameter=="b.phi.mig",7]*mig+ out[out$parameter=="b.phi.capt",7]*capt) %>%
   mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
   mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
   arrange(mig) %>%
@@ -690,7 +690,7 @@ expand.grid(mig=unique(as.numeric(mig.mat, na.rm=T)), capt=c(0,1)) %>%
   geom_line(aes(x=mig, y=surv, colour=Origin))+
   
   ## format axis ticks
-  scale_x_continuous(name="Monthly movement (km)", limits=c(0,55), breaks=seq(0,55,10), labels=seq(0,5500,1000)) +
+  scale_x_continuous(name="Mean daily movement per month (km)", limits=c(0,6), breaks=seq(0,6,1), labels=seq(0,600,100)) +
   scale_y_continuous(name="Monthly survival probability", limits=c(0.3,1), breaks=seq(0.3,1,0.1), labels=seq(0.3,1,0.1)) +
   
   ## beautification of the axes
@@ -709,9 +709,9 @@ ggsave("EGVU_surv_by_movement.pdf")
 ## CREATE DATAFRAME OF LATITUDE RANGE AND PLOT
 expand.grid(lat=unique(as.numeric(lat.mat), na.rm=T), capt=c(0,1)) %>%
   filter(!is.na(lat)) %>%
-  mutate(logit.surv=out$mean[out$parameter=="mean.phi"]+ out$mean[out$parameter=="b.phi.lat"]*lat+ out$mean[out$parameter=="b.phi.capt"]*capt) %>%
-  mutate(lcl.surv=out[out$parameter=="mean.phi",3]+ out[out$parameter=="b.phi.lat",3]*lat+out[out$parameter=="b.phi.capt",3]*capt) %>%
-  mutate(ucl.surv=out[out$parameter=="mean.phi",7]+ out[out$parameter=="b.phi.lat",7]*lat+ out[out$parameter=="b.phi.capt",7]*capt) %>%
+  mutate(logit.surv=out$mean[out$parameter=="mean.phi[2]"]+ out$mean[out$parameter=="b.phi.lat"]*lat+ out$mean[out$parameter=="b.phi.lat2"]*(lat^2)+ out$mean[out$parameter=="b.phi.capt"]*capt) %>%
+  mutate(lcl.surv=out[out$parameter=="mean.phi[2]",3]+ out[out$parameter=="b.phi.lat",3]*lat+out[out$parameter=="b.phi.lat2",3]*(lat^2)+ out[out$parameter=="b.phi.capt",3]*capt) %>%
+  mutate(ucl.surv=out[out$parameter=="mean.phi[2]",7]+ out[out$parameter=="b.phi.lat",7]*lat+ out[out$parameter=="b.phi.lat2",7]*(lat^2)+ out[out$parameter=="b.phi.capt",7]*capt) %>%
   mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
   mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
   arrange(lat) %>%
@@ -722,8 +722,8 @@ expand.grid(lat=unique(as.numeric(lat.mat), na.rm=T), capt=c(0,1)) %>%
   geom_line(aes(x=lat, y=surv, colour=Origin))+
   
   ## format axis ticks
-  scale_x_continuous(name="Latitude", limits=c(1,45), breaks=seq(0,45,10), labels=seq(0,45,10)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0,0.8), breaks=seq(00,0.8,0.1), labels=seq(0,0.8,0.1)) +
+  #scale_x_continuous(name="Latitude", limits=c(-10,10), breaks=seq(-10,10,5), labels=seq(5,45,10)) +
+  scale_y_continuous(name="Monthly survival probability", limits=c(0,1), breaks=seq(0,1,0.2), labels=seq(0,1,0.2)) +
   
   ## beautification of the axes
   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
