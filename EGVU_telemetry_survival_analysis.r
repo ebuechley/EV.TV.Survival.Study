@@ -393,7 +393,7 @@ INPUT.telemetry <- list(y = y.telemetry,
                         f = f.telemetry,
                         l = l.telemetry,
                         age = age.mat,
-                        adult = ifelse(age.mat>54,0,1), ### provide a simple classification for adults and non-adults
+                        adult = ifelse(age.mat>53,0,1), ### provide a simple classification for adults and non-adults
                         mig = mig.mat,
                         resid = ifelse(EV$population %in% c("unknown","oman","horn of africa"),0,1),
                         lat = lat.mat.st,
@@ -589,194 +589,23 @@ nt <- 5
 nb <- 1000
 nc <- 4
 
-# Call JAGS from R (took 30 min for Balkan data)
+# Call JAGS from R (took 70 min)
 EVsurv <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
 			"C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp.jags",
 			n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
+
+EVsurv2 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                   "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp2.jags",
+                   n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+EVsurv3 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                   "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp3.jags",
+                   n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+EVsurv4 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                   "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp4.jags",
+                   n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
 save.image("EGVU_survival_output_v3.RData")
 
-
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# EXPORT THE OUTPUT
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-out<-as.data.frame(EVsurv$summary)
-out$parameter<-row.names(EVsurv$summary)
-write.table(out,"EGVU_telemetry_parameter_estimates.csv", sep=",", row.names=F)
-
-
-
-
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PLOT PARAMETER ESTIMATES ON LOGIT SCALE 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-out %>% filter(grepl("phi",parameter)) %>%
-
-ggplot()+
-  geom_point(aes(x=parameter, y=mean))+
-  geom_errorbar(aes(x=parameter, ymin=`2.5%`, ymax=`97.5%`), width=.1) +
-  geom_hline(aes(yintercept=0), colour="darkgrey") +
-  
-  ## format axis ticks
-  xlab("Parameter") +
-  ylab("estimate (logit scale)") +
-    
-  ## beautification of the axes
-  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        axis.text.y=element_text(size=18, color="black"),
-        axis.text.x=element_text(size=12, color="black",angle=45, vjust = 1, hjust=1), 
-        axis.title=element_text(size=18), 
-        strip.text.x=element_text(size=18, color="black"), 
-        strip.background=element_rect(fill="white", colour="black"))
-
-
-ggsave("EGVU_surv_parameter_estimates.pdf")
-
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PLOT MONTHLY SURVIVAL PROBABILITIES ON REAL SCALE ACROSS RANGE OF COVARIATES
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## CREATE DATAFRAME OF AGE RANGE FOR SUBADULTS AND PLOT
-expand.grid(age=unique(as.numeric(age.mat, na.rm=T)), capt=c(0,1)) %>%
-  filter(!is.na(age)) %>%
-  mutate(logit.surv=out$mean[out$parameter=="mean.phi[1]"]+ out$mean[out$parameter=="b.phi.age"]*age+ out$mean[out$parameter=="b.phi.capt"]*capt) %>%
-  mutate(lcl.surv=out[out$parameter=="mean.phi",3]+ out[out$parameter=="b.phi.age",3]*age+out[out$parameter=="b.phi.capt",3]*capt) %>%
-  mutate(ucl.surv=out[out$parameter=="mean.phi",7]+ out[out$parameter=="b.phi.age",7]*age+ out[out$parameter=="b.phi.capt",7]*capt) %>%
-  mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
-  mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
-  arrange(age) %>%
-
-
-  ggplot()+
-  geom_ribbon(aes(x=age, ymin=lcl, ymax=ucl, fill=Origin), alpha=0.2) +
-  geom_line(aes(x=age, y=surv, colour=Origin))+
-  
-  ## format axis ticks
-  scale_x_continuous(name="Age in years", limits=c(1,54), breaks=seq(1,54,6), labels=seq(0,4,0.5)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0.3,1), breaks=seq(0.3,1,0.1), labels=seq(0.3,1,0.1)) +
-  
-  ## beautification of the axes
-  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        axis.text.y=element_text(size=14, color="black"),
-        axis.text.x=element_text(size=14, color="black"), 
-        axis.title=element_text(size=18), 
-        strip.text.x=element_text(size=18, color="black"), 
-        strip.background=element_rect(fill="white", colour="black"))
-
-ggsave("EGVU_surv_by_age.pdf")
-
-
-
-
-## CREATE DATAFRAME OF MOVEMENT RANGE AND PLOT
-expand.grid(mig=unique(as.numeric(mig.mat, na.rm=T)), capt=c(0,1)) %>%
-  filter(!is.na(mig)) %>%
-  mutate(logit.surv=out$mean[out$parameter=="mean.phi[2]"]+ out$mean[out$parameter=="b.phi.mig"]*mig+ out$mean[out$parameter=="b.phi.capt"]*capt) %>%
-  mutate(lcl.surv=out[out$parameter=="mean.phi[2]",3]+ out[out$parameter=="b.phi.mig",3]*mig+out[out$parameter=="b.phi.capt",3]*capt) %>%
-  mutate(ucl.surv=out[out$parameter=="mean.phi[2]",7]+ out[out$parameter=="b.phi.mig",7]*mig+ out[out$parameter=="b.phi.capt",7]*capt) %>%
-  mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
-  mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
-  arrange(mig) %>%
-  
-  
-  ggplot()+
-  geom_ribbon(aes(x=mig, ymin=lcl, ymax=ucl, fill=Origin), alpha=0.2) +
-  geom_line(aes(x=mig, y=surv, colour=Origin))+
-  
-  ## format axis ticks
-  scale_x_continuous(name="Mean daily movement per month (km)", limits=c(0,6), breaks=seq(0,6,1), labels=seq(0,600,100)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0.3,1), breaks=seq(0.3,1,0.1), labels=seq(0.3,1,0.1)) +
-  
-  ## beautification of the axes
-  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        axis.text.y=element_text(size=14, color="black"),
-        axis.text.x=element_text(size=14, color="black"), 
-        axis.title=element_text(size=18), 
-        strip.text.x=element_text(size=18, color="black"), 
-        strip.background=element_rect(fill="white", colour="black"))
-
-ggsave("EGVU_surv_by_movement.pdf")
-
-
-
-
-## CREATE DATAFRAME OF LATITUDE RANGE AND PLOT
-expand.grid(lat=unique(as.numeric(lat.mat), na.rm=T), capt=c(0,1)) %>%
-  filter(!is.na(lat)) %>%
-  mutate(logit.surv=out$mean[out$parameter=="mean.phi[2]"]+ out$mean[out$parameter=="b.phi.lat"]*lat+ out$mean[out$parameter=="b.phi.lat2"]*(lat^2)+ out$mean[out$parameter=="b.phi.capt"]*capt) %>%
-  mutate(lcl.surv=out[out$parameter=="mean.phi[2]",3]+ out[out$parameter=="b.phi.lat",3]*lat+out[out$parameter=="b.phi.lat2",3]*(lat^2)+ out[out$parameter=="b.phi.capt",3]*capt) %>%
-  mutate(ucl.surv=out[out$parameter=="mean.phi[2]",7]+ out[out$parameter=="b.phi.lat",7]*lat+ out[out$parameter=="b.phi.lat2",7]*(lat^2)+ out[out$parameter=="b.phi.capt",7]*capt) %>%
-  mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
-  mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
-  arrange(lat) %>%
-  
-  
-  ggplot()+
-  geom_ribbon(aes(x=lat, ymin=lcl, ymax=ucl, fill=Origin), alpha=0.2) +
-  geom_line(aes(x=lat, y=surv, colour=Origin))+
-  
-  ## format axis ticks
-  #scale_x_continuous(name="Latitude", limits=c(-10,10), breaks=seq(-10,10,5), labels=seq(5,45,10)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0,1), breaks=seq(0,1,0.2), labels=seq(0,1,0.2)) +
-  
-  ## beautification of the axes
-  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        axis.text.y=element_text(size=14, color="black"),
-        axis.text.x=element_text(size=14, color="black"), 
-        axis.title=element_text(size=18), 
-        strip.text.x=element_text(size=18, color="black"), 
-        strip.background=element_rect(fill="white", colour="black"))
-
-ggsave("EGVU_surv_by_latitude.pdf")
-
-
-
-
-
-# 
-# 
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# # PLOT SURVIVAL ESTIMATES 
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# phi.labels<-phi.lookup %>% gather(key="season", value="parameter",-age,-species) %>% mutate(label=paste(age,season, sep=".")) %>%
-#   arrange(parameter) %>%
-#   filter(!grepl("juv.summer",label)) %>%
-#   filter(!grepl("imm.summer",label))
-#                                                                          
-# ## retrieve the population projections
-# plotdat<-out[(grep("phi",out$parameter)),c(12,1,3,7)] %>%
-#   mutate(parameter= phi.labels$label) %>%
-#   mutate(species= phi.labels$species)
-# names(plotdat)[1:4]<-c('parm','mean','lcl','ucl')
-# 
-# 
-# 
-# ### produce plot 
-# 
-# pdf("TV_EV_survival_estimates.pdf", width=7, height=10)
-# 
-# ggplot(plotdat)+
-#   geom_point(aes(x=parm, y=mean), size=1,col='darkgrey')+
-#   geom_errorbar(aes(x=parm, ymin=lcl, ymax=ucl), width=.1)+
-#   facet_wrap(~species, ncol=1, scales="fixed") +
-# 
-#   ## format axis ticks
-#   scale_y_continuous(name="monthly survival probability", limits=c(0.7,1),breaks=seq(0.7,1,0.05), labels=seq(0.7,1,0.05))+
-# 
-#   ## beautification of the axes
-#   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#         axis.text.y=element_text(size=18, color="black"),
-#         axis.text.x=element_text(size=12, color="black",angle=45, vjust = 1, hjust=1), 
-#         axis.title=element_text(size=18), 
-#         strip.text.x=element_text(size=18, color="black"), 
-#         strip.background=element_rect(fill="white", colour="black"))
-# 
-# dev.off()
-# 
-# 
