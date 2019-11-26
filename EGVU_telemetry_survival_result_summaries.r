@@ -5,6 +5,8 @@
 ##########################################################################
 # plotting model estimates obtained from EGVU_telemetry_survival_analysis.r
 
+## revised on 26 Nov 2019 after 4 alternative models were run
+
 library(jagsUI)
 library(tidyverse)
 library(data.table)
@@ -21,18 +23,39 @@ select<-dplyr::select
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study"), silent=T)
 load("EGVU_survival_output_v3.RData")
 
+### COMBINE OUTPUT FROM ALL 5 MODELS
+out<-bind_rows(out1,out2,out3,out4,out5)
+
+
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PLOT PARAMETER ESTIMATES ON LOGIT SCALE 
+# EXTRACT DIC TO COMPARE MODELS
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+pd_dic <- function(x) {
+  data.frame(n.parameters=x$pD, DIC=x$DIC)
+}
+DIC_tab<-bind_rows(pd_dic(EVsurv1),pd_dic(EVsurv2),pd_dic(EVsurv3),pd_dic(EVsurv4),pd_dic(EVsurv5)) %>%
+  mutate(model=c("m1","m2","m3","m4","m5")) %>%
+  arrange(DIC) %>%
+  mutate(deltaDIC=DIC-DIC[1])
+DIC_tab
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PLOT PARAMETER ESTIMATES FROM ALL 5 MODELS ON LOGIT SCALE 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 out %>% filter(grepl("phi",parameter)) %>%
+  left_join(DIC_tab, by="model") %>%
+  mutate(header= paste(model,"delta DIC:",as.integer(deltaDIC)," ")) %>%
 
 ggplot()+
   geom_point(aes(x=parameter, y=mean))+
   geom_errorbar(aes(x=parameter, ymin=`2.5%`, ymax=`97.5%`), width=.1) +
   geom_hline(aes(yintercept=0), colour="darkgrey") +
+  facet_wrap(~header, ncol=2) +
   
   ## format axis ticks
   xlab("Parameter") +
@@ -47,13 +70,22 @@ ggplot()+
         strip.background=element_rect(fill="white", colour="black"))
 
 
-ggsave("EGVU_surv_parameter_estimates.pdf")
+ggsave("EGVU_surv_parameter_estimates_allmodels.pdf", height=11, width=8)
+
+
+
+
+
+
 
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CREATE DATA FRAME WITH ALL POSSIBLE COMBINATIONS (causes memory allocation problems)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+## SELECT ONLY PARAMETERS RELEVANT FOR MODEL 3
+
 
 ### LINEAR PREDICTOR EQUATION
 # logit(phi[i,t]) <- lp.mean[adult[i,t]+1] + b.phi.age*(age[i,t])*(adult[i,t])  +   ### age category-specific intercept and slope for non-adult bird to increase survival with age
@@ -64,20 +96,20 @@ ggsave("EGVU_surv_parameter_estimates.pdf")
 
 
 ## CREATE DATAFRAME OF ALL POSSIBLE COVARIATE COMBINATIONS FOR PLOTTING
-PLOTSUBAD<-expand.grid(resid=c(0,1),
+PLOTSUBAD<-expand.grid(#resid=c(0,1),
                      mig=seq(min(mig.mat, na.rm=T),max(mig.mat, na.rm=T),length=30),
                      #free=seq(min(free.mat, na.rm=T),max(free.mat, na.rm=T),length=10),
-                     #lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=10),
-                     #long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=20),
-                     capt=c(0,1),
+                     lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=10),
+                     long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=20),
+                     #capt=c(0,1),
                      age=seq(min(age.mat, na.rm=T),max(age.mat, na.rm=T),length=20)) %>%
   mutate(adult=1)
 
-PLOTAD<-expand.grid(resid=c(0,1),
+PLOTAD<-expand.grid(#resid=c(0,1),
                        mig=seq(min(mig.mat, na.rm=T),max(mig.mat, na.rm=T),length=20),
                        #free=seq(min(free.mat, na.rm=T),max(free.mat, na.rm=T),length=10),
-                       #lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=10),
-                       #long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=20),
+                       lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=10),
+                       long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=20),
                        capt=c(0,1)) %>%
   mutate(age=54,adult=0)
 
