@@ -607,5 +607,54 @@ EVsurv4 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp4.jags",
                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
+
+### after inspection of the above 4 models the following was concocted
+
+EVsurv5 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp5.jags",
+                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+### after inspection of the fifth model try to fit one that does not distinguish between captive and wild individuals at all
+
+EVsurv6 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp6.jags",
+                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# EXPORT THE OUTPUT
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+out1<-as.data.frame(EVsurv1$summary)
+out1$parameter<-row.names(EVsurv1$summary)
+out1$model<-"m1"
+write.table(out1,"EGVU_telemetry_survival_estimates_m1.csv", sep=",", row.names=F)
+
+out2<-as.data.frame(EVsurv2$summary)
+out2$parameter<-row.names(EVsurv2$summary)
+out2$model<-"m2"
+write.table(out2,"EGVU_telemetry_survival_estimates_m2.csv", sep=",", row.names=F)
+
+out3<-as.data.frame(EVsurv3$summary)
+out3$parameter<-row.names(EVsurv3$summary)
+out3$model<-"m3"
+write.table(out3,"EGVU_telemetry_survival_estimates_m3.csv", sep=",", row.names=F)
+
+out4<-as.data.frame(EVsurv4$summary)
+out4$parameter<-row.names(EVsurv4$summary)
+out4$model<-"m4"
+write.table(out4,"EGVU_telemetry_survival_estimates_m4.csv", sep=",", row.names=F)
+
+
+out5<-as.data.frame(EVsurv5$summary)
+out5$parameter<-row.names(EVsurv5$summary)
+out5$model<-"m5"
+write.table(out5,"EGVU_telemetry_survival_estimates_m5.csv", sep=",", row.names=F)
+
+out6<-as.data.frame(EVsurv6$summary)
+out6$parameter<-row.names(EVsurv6$summary)
+out6$model<-"m6"
+write.table(out5,"EGVU_telemetry_survival_estimates_m6.csv", sep=",", row.names=F)
+
+
 save.image("EGVU_survival_output_v3.RData")
 
