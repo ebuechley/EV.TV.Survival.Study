@@ -24,7 +24,7 @@ try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study
 load("EGVU_survival_output_v3.RData")
 
 ### COMBINE OUTPUT FROM ALL 5 MODELS
-out<-bind_rows(out1,out2,out3,out4,out5)
+out<-bind_rows(out1,out2,out3,out4,out5,out6)
 
 
 
@@ -35,11 +35,21 @@ out<-bind_rows(out1,out2,out3,out4,out5)
 pd_dic <- function(x) {
   data.frame(n.parameters=x$pD, DIC=x$DIC)
 }
-DIC_tab<-bind_rows(pd_dic(EVsurv1),pd_dic(EVsurv2),pd_dic(EVsurv3),pd_dic(EVsurv4),pd_dic(EVsurv5)) %>%
-  mutate(model=c("m1","m2","m3","m4","m5")) %>%
+DIC_tab<-bind_rows(pd_dic(EVsurv1),pd_dic(EVsurv2),pd_dic(EVsurv3),pd_dic(EVsurv4),pd_dic(EVsurv5),pd_dic(EVsurv6)) %>%
+  mutate(model=c("m1","m2","m3","m4","m5","m6")) %>%
   arrange(DIC) %>%
   mutate(deltaDIC=DIC-DIC[1])
 DIC_tab
+
+ModSelTab<-out %>% dplyr::select(model, parameter,mean) %>%
+  mutate(mean=round(mean,3)) %>%
+  spread(key=parameter, value=mean, fill="not included") %>%
+  left_join(DIC_tab, by="model")%>%
+  arrange(DIC) 
+
+fwrite(ModSelTab,"EGVU_surv_model_selection_table.csv")
+
+
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
