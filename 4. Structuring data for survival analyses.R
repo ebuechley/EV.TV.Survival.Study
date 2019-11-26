@@ -28,6 +28,7 @@ names(d)
 d = d[,c("species","study.name","population","id.tag","timestamp","lat",
          "long","year","month","day","NSD","ND","dist","dt.days")]
 summary(d)
+unique(d$id.tag)
 
 #remove any rows with NA
 d = d[complete.cases(d[,"dist"]),] 
@@ -88,6 +89,15 @@ summary(ev.summary$mortality.date)
 for (i in unique(ev.summary$id.tag)) { 
   d$mortality.date[which(d$id.tag == i)] = ev.summary$mortality.date[which(ev.summary$id.tag == i)]
 }
+
+#add column with captive/wild for each individual
+d$captive.raised = NA
+summary(ev.summary$captive.raised)
+
+for (i in unique(ev.summary$id.tag)) { 
+  d$captive.raised[which(d$id.tag == i)] = ev.summary$captive.raised[which(ev.summary$id.tag == i)]
+}
+
 summary(d)
 head(d)
 
@@ -126,7 +136,7 @@ summary(d)
 
 #mean.monthly.latitude
 d$mean.monthly.lat = ave(d$lat, d$id.tag.yr.mo, FUN = mean)
-d$mean.monthly.lomg = ave(d$long, d$id.tag.yr.mo, FUN = mean)
+d$mean.monthly.long = ave(d$long, d$id.tag.yr.mo, FUN = mean)
 summary(d)
 
 #explore data structure
@@ -135,7 +145,9 @@ ggplot(d, aes(month,mean.monthly.ND)) + geom_boxplot()
 ggplot(d, aes(month,mean.monthly.dist)) + geom_boxplot()
 ggplot(d, aes(month,sum.monthly.dist)) + geom_boxplot()
 ggplot(d, aes(month,mean.monthly.lat)) + geom_boxplot()
+ggplot(d, aes(month,mean.monthly.long)) + geom_boxplot()
 hist(d$sum.monthly.dist)
+hist(d$mean.monthly.long)
 hist(d$age.at.deployment.month)
 hist(d$age.in.months.capped)
 hist(d$age.in.months)

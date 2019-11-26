@@ -8,7 +8,7 @@ rm(list = ls())
 setwd("~/Documents/GitHub/EV - TV Survival Study/")
 
 #read data
-d = read.csv("ev.tv.filtered.csv")
+d = read.csv("./Final Cleaned Data/ev.tv.filtered.csv")
 summary(d)
 names(d)
 summary(d$sensor.type)
@@ -30,31 +30,41 @@ names(d)
 library(gridExtra)
 
 names(d)
+unique(d$species)
+d = subset(d, species == "Neophron percnopterus")
+summary(d$species)
+d$id.tag.yr <- c(paste(d$id.tag,d$year,sep="_")) 
+unique(d$id.tag.yr)
+
+d$timestamp = as.Date(d$timestamp)
+summary(d$timestamp)
 
 
-for (i in unique(d$id.tag)) { 
-  
+for (i in unique(d$id.tag.yr)) { 
   #net displacement
   plot1 <- 
-    ggplot(aes(timestamp, ND), data = subset(d, id.tag ==  i))  + 
-    theme_bw() + geom_line() + labs(x = "date", y = "net displacement (degrees)") 
+    ggplot(aes(timestamp, ND), data = subset(d, id.tag.yr == i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "net displacement (degrees)") + 
+    scale_x_date(date_breaks = "1 month", date_labels = "%b", date_minor_breaks = "1 month") 
   
   #fix rate
   plot2 <- 
-    ggplot(aes(timestamp, dt.days), data = subset(d, id.tag == i))  + 
-    theme_bw() + geom_line() + labs(x = "date", y = "time between fixes (days)") 
+    ggplot(aes(timestamp, dt.days), data = subset(d, id.tag.yr == i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "time between fixes (days)") + 
+    scale_x_date(date_breaks = "1 month", date_labels = "%b", date_minor_breaks = "1 month")
   
   #GPS tracks
   plot3 <- 
     ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() +
-    geom_path(data = subset(d, id.tag ==  i), aes(long,lat)) + labs(x = "longitude", y = "latitude") + 
+    geom_path(data = subset(d, id.tag.yr ==  i), aes(long,lat)) + labs(x = "longitude", y = "latitude") + 
     theme(legend.title = element_blank()) +
-    ggtitle(paste(i)) + theme(plot.title = element_text(hjust = 0.5))
+    ggtitle(paste(i)) + theme(plot.title = element_text(hjust = 0.5)) 
   
   #distance
   plot4 <- 
-    ggplot(aes(timestamp, dist), data = subset(d, id.tag ==  i))  + 
-    theme_bw() + geom_line() + labs(x = "date", y = "distance (degrees)") 
+    ggplot(aes(timestamp, dist), data = subset(d, id.tag.yr ==  i))  + 
+    theme_bw() + geom_line() + labs(x = "date", y = "distance (degrees)") + 
+    scale_x_date(date_breaks = "1 month", date_labels = "%b", date_minor_breaks = "1 month")
   
   #arrange
   plot5 = grid.arrange(plot3, plot1, plot4, plot2, ncol = 2, nrow = 2, 
