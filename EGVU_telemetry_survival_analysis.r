@@ -497,13 +497,9 @@ model {
 
   #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
   b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
-  b.phi.mig ~ dnorm(0, 0.001)               # Prior for slope of migration on survival probability on logit scale
   b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of captive origin on survival probability on logit scale
-  b.phi.free ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
   b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
-  b.phi.lat2 ~ dnorm(0, 0.001)         # Prior for slope of quadratic effect of latitude on survival probability on logit scale
   b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
-  b.phi.resident ~ dnorm(0, 0.001)         # Prior for resident/mig population on survival probability on logit scale
 
 
   # TAG FAILURE AND LOSS PROBABILITY
