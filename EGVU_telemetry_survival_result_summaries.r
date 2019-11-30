@@ -7,6 +7,8 @@
 
 ## revised on 26 Nov 2019 after 4 alternative models were run
 
+## revised on 30 Nov 2019 to include categorical classification of migratory and stationary periods
+
 library(jagsUI)
 library(tidyverse)
 library(data.table)
@@ -24,7 +26,7 @@ try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study
 load("EGVU_survival_output_v3.RData")
 
 ### COMBINE OUTPUT FROM ALL 5 MODELS
-out<-bind_rows(out1,out2,out3,out4,out5,out6)
+out<-bind_rows(out1,out2,out3,out4,out5,out6, out7)
 
 
 
@@ -35,8 +37,8 @@ out<-bind_rows(out1,out2,out3,out4,out5,out6)
 pd_dic <- function(x) {
   data.frame(n.parameters=x$pD, DIC=x$DIC)
 }
-DIC_tab<-bind_rows(pd_dic(EVsurv1),pd_dic(EVsurv2),pd_dic(EVsurv3),pd_dic(EVsurv4),pd_dic(EVsurv5),pd_dic(EVsurv6)) %>%
-  mutate(model=c("m1","m2","m3","m4","m5","m6")) %>%
+DIC_tab<-bind_rows(pd_dic(EVsurv1),pd_dic(EVsurv2),pd_dic(EVsurv3),pd_dic(EVsurv4),pd_dic(EVsurv5),pd_dic(EVsurv6),pd_dic(EVsurv7)) %>%
+  mutate(model=c("m1","m2","m3","m4","m5","m6","m7")) %>%
   arrange(DIC) %>%
   mutate(deltaDIC=DIC-DIC[1])
 DIC_tab
@@ -53,7 +55,7 @@ fwrite(ModSelTab,"EGVU_surv_model_selection_table.csv")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PLOT PARAMETER ESTIMATES FROM ALL 5 MODELS ON LOGIT SCALE 
+# PLOT PARAMETER ESTIMATES FROM ALL 6 MODELS ON LOGIT SCALE 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
