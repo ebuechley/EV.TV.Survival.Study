@@ -691,8 +691,14 @@ write.table(out5,"EGVU_telemetry_survival_estimates_m5.csv", sep=",", row.names=
 out6<-as.data.frame(EVsurv6$summary)
 out6$parameter<-row.names(EVsurv6$summary)
 out6$model<-"m6"
-write.table(out5,"EGVU_telemetry_survival_estimates_m6.csv", sep=",", row.names=F)
+write.table(out6,"EGVU_telemetry_survival_estimates_m6.csv", sep=",", row.names=F)
+
+out7<-as.data.frame(EVsurv7$summary)
+out7$parameter<-row.names(EVsurv7$summary)
+out7$model<-"m7"
+write.table(out7,"EGVU_telemetry_survival_estimates_m7.csv", sep=",", row.names=F)
 
 
+#load("EGVU_survival_output_v3.RData")
 save.image("EGVU_survival_output_v3.RData")
 
