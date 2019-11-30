@@ -23,6 +23,8 @@
 ## UPDATE 22 NOV 2019: included new data sent by Evan and additional covariates as discussed by collaborators
 ## mean daily movement distance, latitude quadratic effect, age only continuous for subadults, latitude x movement interaction, longitude
 
+## UPDATE 30 Nov 2019: included new data sent by Evan to include categorical classification of migratory and stationary periods
+
 
 library(jagsUI)
 library(tidyverse)
@@ -172,6 +174,34 @@ for(n in EV.obs.matrix$id.tag){
 # # CREATE MATRIX OF SURVIVAL PARAMETERS BASED ON AGE AND SEASON
 # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # commented out on 17 NOV 2019 when inserting new covariate data frame
+# resurrected on 30 Nov 2019 based on manually provided file
+# 0	No data
+# 1	Stationary
+# 2	Migratory
+
+EV.phi.states<-fread("Mig_stage_matrix.csv")
+head(EV.phi.states)
+
+### arrange into full matrix ###
+EV.phi.matrix<-EV.phi.states %>%
+  #separate(id.year,into=c("id","tag","year"), sep="_") %>% ## does not work as some id have _
+  #mutate(id.tag=paste(id,tag,sep="_")) %>%
+  mutate(id.tag=substr(id.year,1,nchar(id.year)-9)) %>%
+  mutate(year=as.numeric(substr(id.year,nchar(id.year)-7,nchar(id.year)-4))) %>%  
+  select(-Seq,-id.year) %>%
+  gather(key="month",value="state",-id.tag,-year) %>%
+  mutate(date=ymd(paste(year,month,"01",sep="-"))) %>%
+  mutate(date=format(date, format="%m-%Y")) %>%
+  mutate(col=timeseries$col[match(date,timeseries$date)]) %>%
+  filter(!is.na(col)) %>%
+  mutate(state=ifelse(state==2,2,1)) %>%  ## replace 0 as there will be no parameter with index 0
+  select(-year,-month,-date) %>%
+  spread(key=col,value=state, fill=1) %>%
+  arrange(id.tag)
+
+
+
+
 # 
 # # phi[1]: juvenile survival probability during migration
 # # phi[2]: juvenile survival probability during winter
