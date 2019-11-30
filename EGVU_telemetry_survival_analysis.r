@@ -200,9 +200,6 @@ EV.phi.matrix<-EV.phi.states %>%
   arrange(id.tag)
 
 
-
-
-# 
 # # phi[1]: juvenile survival probability during migration
 # # phi[2]: juvenile survival probability during winter
 # # phi[3]: immature survival probability during stationary period (winter or summer)
@@ -384,7 +381,8 @@ y.telemetry<-as.matrix(EV.obs.matrix[,2:max(timeseries$col)])
 z.telemetry<-as.matrix(EV.state.matrix[,2:max(timeseries$col)])
 #phi.mat<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
 age.mat<-as.matrix(age.matrix[,2:max(timeseries$col)])
-mig.mat<-as.matrix(mig.matrix[,2:max(timeseries$col)])
+#mig.mat<-as.matrix(mig.matrix[,2:max(timeseries$col)])  ## commented out on 30 NOV 2019 and replaced with categorical migratory vs stationary matrix
+mig.mat<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
 lat.mat<-as.matrix(lat.matrix[,2:max(timeseries$col)])
 free.mat<-as.matrix(free.matrix[,2:max(timeseries$col)])
 long.mat<-as.matrix(long.matrix[,2:max(timeseries$col)])
@@ -447,7 +445,7 @@ INPUT.telemetry <- list(y = y.telemetry,
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Specify model in BUGS language
-sink("EGVU_telemetry_multistate_tagfail_phi_lp1.jags")
+sink("EGVU_telemetry_multistate_tagfail_phi_lp7.jags")
 cat("
 model {
   
@@ -482,20 +480,22 @@ model {
   # MONTHLY SURVIVAL PROBABILITY
   for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
-        logit(phi[i,t]) <- lp.mean[adult[i,t]+1] + b.phi.age*(age[i,t])*(adult[i,t])  +   ### age category-specific intercept and slope for non-adult bird to increase survival with age
-                            b.phi.mig*(mig[i,t]) +                           ### survival dependent on mean daily movement distance averaged over month for migratory populations
-                            b.phi.capt*(capt[i]) + b.phi.free*(free[i,t])*(capt[i])*(adult[i,t])   +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
-                            b.phi.lat*(lat[i,t]) + b.phi.lat2 * pow((lat[i,t]),2) + b.phi.long*(long[i]) +  #### probability of monthly survival dependent on latitude and longitude
-                            b.phi.resident* (resid[i])                                    ### survival depending on whether population is resident
+        logit(phi[i,t]) <- lp.mean[adult[i,t]+1,mig[i,t]] + b.phi.age*(age[i,t])*(adult[i,t])  +   ### age and migratory stage category-specific intercept and slope for non-adult bird to increase survival with age
+                            b.phi.capt*(capt[i]) +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
+                            b.phi.lat*(lat[i,t]) + b.phi.long*(long[i])  #### probability of monthly survival dependent on latitude and longitude
     } #t
   } #i
   
 
-  #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
+  #### CATEGORICAL INTERCEPTS FOR SURVIVAL PROBABILITY based on age (adult/sub-adult) and migratory stage (stationary/migratory)
   for(agecat in 1:2){
-      mean.phi[agecat] ~ dunif(0.5, 0.999999)   # uninformative prior for all MONTHLY survival probabilities
-      lp.mean[agecat] <- log(mean.phi[agecat]/(1 - mean.phi[agecat]))    # logit transformed survival intercept
+    for(stagecat in 1:2) {
+      mean.phi[agecat,stagecat] ~ dunif(0.5, 0.999999)   # uninformative prior for all MONTHLY survival probabilities
+      lp.mean[agecat,stagecat] <- log(mean.phi[agecat,stagecat]/(1 - mean.phi[agecat,stagecat]))    # logit transformed survival intercept
+    }
   }
+
+  #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
   b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
   b.phi.mig ~ dnorm(0, 0.001)               # Prior for slope of migration on survival probability on logit scale
   b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of captive origin on survival probability on logit scale
@@ -648,6 +648,13 @@ EVsurv5 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
 
 EVsurv6 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp6.jags",
+                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+
+### FINAL MODEL WITH CATEGORICAL CLASSIFICATION OF MIGRATORY STAGE
+
+EVsurv7 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp7.jags",
                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
 
