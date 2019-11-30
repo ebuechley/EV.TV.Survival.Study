@@ -606,12 +606,13 @@ parameters.telemetry <- c("mean.phi","p.seen.alive","p.found.dead","b.phi.age","
 #                                   p.obs = runif(1, 0.5, 1))}  
 
 inits.telemetry <- function(){list(z = z.telemetry,
-                                   mean.phi = runif(2, 0.5, 0.999),
-					     base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
-						base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
-						beta1 = rnorm(1,0, 0.001),         # Prior for slope parameter for obs prob with time since
-						beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
-						beta3 = rnorm(1,0, 0.001))} 
+                                   mean.phi = matrix(runif(4, 0.5, 0.999),nrow=2), ### this is only valid for model 7
+                                   #mean.phi = runif(2, 0.5, 0.999), ### this is only valid for models 1-6
+					                         base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
+						                      base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
+						                      beta1 = rnorm(1,0, 0.001),         # Prior for slope parameter for obs prob with time since
+						                      beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
+						                      beta3 = rnorm(1,0, 0.001))} 
 
 # MCMC settings
 ni <- 10
