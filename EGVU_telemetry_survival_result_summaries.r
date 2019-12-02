@@ -200,7 +200,7 @@ head(PLOTDAT)
 
 
 ### CALCULATE PREDICTED SURVIVAL BASED ON MODEL 3
-
+out3<-out %>% filter(model=="m3")
 
 PLOTDAT<-  bind_rows(PLOTSUBAD,PLOTAD) %>%
   filter(!is.na(age)) %>%
@@ -228,93 +228,157 @@ head(PLOTDAT)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PLOT MONTHLY SURVIVAL PROBABILITIES ON REAL SCALE ACROSS RANGE OF COVARIATES
+# PLOT MONTHLY SURVIVAL PROBABILITIES ON REAL SCALE ACROSS AGE
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 ## PLOT AGE INCREASE FOR SUBADULTS
 
   ggplot(PLOTDAT[PLOTDAT$adult==1,])+
-  geom_ribbon(aes(x=age, ymin=lcl, ymax=ucl, fill=Origin), alpha=0.2) +
-  geom_line(aes(x=age, y=surv, colour=Origin))+
-  facet_wrap(~Migratory) +
+  geom_ribbon(aes(x=age, ymin=lcl, ymax=ucl), alpha=0.2) +
+  geom_line(aes(x=age, y=surv))+
+  facet_grid(Origin~Migratory) +
     
-  geom_hline(data=PLOTDAT[PLOTDAT$adult==0,],aes(yintercept=surv, colour=Origin))+  
+  geom_hline(data=PLOTDAT[PLOTDAT$adult==0,],aes(yintercept=surv), colour="firebrick")+  
   
   ## format axis ticks
   scale_x_continuous(name="Age in years", limits=c(1,54), breaks=seq(1,54,6), labels=seq(0,4,0.5)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0,1), breaks=seq(0,1,0.2), labels=seq(0,1,0.2)) +
+  scale_y_continuous(name="Monthly survival probability", limits=c(0.5,1), breaks=seq(0.5,1,0.1)) +
   
   ## beautification of the axes
   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         axis.text.y=element_text(size=14, color="black"),
         axis.text.x=element_text(size=14, color="black"), 
         axis.title=element_text(size=18), 
-        strip.text.x=element_text(size=18, color="black"), 
+        strip.text=element_text(size=18, color="black"), 
         strip.background=element_rect(fill="white", colour="black"))
 
-ggsave("EGVU_subad_surv_by_age.pdf")
+ggsave("EGVU_surv_by_age.pdf")
 
 
 
 
 
-## PLOT ADULT SURVIVAL ACROSS DAILY MOVEMENT DISTANCES
+# ## PLOT ADULT SURVIVAL ACROSS DAILY MOVEMENT DISTANCES
+# 
+# ggplot(PLOTDAT[PLOTDAT$adult==0,])+
+#   #geom_ribbon(aes(x=mig, ymin=lcl, ymax=ucl, fill=Origin), alpha=0.2) +
+#   geom_hline(data=PLOTDAT[PLOTDAT$adult==0,],aes(yintercept=surv, colour=Origin))+
+#   facet_wrap(~Migratory) +
+#   
+#   ## format axis ticks
+#   scale_x_continuous(name="Mean daily movement per month (km)", limits=c(0,6), breaks=seq(0,6,1), labels=seq(0,600,100)) +
+#   scale_y_continuous(name="Monthly survival probability", limits=c(0,1), breaks=seq(0,1,0.2), labels=seq(0,1,0.2)) +
+#   
+#   ## beautification of the axes
+#   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+#         axis.text.y=element_text(size=14, color="black"),
+#         axis.text.x=element_text(size=14, color="black"), 
+#         axis.title=element_text(size=18), 
+#         strip.text.x=element_text(size=18, color="black"), 
+#         strip.background=element_rect(fill="white", colour="black"))
+# 
+# ggsave("EGVU_ad_surv_by_daily_move.pdf")
 
-ggplot(PLOTDAT[PLOTDAT$adult==0,])+
-  #geom_ribbon(aes(x=mig, ymin=lcl, ymax=ucl, fill=Origin), alpha=0.2) +
-  geom_hline(data=PLOTDAT[PLOTDAT$adult==0,],aes(yintercept=surv, colour=Origin))+
-  facet_wrap(~Migratory) +
-  
-  ## format axis ticks
-  scale_x_continuous(name="Mean daily movement per month (km)", limits=c(0,6), breaks=seq(0,6,1), labels=seq(0,600,100)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0,1), breaks=seq(0,1,0.2), labels=seq(0,1,0.2)) +
-  
-  ## beautification of the axes
-  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        axis.text.y=element_text(size=14, color="black"),
-        axis.text.x=element_text(size=14, color="black"), 
-        axis.title=element_text(size=18), 
-        strip.text.x=element_text(size=18, color="black"), 
-        strip.background=element_rect(fill="white", colour="black"))
-
-ggsave("EGVU_ad_surv_by_daily_move.pdf")
 
 
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PLOT MONTHLY SURVIVAL PROBABILITIES ON REAL SCALE ACROSS LATITUDE AND LONGITUDE
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+out7<-out %>% filter(model=="m7")
+
+## CREATE DATAFRAME OF ALL POSSIBLE COVARIATE COMBINATIONS FOR PLOTTING LATITUDE AND LONGITUDE
+PLOTDAT<-expand.grid(mig=c(1,2),    #seq(min(mig.mat, na.rm=T),max(mig.mat, na.rm=T),length=30),
+                      lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=30),
+                      long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=30),
+                      capt=c(0,1),
+                      age=54) %>%
+                      mutate(adult=0) %>%
+  mutate(logit.surv=ifelse(adult==0 & mig==1,out7$mean[out7$parameter=="mean.phi[1,1]"],
+                           ifelse(adult==0 & mig==2,out7$mean[out7$parameter=="mean.phi[1,2]"],
+                                  ifelse(adult==1 & mig==1,out7$mean[out7$parameter=="mean.phi[2,1]"],out7$mean[out7$parameter=="mean.phi[2,2]"])))+
+           out7$mean[out7$parameter=="b.phi.age"]*age*adult+
+           out7$mean[out7$parameter=="b.phi.capt"]*capt +
+          out7$mean[out7$parameter=="b.phi.lat"]*lat+
+          out7$mean[out7$parameter=="b.phi.long"]*long) %>%
+  mutate(lcl.surv=ifelse(adult==0 & mig==1,out7[out7$parameter=="mean.phi[1,1]",3],
+                         ifelse(adult==0 & mig==2,out7[out7$parameter=="mean.phi[1,2]",3],
+                                ifelse(adult==1 & mig==1,out7[out7$parameter=="mean.phi[2,1]",3],out7[out7$parameter=="mean.phi[2,2]",3])))+
+           out7[out7$parameter=="b.phi.age",3]*age*adult+
+           out7[out7$parameter=="b.phi.capt",3]*capt +
+           out7[out7$parameter=="b.phi.lat",3]*lat+
+           out7[out7$parameter=="b.phi.long",3]*long) %>%
+  mutate(ucl.surv=ifelse(adult==0 & mig==1,out7[out7$parameter=="mean.phi[1,1]",7],
+                         ifelse(adult==0 & mig==2,out7[out7$parameter=="mean.phi[1,2]",7],
+                                ifelse(adult==1 & mig==1,out7[out7$parameter=="mean.phi[2,1]",7],out7[out7$parameter=="mean.phi[2,2]",7])))+
+           out7[out7$parameter=="b.phi.age",7]*age*adult+
+           out7[out7$parameter=="b.phi.capt",7]*capt +
+           out7[out7$parameter=="b.phi.lat",7]*lat+
+           out7[out7$parameter=="b.phi.long",7]*long) %>%
+  mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
+  mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
+  mutate(Migratory=ifelse(mig==1,"stationary","migratory")) %>%
+  mutate(Latitude=(lat*sd.lat)+mean.lat) %>% ## back transform latitude
+  mutate(Longitude=(long*sd.long)+mean.long) %>% ## back transform longitude
+  arrange(Origin,Migratory)
+head(PLOTDAT)
+min(PLOTDAT$lcl)
 
 
 
 ## PLOT ADULT SURVIVAL ACROSS LATITUDE
 
-
-## CREATE DATAFRAME OF LATITUDE RANGE AND PLOT
-expand.grid(lat=unique(as.numeric(lat.mat), na.rm=T), capt=c(0,1)) %>%
-  filter(!is.na(lat)) %>%
-  mutate(logit.surv=out$mean[out$parameter=="mean.phi[2]"]+ out$mean[out$parameter=="b.phi.lat"]*lat+ out$mean[out$parameter=="b.phi.lat2"]*(lat^2)+ out$mean[out$parameter=="b.phi.capt"]*capt) %>%
-  mutate(lcl.surv=out[out$parameter=="mean.phi[2]",3]+ out[out$parameter=="b.phi.lat",3]*lat+out[out$parameter=="b.phi.lat2",3]*(lat^2)+ out[out$parameter=="b.phi.capt",3]*capt) %>%
-  mutate(ucl.surv=out[out$parameter=="mean.phi[2]",7]+ out[out$parameter=="b.phi.lat",7]*lat+ out[out$parameter=="b.phi.lat2",7]*(lat^2)+ out[out$parameter=="b.phi.capt",7]*capt) %>%
-  mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
-  mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
-  arrange(lat) %>%
-  
-  
+PLOTDAT %>% filter(long< -1.7) %>%
   ggplot()+
-  geom_ribbon(aes(x=lat, ymin=lcl, ymax=ucl, fill=Origin), alpha=0.2) +
-  geom_line(aes(x=lat, y=surv, colour=Origin))+
+  geom_ribbon(aes(x=Latitude, ymin=lcl, ymax=ucl), alpha=0.2) +
+  geom_line(aes(x=Latitude, y=surv))+
+    #geom_rect(aes(xmin=min(Longitude),ymin=min(Latitude),xmax=max(Longitude),ymax=max(Latitude), fill = surv)) +
+    facet_grid(Origin~Migratory) +
+
   
   ## format axis ticks
   #scale_x_continuous(name="Latitude", limits=c(-10,10), breaks=seq(-10,10,5), labels=seq(5,45,10)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0,1), breaks=seq(0,1,0.2), labels=seq(0,1,0.2)) +
+  scale_y_continuous(name="Monthly survival probability", limits=c(0.9,1), breaks=seq(0.9,1,0.01)) +
+    xlab("Latitude") +
+
   
   ## beautification of the axes
   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         axis.text.y=element_text(size=14, color="black"),
         axis.text.x=element_text(size=14, color="black"), 
         axis.title=element_text(size=18), 
-        strip.text.x=element_text(size=18, color="black"), 
+        strip.text=element_text(size=18, color="black"), 
         strip.background=element_rect(fill="white", colour="black"))
 
-ggsave("EGVU_surv_by_latitude.pdf")
+ggsave("EGVU_ad_surv_by_latitude.pdf")
 
 
+
+## PLOT ADULT SURVIVAL ACROSS LATITUDE
+
+PLOTDAT %>% filter(lat> 1.4) %>%
+  ggplot()+
+  geom_ribbon(aes(x=Longitude, ymin=lcl, ymax=ucl), alpha=0.2) +
+  geom_line(aes(x=Longitude, y=surv))+
+  #geom_rect(aes(xmin=min(Longitude),ymin=min(Latitude),xmax=max(Longitude),ymax=max(Latitude), fill = surv)) +
+  facet_grid(Origin~Migratory) +
+  
+  
+  ## format axis ticks
+  #scale_x_continuous(name="Latitude", limits=c(-10,10), breaks=seq(-10,10,5), labels=seq(5,45,10)) +
+  #scale_y_continuous(name="Monthly survival probability", limits=c(0.8,1), breaks=seq(0.8,1,0.05)) +
+  xlab("Longitude") +
+  
+  
+  ## beautification of the axes
+  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.y=element_text(size=14, color="black"),
+        axis.text.x=element_text(size=14, color="black"), 
+        axis.title=element_text(size=18), 
+        strip.text=element_text(size=18, color="black"), 
+        strip.background=element_rect(fill="white", colour="black"))
+
+ggsave("EGVU_ad_surv_by_longitude.pdf")
 
