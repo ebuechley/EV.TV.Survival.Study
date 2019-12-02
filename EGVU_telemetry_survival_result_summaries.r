@@ -26,7 +26,7 @@ try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study
 load("EGVU_survival_output_v3.RData")
 
 ### COMBINE OUTPUT FROM ALL 5 MODELS
-out<-bind_rows(out1,out2,out3,out4,out5,out6, out7)
+out<-bind_rows(out1,out2,out3,out4,out5,out6, out7, out8)
 
 
 
@@ -37,8 +37,8 @@ out<-bind_rows(out1,out2,out3,out4,out5,out6, out7)
 pd_dic <- function(x) {
   data.frame(n.parameters=x$pD, DIC=x$DIC)
 }
-DIC_tab<-bind_rows(pd_dic(EVsurv1),pd_dic(EVsurv2),pd_dic(EVsurv3),pd_dic(EVsurv4),pd_dic(EVsurv5),pd_dic(EVsurv6),pd_dic(EVsurv7)) %>%
-  mutate(model=c("m1","m2","m3","m4","m5","m6","m7")) %>%
+DIC_tab<-bind_rows(pd_dic(EVsurv1),pd_dic(EVsurv2),pd_dic(EVsurv3),pd_dic(EVsurv4),pd_dic(EVsurv5),pd_dic(EVsurv6),pd_dic(EVsurv7),pd_dic(EVsurv8)) %>%
+  mutate(model=c("m1","m2","m3","m4","m5","m6","m7","m8")) %>%
   arrange(DIC) %>%
   mutate(deltaDIC=DIC-DIC[1])
 DIC_tab
@@ -67,7 +67,7 @@ ggplot()+
   geom_point(aes(x=parameter, y=mean))+
   geom_errorbar(aes(x=parameter, ymin=`2.5%`, ymax=`97.5%`), width=.1) +
   geom_hline(aes(yintercept=0), colour="darkgrey") +
-  facet_wrap(~header, ncol=2) +
+  facet_wrap(~header, ncol=4) +
   
   ## format axis ticks
   xlab("Parameter") +
@@ -82,7 +82,7 @@ ggplot()+
         strip.background=element_rect(fill="white", colour="black"))
 
 
-ggsave("EGVU_surv_parameter_estimates_allmodels.pdf", height=11, width=8)
+ggsave("EGVU_surv_parameter_estimates_allmodels.pdf", height=10, width=15)
 
 
 
@@ -95,8 +95,8 @@ ggsave("EGVU_surv_parameter_estimates_allmodels.pdf", height=11, width=8)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CREATE DATA FRAME WITH ALL POSSIBLE COMBINATIONS (causes memory allocation problems)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-## SELECT ONLY PARAMETERS RELEVANT FOR MODEL 3
+## CHANGED On 2 DEC 2019 to exclude models with a continuous 'migration' covariate due to the confounding  problem of dead birds travelling less
+## SELECT ONLY PARAMETERS RELEVANT FOR MODEL 8
 
 
 ### LINEAR PREDICTOR EQUATION
@@ -109,47 +109,51 @@ ggsave("EGVU_surv_parameter_estimates_allmodels.pdf", height=11, width=8)
 
 ## CREATE DATAFRAME OF ALL POSSIBLE COVARIATE COMBINATIONS FOR PLOTTING
 PLOTSUBAD<-expand.grid(#resid=c(0,1),
-                     mig=seq(min(mig.mat, na.rm=T),max(mig.mat, na.rm=T),length=30),
+                     mig=c(1,2),    #seq(min(mig.mat, na.rm=T),max(mig.mat, na.rm=T),length=30),
                      #free=seq(min(free.mat, na.rm=T),max(free.mat, na.rm=T),length=10),
-                     lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=10),
-                     long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=20),
-                     #capt=c(0,1),
-                     age=seq(min(age.mat, na.rm=T),max(age.mat, na.rm=T),length=20)) %>%
+                     #lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=30),
+                     #long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=30),
+                     capt=c(0,1),
+                     age=seq(min(age.mat, na.rm=T),max(age.mat, na.rm=T),length=30)) %>%
   mutate(adult=1)
 
 PLOTAD<-expand.grid(#resid=c(0,1),
-                       mig=seq(min(mig.mat, na.rm=T),max(mig.mat, na.rm=T),length=20),
+                        mig=c(1,2),    #seq(min(mig.mat, na.rm=T),max(mig.mat, na.rm=T),length=20),
                        #free=seq(min(free.mat, na.rm=T),max(free.mat, na.rm=T),length=10),
-                       lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=10),
-                       long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=20),
+                       #lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=30),
+                       #long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=30),
                        capt=c(0,1)) %>%
   mutate(age=54,adult=0)
+
+
+
+### CALCULATE PREDICTED SURVIVAL 
 
 
 PLOTDAT<-  bind_rows(PLOTSUBAD,PLOTAD) %>%
   filter(!is.na(age)) %>%
   filter(!is.na(mig)) %>%
-  mutate(logit.surv=ifelse(adult==0,out$mean[out$parameter=="mean.phi[1]"],out$mean[out$parameter=="mean.phi[2]"])+
-           out$mean[out$parameter=="b.phi.age"]*age*adult+
-           out$mean[out$parameter=="b.phi.capt"]*capt +
-           out$mean[out$parameter=="b.phi.mig"]*mig*resid +
-           out$mean[out$parameter=="b.phi.resident"]*resid) %>%
-  mutate(lcl.surv=ifelse(adult==0,out[out$parameter=="mean.phi[1]",3],out[out$parameter=="mean.phi[2]",3])+
-           out[out$parameter=="b.phi.age",3]*age*adult+
-           out[out$parameter=="b.phi.capt",3]*capt +
-           out[out$parameter=="b.phi.mig",3]*mig*resid +
-           out[out$parameter=="b.phi.resident",3]*resid) %>%
-  mutate(ucl.surv=ifelse(adult==0,out[out$parameter=="mean.phi[1]",7],out[out$parameter=="mean.phi[2]",7])+
-           out[out$parameter=="b.phi.age",7]*age*adult+
-           out[out$parameter=="b.phi.capt",7]*capt +
-           out[out$parameter=="b.phi.mig",7]*mig*resid +
-           out[out$parameter=="b.phi.resident",7]*resid) %>%
+  mutate(logit.surv=ifelse(adult==0,out8$mean[out8$parameter=="mean.phi[1]"],out8$mean[out8$parameter=="mean.phi[2]"])+
+           out8$mean[out8$parameter=="b.phi.age"]*age*adult+
+           out8$mean[out8$parameter=="b.phi.capt"]*capt +
+           out8$mean[out8$parameter=="b.phi.mig"]*(mig-1)) %>% #+
+           #out8$mean[out8$parameter=="b.phi.resident"]*resid) %>%
+  mutate(lcl.surv=ifelse(adult==0,out8[out8$parameter=="mean.phi[1]",3],out8[out8$parameter=="mean.phi[2]",3])+
+           out8[out8$parameter=="b.phi.age",3]*age*adult+
+           out8[out8$parameter=="b.phi.capt",3]*capt +
+           out8[out8$parameter=="b.phi.mig",3]*(mig-1)) %>% # +
+           #out8[out8$parameter=="b.phi.resident",3]*resid) %>%
+  mutate(ucl.surv=ifelse(adult==0,out8[out8$parameter=="mean.phi[1]",7],out8[out8$parameter=="mean.phi[2]",7])+
+           out8[out8$parameter=="b.phi.age",7]*age*adult+
+           out8[out8$parameter=="b.phi.capt",7]*capt +
+           out8[out8$parameter=="b.phi.mig",7]*(mig-1)) %>% #+
+           #out8[out8$parameter=="b.phi.resident",7]*resid) %>%
   mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
   mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
-  mutate(Migratory=ifelse(resid==0,"resident","migratory")) %>%
-  arrange(age)
+  mutate(Migratory=ifelse(mig==1,"stationary","migratory")) %>%
+  arrange(Origin,Migratory,age)
 
-
+head(PLOTDAT)
 
 
 
@@ -160,10 +164,12 @@ PLOTDAT<-  bind_rows(PLOTSUBAD,PLOTAD) %>%
 
 ## PLOT AGE INCREASE FOR SUBADULTS
 
-  ggplot(PLOTDAT[PLOTDAT$adult==1 & PLOTDAT$mig<0.0002,])+
+  ggplot(PLOTDAT[PLOTDAT$adult==1,])+
   geom_ribbon(aes(x=age, ymin=lcl, ymax=ucl, fill=Origin), alpha=0.2) +
   geom_line(aes(x=age, y=surv, colour=Origin))+
   facet_wrap(~Migratory) +
+    
+  geom_hline(data=PLOTDAT[PLOTDAT$adult==0,],aes(yintercept=surv, colour=Origin))+  
   
   ## format axis ticks
   scale_x_continuous(name="Age in years", limits=c(1,54), breaks=seq(1,54,6), labels=seq(0,4,0.5)) +
@@ -186,8 +192,8 @@ ggsave("EGVU_subad_surv_by_age.pdf")
 ## PLOT ADULT SURVIVAL ACROSS DAILY MOVEMENT DISTANCES
 
 ggplot(PLOTDAT[PLOTDAT$adult==0,])+
-  geom_ribbon(aes(x=mig, ymin=lcl, ymax=ucl, fill=Origin), alpha=0.2) +
-  geom_line(aes(x=mig, y=surv, colour=Origin))+
+  #geom_ribbon(aes(x=mig, ymin=lcl, ymax=ucl, fill=Origin), alpha=0.2) +
+  geom_hline(data=PLOTDAT[PLOTDAT$adult==0,],aes(yintercept=surv, colour=Origin))+
   facet_wrap(~Migratory) +
   
   ## format axis ticks
