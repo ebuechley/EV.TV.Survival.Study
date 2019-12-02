@@ -445,7 +445,7 @@ INPUT.telemetry <- list(y = y.telemetry,
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Specify model in BUGS language
-sink("EGVU_telemetry_multistate_tagfail_phi_lp7.jags")
+sink("EGVU_telemetry_multistate_tagfail_phi_lp8.jags")
 cat("
 model {
   
@@ -480,8 +480,9 @@ model {
   # MONTHLY SURVIVAL PROBABILITY
   for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
-        logit(phi[i,t]) <- lp.mean[adult[i,t]+1,mig[i,t]] + b.phi.age*(age[i,t])*(adult[i,t])  +   ### age and migratory stage category-specific intercept and slope for non-adult bird to increase survival with age
+        logit(phi[i,t]) <- lp.mean[adult[i,t]+1] + b.phi.age*(age[i,t])*(adult[i,t])  +   ### age and migratory stage category-specific intercept and slope for non-adult bird to increase survival with age
                             b.phi.capt*(capt[i]) +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
+                            b.phi.mig*(mig[i,t]-1) +                           ### survival dependent on mean daily movement distance averaged over month for migratory populations
                             b.phi.lat*(lat[i,t]) + b.phi.long*(long[i])  #### probability of monthly survival dependent on latitude and longitude
     } #t
   } #i
@@ -489,14 +490,15 @@ model {
 
   #### CATEGORICAL INTERCEPTS FOR SURVIVAL PROBABILITY based on age (adult/sub-adult) and migratory stage (stationary/migratory)
   for(agecat in 1:2){
-    for(stagecat in 1:2) {
-      mean.phi[agecat,stagecat] ~ dunif(0.5, 0.999999)   # uninformative prior for all MONTHLY survival probabilities
-      lp.mean[agecat,stagecat] <- log(mean.phi[agecat,stagecat]/(1 - mean.phi[agecat,stagecat]))    # logit transformed survival intercept
-    }
+    #for(stagecat in 1:2) {
+      mean.phi[agecat] ~ dunif(0.5, 0.999999)   # uninformative prior for all MONTHLY survival probabilities
+      lp.mean[agecat] <- log(mean.phi[agecat]/(1 - mean.phi[agecat]))    # logit transformed survival intercept
+    #}
   }
 
   #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
   b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
+  b.phi.mig ~ dnorm(0, 0.001)               # Prior for slope of migration on survival probability on logit scale
   b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of captive origin on survival probability on logit scale
   b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
   b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
@@ -602,8 +604,8 @@ parameters.telemetry <- c("mean.phi","p.seen.alive","p.found.dead","b.phi.age","
 #                                   p.obs = runif(1, 0.5, 1))}  
 
 inits.telemetry <- function(){list(z = z.telemetry,
-                                   mean.phi = matrix(runif(4, 0.5, 0.999),nrow=2), ### this is only valid for model 7
-                                   #mean.phi = runif(2, 0.5, 0.999), ### this is only valid for models 1-6
+                                   #mean.phi = matrix(runif(4, 0.5, 0.999),nrow=2), ### this is only valid for model 7
+                                   mean.phi = runif(2, 0.5, 0.999), ### this is only valid for models 1-6
 					                         base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
 						                      base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
 						                      beta1 = rnorm(1,0, 0.001),         # Prior for slope parameter for obs prob with time since
@@ -654,6 +656,12 @@ EVsurv7 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp7.jags",
                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
+### FINAL MODEL WITH CATEGORICAL CLASSIFICATION OF MIGRATORY STAGE
+
+EVsurv8 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp8.jags",
+                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # EXPORT THE OUTPUT
@@ -693,6 +701,11 @@ out7<-as.data.frame(EVsurv7$summary)
 out7$parameter<-row.names(EVsurv7$summary)
 out7$model<-"m7"
 write.table(out7,"EGVU_telemetry_survival_estimates_m7.csv", sep=",", row.names=F)
+
+out8<-as.data.frame(EVsurv8$summary)
+out8$parameter<-row.names(EVsurv8$summary)
+out8$model<-"m8"
+write.table(out8,"EGVU_telemetry_survival_estimates_m8.csv", sep=",", row.names=F)
 
 
 #load("EGVU_survival_output_v3.RData")
