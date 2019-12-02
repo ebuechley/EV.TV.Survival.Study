@@ -32,9 +32,9 @@ model {
   # MONTHLY SURVIVAL PROBABILITY
   for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
-        logit(phi[i,t]) <- lp.mean[adult[i,t]+1] + b.phi.age*(age[i,t])  +   ### age and migratory stage category-specific intercept and slope for non-adult bird to increase survival with age
+        logit(phi[i,t]) <- lp.mean[mig[i,t]] + b.phi.age*(age[i,t])  +   ### age and migratory stage category-specific intercept and slope for non-adult bird to increase survival with age
                             b.phi.capt*(capt[i]) +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
-                            b.phi.mig*(mig[i,t]-1) +                           ### survival dependent on mean daily movement distance averaged over month for migratory populations
+                            #b.phi.mig*(mig[i,t]-1) +                           ### survival dependent on mean daily movement distance averaged over month for migratory populations
                             b.phi.lat*(lat[i,t]) + b.phi.long*(long[i])  #### probability of monthly survival dependent on latitude and longitude
     } #t
   } #i
@@ -50,7 +50,7 @@ model {
 
   #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
   b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
-  b.phi.mig ~ dnorm(0, 0.001)               # Prior for slope of migration on survival probability on logit scale
+  #b.phi.mig ~ dnorm(0, 0.001)               # Prior for slope of migration on survival probability on logit scale
   b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of captive origin on survival probability on logit scale
   b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
   b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
