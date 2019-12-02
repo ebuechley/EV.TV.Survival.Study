@@ -13,6 +13,7 @@ library(jagsUI)
 library(tidyverse)
 library(data.table)
 library(lubridate)
+library(gtools)
 filter<-dplyr::filter
 select<-dplyr::select
 
@@ -28,7 +29,12 @@ load("EGVU_survival_output_v3.RData")
 ### COMBINE OUTPUT FROM ALL 5 MODELS
 out<-bind_rows(out1,out2,out3,out4,out5,out6, out7, out8)
 
-
+### CONVERT mean.phi to logit
+head(out)
+out.intercept<-out %>% filter(grepl("mean.phi",parameter)) %>%
+  mutate(mean=logit(mean),`2.5%`=logit(`2.5%`),`97.5%`=logit(`97.5%`))
+out<-out %>% filter(!grepl("mean.phi",parameter)) %>%
+  bind_rows(out.intercept)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -127,8 +133,8 @@ PLOTAD<-expand.grid(#resid=c(0,1),
 
 
 
-### CALCULATE PREDICTED SURVIVAL 
-
+### CALCULATE PREDICTED SURVIVAL BASED ON MODEL 8
+out8<-out %>% filter(model=="m8")
 
 PLOTDAT<-  bind_rows(PLOTSUBAD,PLOTAD) %>%
   filter(!is.na(age)) %>%
@@ -154,6 +160,70 @@ PLOTDAT<-  bind_rows(PLOTSUBAD,PLOTAD) %>%
   arrange(Origin,Migratory,age)
 
 head(PLOTDAT)
+
+
+### CALCULATE PREDICTED SURVIVAL BASED ON MODEL 7
+out7<-out %>% filter(model=="m7")
+
+PLOTDAT<-  bind_rows(PLOTSUBAD,PLOTAD) %>%
+  filter(!is.na(age)) %>%
+  filter(!is.na(mig)) %>%
+  mutate(logit.surv=ifelse(adult==0 & mig==1,out7$mean[out7$parameter=="mean.phi[1,1]"],
+                           ifelse(adult==0 & mig==2,out7$mean[out7$parameter=="mean.phi[1,2]"],
+                                  ifelse(adult==1 & mig==1,out7$mean[out7$parameter=="mean.phi[2,1]"],out7$mean[out7$parameter=="mean.phi[2,2]"])))+
+           out7$mean[out7$parameter=="b.phi.age"]*age*adult+
+           out7$mean[out7$parameter=="b.phi.capt"]*capt) %>% # +
+           #out7$mean[out7$parameter=="b.phi.mig"]*(mig-1)) %>% #+
+  #out7$mean[out7$parameter=="b.phi.resident"]*resid) %>%
+  mutate(lcl.surv=ifelse(adult==0 & mig==1,out7[out7$parameter=="mean.phi[1,1]",3],
+                         ifelse(adult==0 & mig==2,out7[out7$parameter=="mean.phi[1,2]",3],
+                                ifelse(adult==1 & mig==1,out7[out7$parameter=="mean.phi[2,1]",3],out7[out7$parameter=="mean.phi[2,2]",3])))+
+           out7[out7$parameter=="b.phi.age",3]*age*adult+
+           out7[out7$parameter=="b.phi.capt",3]*capt) %>% # +
+           #out7[out7$parameter=="b.phi.mig",3]*(mig-1)) %>% # +
+  #out7[out7$parameter=="b.phi.resident",3]*resid) %>%
+  mutate(ucl.surv=ifelse(adult==0 & mig==1,out7[out7$parameter=="mean.phi[1,1]",7],
+                           ifelse(adult==0 & mig==2,out7[out7$parameter=="mean.phi[1,2]",7],
+                                  ifelse(adult==1 & mig==1,out7[out7$parameter=="mean.phi[2,1]",7],out7[out7$parameter=="mean.phi[2,2]",7])))+
+           out7[out7$parameter=="b.phi.age",7]*age*adult+
+           out7[out7$parameter=="b.phi.capt",7]*capt) %>% # +
+           #out7[out7$parameter=="b.phi.mig",7]*(mig-1)) %>% #+
+  #out7[out7$parameter=="b.phi.resident",7]*resid) %>%
+  mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
+  mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
+  mutate(Migratory=ifelse(mig==1,"stationary","migratory")) %>%
+  arrange(Origin,Migratory,age)
+
+head(PLOTDAT)
+
+
+
+
+### CALCULATE PREDICTED SURVIVAL BASED ON MODEL 3
+
+
+PLOTDAT<-  bind_rows(PLOTSUBAD,PLOTAD) %>%
+  filter(!is.na(age)) %>%
+  filter(!is.na(mig)) %>%
+  mutate(logit.surv=ifelse(adult==0,out3$mean[out3$parameter=="mean.phi[1]"],out3$mean[out3$parameter=="mean.phi[2]"])+
+           out3$mean[out3$parameter=="b.phi.age"]*age*adult+
+           out3$mean[out3$parameter=="b.phi.capt"]*capt +
+           out3$mean[out3$parameter=="b.phi.mig"]*(mig-1)) %>% #+
+  mutate(lcl.surv=ifelse(adult==0,out3[out3$parameter=="mean.phi[1]",3],out3[out3$parameter=="mean.phi[2]",3])+
+           out3[out3$parameter=="b.phi.age",3]*age*adult+
+           out3[out3$parameter=="b.phi.capt",3]*capt +
+           out3[out3$parameter=="b.phi.mig",3]*(mig-1)) %>% # +
+  mutate(ucl.surv=ifelse(adult==0,out3[out3$parameter=="mean.phi[1]",7],out3[out3$parameter=="mean.phi[2]",7])+
+           out3[out3$parameter=="b.phi.age",7]*age*adult+
+           out3[out3$parameter=="b.phi.capt",7]*capt +
+           out3[out3$parameter=="b.phi.mig",7]*(mig-1)) %>% #+
+  mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
+  mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
+  mutate(Migratory=ifelse(mig==1,"stationary","migratory")) %>%
+  arrange(Origin,Migratory,age)
+
+head(PLOTDAT)
+
 
 
 
