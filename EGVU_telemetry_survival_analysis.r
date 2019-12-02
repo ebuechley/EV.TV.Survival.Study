@@ -596,7 +596,7 @@ sink()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Parameters monitored
-parameters.telemetry <- c("mean.phi","p.seen.alive","p.found.dead","b.phi.age","b.phi.mig","b.phi.capt","b.phi.lat","b.phi.lat2","b.phi.resident","b.phi.free","b.phi.long")
+parameters.telemetry <- c("mean.phi","lp.mean","p.seen.alive","p.found.dead","b.phi.age","b.phi.mig","b.phi.capt","b.phi.lat","b.phi.lat2","b.phi.resident","b.phi.free","b.phi.long")
 
 # Initial values
 #inits.telemetry <- function(){list(z = z.telemetry,
