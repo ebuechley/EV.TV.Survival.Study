@@ -109,18 +109,15 @@ ggsave("Fig1_Age.pdf", width=)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PLOT MONTHLY SURVIVAL PROBABILITIES ON REAL SCALE ACROSS LATITUDE AND LONGITUDE
+# FIG. 2 - MONTHLY SURVIVAL PROBABILITIES ACROSS LATITUDE AND LONGITUDE
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## NEED TO FIX AGE TO A CERTAIN LEVEL
 
 
 ## CREATE DATAFRAME OF ALL POSSIBLE COVARIATE COMBINATIONS FOR PLOTTING LATITUDE AND LONGITUDE
-PLOTDAT<-expand.grid(mig=c(1,2),    #seq(min(mig.mat, na.rm=T),max(mig.mat, na.rm=T),length=30),
-                      lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=30),
-                      long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=30),
-                      capt=c(0,1),
-                      age=54) %>%
-                      mutate(adult=0) %>%
+PLOTDAT<-expand.grid(mig=c(1,2),lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=30),long=0,capt=c(0,1)) %>%
+  bind_rows(expand.grid(mig=c(1,2),lat=0,long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=30),capt=c(0,1))) %>%
+  mutate(adult=0, age=54) %>%
   mutate(logit.surv=ifelse(adult==0 & mig==1,out7$mean[out7$parameter=="lp.mean[1,1]"],
                            ifelse(adult==0 & mig==2,out7$mean[out7$parameter=="lp.mean[1,2]"],
                                   ifelse(adult==1 & mig==1,out7$mean[out7$parameter=="lp.mean[2,1]"],out7$mean[out7$parameter=="lp.mean[2,2]"])))+
@@ -147,26 +144,28 @@ PLOTDAT<-expand.grid(mig=c(1,2),    #seq(min(mig.mat, na.rm=T),max(mig.mat, na.r
   mutate(Migratory=ifelse(mig==1,"stationary","migratory")) %>%
   mutate(Latitude=(lat*sd.lat)+mean.lat) %>% ## back transform latitude
   mutate(Longitude=(long*sd.long)+mean.long) %>% ## back transform longitude
-  arrange(Origin,Migratory)
+  arrange(Origin,Migratory) %>%
+  select(Origin, Migratory,surv,lcl,ucl,Latitude,Longitude) %>%
+  gather(key='direction',value='degree',-Origin,-Migratory,-surv,-lcl,-ucl)
 head(PLOTDAT)
 min(PLOTDAT$lcl)
 
 
 
-## PLOT ADULT SURVIVAL ACROSS LATITUDE
+## PLOT ADULT SURVIVAL ACROSS LATITUDE AND LONGITUDE
 
-PLOTDAT %>% filter(long< -1.7) %>%
+PLOTDAT %>%
   ggplot()+
-  geom_ribbon(aes(x=Latitude, ymin=lcl, ymax=ucl), alpha=0.2) +
-  geom_line(aes(x=Latitude, y=surv))+
+  geom_ribbon(aes(x=degree, ymin=lcl, ymax=ucl, fill=Origin), alpha=0.2) +
+  geom_line(aes(x=degree, y=surv,colour=Origin))+
     #geom_rect(aes(xmin=min(Longitude),ymin=min(Latitude),xmax=max(Longitude),ymax=max(Latitude), fill = surv)) +
-    facet_grid(Origin~Migratory) +
+    facet_grid(Migratory~direction, scales="free") +
 
   
   ## format axis ticks
   #scale_x_continuous(name="Latitude", limits=c(-10,10), breaks=seq(-10,10,5), labels=seq(5,45,10)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0.9,1), breaks=seq(0.9,1,0.01)) +
-    xlab("Latitude") +
+  ylab("Monthly survival probability") +
+  xlab("Latitude") +
 
   
   ## beautification of the axes
