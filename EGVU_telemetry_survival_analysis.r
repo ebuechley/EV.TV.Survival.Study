@@ -289,6 +289,11 @@ age.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
   spread(key=col,value=age) %>%
   arrange(id.tag)
 
+# age.matrix[,1:2] %>%
+#   rename(test=`2`) %>%
+#   mutate(test=1) %>%
+#   full_join(EV, by="id.tag") %>% filter(is.na(population)) %>% select(id.tag,population,age.at.deployment)
+
 
 ## CREATE MOVE DISTANCE (MIGRATION) MATRIX
 mig.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
