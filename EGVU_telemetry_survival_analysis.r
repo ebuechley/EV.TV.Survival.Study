@@ -50,7 +50,8 @@ EVcovar<-fread("ev.survival.prepared.csv")
 names(EV)[1]<-'species'
 head(EV)
 dim(EV)
-
+EV$id.tag = as.character(EV$id.tag)
+EVcovar$id.tag = as.character(EVcovar$id.tag)
 
 #EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
 EV<-EV %>% mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= parse_date_time(end.date, c("mdy", "mdy HM"))) %>%
@@ -177,8 +178,6 @@ for(n in EV.obs.matrix$id.tag){
 }
 
 
-
-
 # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # # CREATE MATRIX OF SURVIVAL PARAMETERS BASED ON AGE AND SEASON
 # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -262,14 +261,32 @@ EV.phi.matrix<-EV.phi.states %>%
 #EV.phi.matrix[!(EV.phi.matrix$id.tag %in% EV$id.tag),1:3]
 
 
-###### TROUBLESHOOT NAMING ISSUES ##########
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# FIX ID TAG VALUES
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+## these were edits made to the summary table by data owners that I am reincorporating back to the original data
+## fix provided by Evan Buechley on 3 Dec 2019
+
+EV.phi.matrix$id.tag = as.character(EV.phi.matrix$id.tag)
+EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="1_1"] <- "52027_1"
+EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="93_14"] <- "81_14"
+EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="AF5AF11F_NA"] <- "Bianca_IHB_AF5AF11F"
+EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="B05AF11F_NA"] <- "Clara_IHC_B05AF11F"
+EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="Provence_2016_Ad_wild_EO5018_Salomé_8P_5018"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P_5018"
+EV.phi.matrix<-EV.phi.matrix[!(EV.phi.matrix$id.tag=="Djibouti_127589"),]
 
 EV.phi.matrix<-EV.phi.matrix %>% filter(id.tag %in% EV$id.tag) %>%
   arrange(id.tag)
 dim(EV.phi.matrix)
 
-merge(EV.phi.matrix[,1:2],EV, by="id.tag", all=T) %>% filter(is.na(`2`)) %>% select(id.tag,population,age.at.deployment)
-merge(EV.phi.matrix[,1:2],EV, by="id.tag", all=T) %>% filter(is.na(population)) %>% select(id.tag,population,age.at.deployment)
+
+### double check - should reveal no inconsistencies
+#merge(EV.phi.matrix[,1:2],EV, by="id.tag", all=T) %>% filter(is.na(`2`)) %>% select(id.tag,population,age.at.deployment)
+#merge(EV.phi.matrix[,1:2],EV, by="id.tag", all=T) %>% filter(is.na(population)) %>% select(id.tag,population,age.at.deployment)
+
+
+
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
