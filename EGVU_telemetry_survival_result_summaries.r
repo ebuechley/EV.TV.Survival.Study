@@ -59,16 +59,16 @@ PLOTDAT<-  expand.grid(adult=c(0,1),mig=c(1,2),capt=c(0,1),age=seq(min(age.mat, 
                                   ifelse(adult==1 & mig==1,out7$mean[out7$parameter=="lp.mean[2,1]"],out7$mean[out7$parameter=="lp.mean[2,2]"])))+
            out7$mean[out7$parameter=="b.phi.age"]*age*adult+
            out7$mean[out7$parameter=="b.phi.capt"]*capt) %>% # +
-  mutate(lcl.surv=ifelse(adult==0 & mig==1,out7[out7$parameter=="lp.mean[1,1]",3],
-                         ifelse(adult==0 & mig==2,out7[out7$parameter=="lp.mean[1,2]",3],
-                                ifelse(adult==1 & mig==1,out7[out7$parameter=="lp.mean[2,1]",3],out7[out7$parameter=="lp.mean[2,2]",3])))+
-           out7[out7$parameter=="b.phi.age",3]*age*adult+
-           out7[out7$parameter=="b.phi.capt",3]*capt) %>% # +
-  mutate(ucl.surv=ifelse(adult==0 & mig==1,out7[out7$parameter=="lp.mean[1,1]",7],
-                         ifelse(adult==0 & mig==2,out7[out7$parameter=="lp.mean[1,2]",7],
-                                ifelse(adult==1 & mig==1,out7[out7$parameter=="lp.mean[2,1]",7],out7[out7$parameter=="lp.mean[2,2]",7])))+
-           out7[out7$parameter=="b.phi.age",7]*age*adult+
-           out7[out7$parameter=="b.phi.capt",7]*capt) %>% # +
+  mutate(lcl.surv=ifelse(adult==0 & mig==1,as.numeric(out7[out7$parameter=="lp.mean[1,1]",3]),
+                         ifelse(adult==0 & mig==2,as.numeric(out7[out7$parameter=="lp.mean[1,2]",3]),
+                                ifelse(adult==1 & mig==1,as.numeric(out7[out7$parameter=="lp.mean[2,1]",3]),as.numeric(out7[out7$parameter=="lp.mean[2,2]",3]))))+
+           as.numeric(out7[out7$parameter=="b.phi.age",3])*age*adult +
+           as.numeric(out7[out7$parameter=="b.phi.capt",3])*capt) %>% # +
+  mutate(ucl.surv=ifelse(adult==0 & mig==1,as.numeric(out7[out7$parameter=="lp.mean[1,1]",7]),
+                         ifelse(adult==0 & mig==2,as.numeric(out7[out7$parameter=="lp.mean[1,2]",7]),
+                                ifelse(adult==1 & mig==1,as.numeric(out7[out7$parameter=="lp.mean[2,1]",7]),as.numeric(out7[out7$parameter=="lp.mean[2,2]",7]))))+
+           as.numeric(out7[out7$parameter=="b.phi.age",7])*age*adult+
+           as.numeric(out7[out7$parameter=="b.phi.capt",7])*capt) %>% # +
   mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
   mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
   mutate(Migratory=ifelse(mig==1,"stationary","migratory")) %>%
@@ -91,7 +91,7 @@ ggplot(PLOTDAT[PLOTDAT$adult==1,])+
   
   ## format axis ticks
   scale_x_continuous(name="Age in years", limits=c(1,54), breaks=seq(1,54,6), labels=seq(0,4,0.5)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0.5,1), breaks=seq(0.5,1,0.1)) +
+  scale_y_continuous(name="Monthly survival probability", limits=c(0.45,1), breaks=seq(0.45,1,0.1)) +
   
   ## beautification of the axes
   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -101,7 +101,7 @@ ggplot(PLOTDAT[PLOTDAT$adult==1,])+
         strip.text=element_text(size=18, color="black"), 
         strip.background=element_rect(fill="white", colour="black"))
 
-ggsave("Fig1_Age.pdf", width=)
+ggsave("Fig1_Age.pdf", width=10,height=9)
 
 
 
