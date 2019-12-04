@@ -32,6 +32,7 @@ select<-dplyr::select
 ## SELECT ONLY PARAMETERS RELEVANT FOR MODEL 7
 
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study"), silent=T)
+load("EGVU_survival_output_v3.RData")  ### need to load whole workspace for input matrices to create plotting data range
 out7<-fread("EGVU_telemetry_survival_estimates_m7.csv")
 
 ### LINEAR PREDICTOR EQUATION
@@ -112,33 +113,34 @@ ggsave("Fig1_Age.pdf", width=10,height=9)
 # FIG. 2 - MONTHLY SURVIVAL PROBABILITIES ACROSS LATITUDE AND LONGITUDE
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## NEED TO FIX AGE TO A CERTAIN LEVEL
+## PLOT SHOWS WEIRD KINK DUE TO 
 
 
 ## CREATE DATAFRAME OF ALL POSSIBLE COVARIATE COMBINATIONS FOR PLOTTING LATITUDE AND LONGITUDE
 PLOTDAT<-expand.grid(mig=c(1,2),lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=30),long=0,capt=c(0,1)) %>%
   bind_rows(expand.grid(mig=c(1,2),lat=0,long=seq(min(long.st, na.rm=T),max(long.st, na.rm=T),length=30),capt=c(0,1))) %>%
   mutate(adult=0, age=54) %>%
-  mutate(logit.surv=ifelse(adult==0 & mig==1,out7$mean[out7$parameter=="lp.mean[1,1]"],
-                           ifelse(adult==0 & mig==2,out7$mean[out7$parameter=="lp.mean[1,2]"],
-                                  ifelse(adult==1 & mig==1,out7$mean[out7$parameter=="lp.mean[2,1]"],out7$mean[out7$parameter=="lp.mean[2,2]"])))+
-           out7$mean[out7$parameter=="b.phi.age"]*age*adult+
-           out7$mean[out7$parameter=="b.phi.capt"]*capt +
-          out7$mean[out7$parameter=="b.phi.lat"]*lat+
-          out7$mean[out7$parameter=="b.phi.long"]*long) %>%
-  mutate(lcl.surv=ifelse(adult==0 & mig==1,out7[out7$parameter=="lp.mean[1,1]",3],
-                         ifelse(adult==0 & mig==2,out7[out7$parameter=="lp.mean[1,2]",3],
-                                ifelse(adult==1 & mig==1,out7[out7$parameter=="lp.mean[2,1]",3],out7[out7$parameter=="lp.mean[2,2]",3])))+
-           out7[out7$parameter=="b.phi.age",3]*age*adult+
-           out7[out7$parameter=="b.phi.capt",3]*capt +
-           out7[out7$parameter=="b.phi.lat",3]*lat+
-           out7[out7$parameter=="b.phi.long",3]*long) %>%
-  mutate(ucl.surv=ifelse(adult==0 & mig==1,out7[out7$parameter=="lp.mean[1,1]",7],
-                         ifelse(adult==0 & mig==2,out7[out7$parameter=="lp.mean[1,2]",7],
-                                ifelse(adult==1 & mig==1,out7[out7$parameter=="lp.mean[2,1]",7],out7[out7$parameter=="lp.mean[2,2]",7])))+
-           out7[out7$parameter=="b.phi.age",7]*age*adult+
-           out7[out7$parameter=="b.phi.capt",7]*capt +
-           out7[out7$parameter=="b.phi.lat",7]*lat+
-           out7[out7$parameter=="b.phi.long",7]*long) %>%
+  mutate(logit.surv=ifelse(adult==0 & mig==1,as.numeric(out7$mean[out7$parameter=="lp.mean[1,1]"]),
+                           ifelse(adult==0 & mig==2,as.numeric(out7$mean[out7$parameter=="lp.mean[1,2]"]),
+                                  ifelse(adult==1 & mig==1,as.numeric(out7$mean[out7$parameter=="lp.mean[2,1]"]),as.numeric(out7$mean[out7$parameter=="lp.mean[2,2]"]))))+
+           as.numeric(out7$mean[out7$parameter=="b.phi.age"])*age*adult+
+           as.numeric(out7$mean[out7$parameter=="b.phi.capt"])*capt +
+          as.numeric(out7$mean[out7$parameter=="b.phi.lat"])*lat+
+          as.numeric(out7$mean[out7$parameter=="b.phi.long"])*long) %>%
+  mutate(lcl.surv=ifelse(adult==0 & mig==1,as.numeric(out7[out7$parameter=="lp.mean[1,1]",3]),
+                         ifelse(adult==0 & mig==2,as.numeric(out7[out7$parameter=="lp.mean[1,2]",3]),
+                                ifelse(adult==1 & mig==1,as.numeric(out7[out7$parameter=="lp.mean[2,1]",3]),as.numeric(out7[out7$parameter=="lp.mean[2,2]",3]))))+
+           as.numeric(out7[out7$parameter=="b.phi.age",3])*age*adult+
+           as.numeric(out7[out7$parameter=="b.phi.capt",3])*capt +
+           as.numeric(out7[out7$parameter=="b.phi.lat",3])*lat+
+           as.numeric(out7[out7$parameter=="b.phi.long",3])*long) %>%
+  mutate(ucl.surv=ifelse(adult==0 & mig==1,as.numeric(out7[out7$parameter=="lp.mean[1,1]",7]),
+                         ifelse(adult==0 & mig==2,as.numeric(out7[out7$parameter=="lp.mean[1,2]",7]),
+                                ifelse(adult==1 & mig==1,as.numeric(out7[out7$parameter=="lp.mean[2,1]",7]),as.numeric(out7[out7$parameter=="lp.mean[2,2]",7]))))+
+           as.numeric(out7[out7$parameter=="b.phi.age",7])*age*adult+
+           as.numeric(out7[out7$parameter=="b.phi.capt",7])*capt +
+           as.numeric(out7[out7$parameter=="b.phi.lat",7])*lat+
+           as.numeric(out7[out7$parameter=="b.phi.long",7])*long) %>%
   mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
   mutate(Origin=ifelse(capt==1,"captive bred","wild")) %>%
   mutate(Migratory=ifelse(mig==1,"stationary","migratory")) %>%
@@ -146,9 +148,11 @@ PLOTDAT<-expand.grid(mig=c(1,2),lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st,
   mutate(Longitude=(long*sd.long)+mean.long) %>% ## back transform longitude
   arrange(Origin,Migratory) %>%
   select(Origin, Migratory,surv,lcl,ucl,Latitude,Longitude) %>%
-  gather(key='direction',value='degree',-Origin,-Migratory,-surv,-lcl,-ucl)
+  gather(key='direction',value='degree',-Origin,-Migratory,-surv,-lcl,-ucl) %>%
+  filter(!(direction=="Latitude" & degree==mean.lat)) %>%
+  filter(!(direction=="Longitude" & degree==mean.long))
 head(PLOTDAT)
-min(PLOTDAT$lcl)
+PLOTDAT %>% filter(Origin=="captive bred" & Migratory=="migratory" & direction=="Latitude") 
 
 
 
@@ -204,7 +208,7 @@ PLOTDAT %>% filter(lat> 1.4) %>%
         strip.text=element_text(size=18, color="black"), 
         strip.background=element_rect(fill="white", colour="black"))
 
-ggsave("EGVU_ad_surv_by_longitude.pdf")
+ggsave("Fig2_Geography.pdf")
 
 
 
@@ -264,8 +268,9 @@ fwrite(ModSelTab,"EGVU_surv_model_selection_table.csv")
 # PLOT PARAMETER ESTIMATES FROM ALL 6 MODELS ON LOGIT SCALE 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-out %>% filter(grepl("phi",parameter)) %>%
+phimean<-out7 %>% filter(grepl("lp.mean",parameter))
+out7 %>% filter(grepl("b.phi",parameter)) %>%
+  bind_rows(phimean) %>%
   left_join(DIC_tab, by="model") %>%
   mutate(header= paste(model,"delta DIC:",as.integer(deltaDIC)," ")) %>%
   
