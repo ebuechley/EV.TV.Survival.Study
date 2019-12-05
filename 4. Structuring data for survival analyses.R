@@ -50,6 +50,7 @@ d <- d[order(d$id.tag),]
 ev.summary <- ev.summary[order(ev.summary$id.tag),] 
 unique(d$id.tag)
 unique(ev.summary$id.tag)
+unique(ev.summary$start.country)
 
 # fix id.tag values
 #these were edits made to the summary table by data owners that I am reincorprating back to the original data
