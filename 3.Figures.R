@@ -11,17 +11,34 @@ rm(list = ls())
 setwd("~/Documents/GitHub/EV - TV Survival Study/")
 
 #read data
-d = read.csv("ev.tv.filtered.csv")
+#d = read.csv("ev.tv.filtered.csv")
 d.summ= read.csv("ev.tv.summary.proofed.csv")
 d.summ$start.date = mdy_hm(d.summ$start.date)
 
 #summary stats for study
 summary(d.summ)
 unique(d.summ$study.name)
+summary(d.summ$fate)
+summary(d.summ$population)
+summary(d.summ$sex)
+
 names(d)
 head(d)
 tv.summ = subset(d.summ, d.summ$species == "Cathartes aura")
 ev.summ = subset(d.summ, d.summ$species == "Neophron percnopterus")
+summary(tv.summ$sex)
+summary(ev.summ$sex)
+summary(tv.summ$age.at.deployment.clean)
+summary(ev.summ$age.at.deployment.clean)
+summary(ev.summ$migrant)
+summary(tv.summ$migrant)
+summary(ev.summ$captive.raised)
+summary(tv.summ$captive.raised)
+summary(ev.summ$rehabilitated)
+summary(tv.summ$rehabilitated)
+ev.summ.wild = subset(ev.summ, ev.summ$captive.raised == "N")
+summary(ev.summ.wild$age.at.deployment.clean)
+
 tv = subset(d, d$species == "Cathartes aura")
 ev = subset(d, d$species == "Neophron percnopterus")
 
