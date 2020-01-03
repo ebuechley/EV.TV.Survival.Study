@@ -31,6 +31,8 @@
 
 ## UPDATE 27 DEC 2019: included code for spring vs fall migration and introduced new model to combine m8 and m5
 
+## UPDATE 3 JAN 2020: revised classification for populations -> Italy into Balkans population due to sea crossing
+
 
 library(jagsUI)
 library(tidyverse)
@@ -359,8 +361,8 @@ pop.orig<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
   arrange(id.tag,timestamp) %>%
   group_by(id.tag) %>%
   summarise(pop=first(population)) %>%
-  mutate(pop=ifelse(pop %in% c("western europe","italy"),1,
-                    ifelse(pop=="balkans",2,
+  mutate(pop=ifelse(pop %in% c("balkans","italy"),2,
+                    ifelse(pop=="western europe",1,
                            ifelse(pop %in% c("middle east","caucasus"),3,4)))) %>%
   arrange(id.tag)
 
@@ -665,7 +667,7 @@ save.image("EGVU_survival_output_v3.RData")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SPECIFY JAGS MODEL [NEEDS TO BE RUN FIRST - ONLY m8 SHOWN HERE]
+# SPECIFY JAGS MODEL [NEEDS TO BE RUN FIRST - ONLY m10 SHOWN HERE]
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Specify model in BUGS language
@@ -705,7 +707,7 @@ cat("
   for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
       logit(phi[i,t]) <- lp.mean[mig[i,t]] + b.phi.age*(age[i,t])  +   ### age and migratory stage category-specific intercept and slope for non-adult bird to increase survival with age
-                            b.phi.free*(free[i,t])*(capt[i])*(adult[i,t])   +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
+                            b.phi.capt*(capt[i])*(adult[i,t])   +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
                             b.phi.lat*(lat[i,t]) +                      #### probability of monthly survival dependent on latitude
                             b.phi.pop[pop[i]]                             #### probability of survival varies by population
       } #t
@@ -720,7 +722,7 @@ cat("
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
-    b.phi.free ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
+    b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
     b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
     #b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
 
@@ -813,5 +815,7 @@ cat("
 }
     ",fill = TRUE)
 sink()
+
+
 
 
