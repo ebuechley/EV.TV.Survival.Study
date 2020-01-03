@@ -13,6 +13,8 @@
 
 ## adjusted on 29 Dec 2019 to new model output (m10)
 
+## revised on 3 Jan 2020 to curtail model output to existing ranges
+
 library(jagsUI)
 library(tidyverse)
 library(data.table)
@@ -33,7 +35,10 @@ select<-dplyr::select
 
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study"), silent=T)
 load("EGVU_survival_output_v3.RData")  ### need to load whole workspace for input matrices to create plotting data range
-out10<-fread("EGVU_telemetry_survival_estimates_m10.csv")
+#out10<-fread("EGVU_telemetry_survival_estimates_m10.csv") ## this causes some weird list error in the PLOTDAT creation below
+out10<-as.data.frame(EVsurv10$summary)
+out10$parameter<-row.names(EVsurv10$summary)
+out10$model<-"m10"
 
 ### LINEAR PREDICTOR EQUATION
 # logit(phi[i,t]) <- lp.mean[mig[i,t]] + b.phi.age*(age[i,t])  +   ### age and migratory stage category-specific intercept and slope for non-adult bird to increase survival with age
@@ -45,47 +50,115 @@ out10<-fread("EGVU_telemetry_survival_estimates_m10.csv")
 
 
 
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# OUTPUT TABLE FOR PREDICTED ANNUAL SURVIVAL FOR ADULT AND JUVENILE FOR EACH POPULATION
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+### CALCULATE PREDICTED SURVIVAL BASED ON FINAL MODEL
+## summarise annual survival by using 10*stationary, 1*spring mig and 1*fall mig
+
+TABLE2<-data.frame(pop=rep(seq(1:4), each=48),
+             capt=rep(c(0,1,0,1), each=24),
+             age=rep(c(1:12,rep(54,12)),4), 
+             mig=rep(c(c(1,3,1,1,1,1,1,1,1,1,1,1),c(1,3,1,1,1,1,1,1,1,1,2,1)),4)) %>%
+  
+  ### REMOVE MIGRATORY PHASES FROM SOUTHERN POPULATION
+  mutate(mig=ifelse(pop==4,1,mig)) %>%
+  
+  ### CALCULATE MONTHLY SURVIVAL
+  mutate(logit.surv=ifelse(mig==1,out10$mean[out10$parameter=="lp.mean[1]"],ifelse(mig==2,out10$mean[out10$parameter=="lp.mean[2]"],out10$mean[out10$parameter=="lp.mean[3]"]))+
+           out10$mean[out10$parameter=="b.phi.age"]*age+
+           out10$mean[grepl("b.phi.pop",out10$parameter)][pop]+
+           out10$mean[out10$parameter=="b.phi.capt"]*capt)  %>% 
+  mutate(lcl.surv=ifelse(mig==1,as.numeric(out10[out10$parameter=="lp.mean[1]",3]),ifelse(mig==2,as.numeric(out10[out10$parameter=="lp.mean[2]",3]),as.numeric(out10[out10$parameter=="lp.mean[3]",3]))) +
+           as.numeric(out10[out10$parameter=="b.phi.age",3])*age +
+           as.numeric(out10[grepl("b.phi.pop",out10$parameter),3][pop])+
+           as.numeric(out10[out10$parameter=="b.phi.capt",3])*capt) %>% # +
+  mutate(ucl.surv=ifelse(mig==1,as.numeric(out10[out10$parameter=="lp.mean[1]",7]),ifelse(mig==2,as.numeric(out10[out10$parameter=="lp.mean[2]",7]),as.numeric(out10[out10$parameter=="lp.mean[3]",7]))) +
+           as.numeric(out10[out10$parameter=="b.phi.age",7])*age+
+           as.numeric(out10[grepl("b.phi.pop",out10$parameter),7][pop])+
+           as.numeric(out10[out10$parameter=="b.phi.capt",7])*capt) %>% # +
+  
+  ### BACKTRANSFORM TO NORMAL SCALE
+  mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
+  
+  ### ANNOTATE GROUPS
+  mutate(Population=ifelse(pop==1,"Europe (West)",
+                           ifelse(pop==2,"Europe (East)",
+                                  ifelse(pop==3,"Middle East","Southern")))) %>%
+  mutate(Ageclass=ifelse(age==54,"adult","juvenile")) %>%
+  mutate(Origin=ifelse(capt==1,"captive-raised","wild")) %>%
+  
+  ### REMOVE CAPTIVE RAISED BIRDS FROM SOUTHERN AND WESTERN POPULATION
+  filter(!(capt==1 & pop %in% c(1,4)))  %>%
+  
+  ### REMOVE CAPTIVE RAISED ADULTS
+  filter(!(capt==1 & age==54))  %>%
+  
+  ### CALCULATE ANNUAL SURVIVAL
+  group_by(Population,Origin,Ageclass) %>%
+  summarise(ann.surv=prod(surv),ann.surv.lcl=prod(lcl),ann.surv.ucl=prod(ucl))
+
+
+
+fwrite(TABLE2,"EGVU_ann_survival_estimates.csv")
+
+
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # FIGURE 1 - PLOT MONTHLY SURVIVAL PROBABILITIES ON REAL SCALE ACROSS AGE FOR ALL 4 POPULATIONS AND 3 MIG STAGES
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### CALCULATE PREDICTED SURVIVAL BASED ON FINAL MODEL
 
-PLOTDAT<-  expand.grid(mig=c(1,2,3),pop=seq(1:4),age=seq(min(age.mat, na.rm=T),max(age.mat, na.rm=T),1)) %>%
+PLOTDAT<-  expand.grid(mig=c(1,2,3),pop=seq(1:4),age=seq(min(age.mat, na.rm=T),max(age.mat, na.rm=T),1), capt=c(0,1)) %>%
   mutate(logit.surv=ifelse(mig==1,out10$mean[out10$parameter=="lp.mean[1]"],ifelse(mig==2,out10$mean[out10$parameter=="lp.mean[2]"],out10$mean[out10$parameter=="lp.mean[3]"]))+
            out10$mean[out10$parameter=="b.phi.age"]*age+
-           out10$mean[grepl("b.phi.pop",out10$parameter)][pop])  %>% 
+           out10$mean[grepl("b.phi.pop",out10$parameter)][pop]+
+           out10$mean[out10$parameter=="b.phi.capt"]*capt)  %>% 
            
   mutate(lcl.surv=ifelse(mig==1,as.numeric(out10[out10$parameter=="lp.mean[1]",3]),ifelse(mig==2,as.numeric(out10[out10$parameter=="lp.mean[2]",3]),as.numeric(out10[out10$parameter=="lp.mean[3]",3]))) +
            as.numeric(out10[out10$parameter=="b.phi.age",3])*age +
-           as.numeric(out10[grepl("b.phi.pop",out10$parameter),3][pop])) %>% # +
+           as.numeric(out10[grepl("b.phi.pop",out10$parameter),3][pop])+
+           as.numeric(out10[out10$parameter=="b.phi.capt",3])*capt) %>% # +
   mutate(ucl.surv=ifelse(mig==1,as.numeric(out10[out10$parameter=="lp.mean[1]",7]),ifelse(mig==2,as.numeric(out10[out10$parameter=="lp.mean[2]",7]),as.numeric(out10[out10$parameter=="lp.mean[3]",7]))) +
            as.numeric(out10[out10$parameter=="b.phi.age",7])*age+
-           as.numeric(out10[grepl("b.phi.pop",out10$parameter),7][pop])) %>% # +
+           as.numeric(out10[grepl("b.phi.pop",out10$parameter),7][pop])+
+           as.numeric(out10[out10$parameter=="b.phi.capt",7])*capt) %>% # +
   mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
   mutate(Population=ifelse(pop==1,"Europe (West)",
                             ifelse(pop==2,"Europe (East)",
                                     ifelse(pop==3,"Middle East","Southern")))) %>%
   mutate(Season=ifelse(mig==1,"stationary",ifelse(mig==2,"spring migration","fall migration"))) %>%
+  mutate(Origin=ifelse(capt==1,"captive-raised","wild")) %>%
   arrange(Population,Season,age) %>%
   
   ### REMOVE SPRING MIGRATION FOR JUVENILE BIRDS
-  filter(!(Season=="spring migration" & age<16))
+  filter(!(Season=="spring migration" & age<16)) %>%
+
+  ### REMOVE MIGRATION FOR SOUTHERN POPULATION
+  filter(!(Season %in% c("spring migration","fall migration") & pop==4)) %>%
+  
+  ### REMOVE CAPTIVE RAISED BIRDS FROM SOUTHERN AND WESTERN POPULATION
+  filter(!(capt==1 & pop %in% c(1,4)))
 
 head(PLOTDAT)
 
 
 
 ## PLOT 
+PLOTDAT %>% filter(capt==0) %>%
 
-ggplot(PLOTDAT)+
-  geom_ribbon(aes(x=age, ymin=lcl, ymax=ucl, fill=Season), alpha=0.2) +
-  geom_line(aes(x=age, y=surv, color=Season))+
+ggplot()+
+  geom_ribbon(aes(x=age, ymin=lcl, ymax=ucl, fill=Season), alpha=0.2) +   ##, type=Origin
+  geom_line(aes(x=age, y=surv, color=Season))+     ## , linetype=Origin
   facet_wrap(~Population,ncol=2) +
   
   ## format axis ticks
   scale_x_continuous(name="Age in years", limits=c(1,54), breaks=seq(1,54,6), labels=seq(0,4,0.5)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0.4,1), breaks=seq(0.4,1,0.1)) +
+  scale_y_continuous(name="Monthly survival probability", limits=c(0.3,1), breaks=seq(0.3,1,0.1)) +
   
   ## beautification of the axes
   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -105,6 +178,16 @@ ggsave("Fig1_Surv_by_Age.pdf", width=10,height=9)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # FIGURE 2 - PLOT MONTHLY SURVIVAL PROBABILITIES ON REAL SCALE ACROSS LATITUDE FOR ALL 4 POPULATIONS AND 3 MIG STAGES
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### ASSESS RANGE OF LATITUDE FOR EACH POPULATION
+poplatrange<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
+  mutate(pop=ifelse(population %in% c("western europe","italy"),1,
+                    ifelse(population=="balkans",2,
+                           ifelse(population %in% c("middle east","caucasus"),3,4)))) %>%
+  group_by(pop) %>%
+  summarise(lat.min=min(lat),lat.max=max(lat))
+
+
 
 ### CALCULATE PREDICTED SURVIVAL BASED ON FINAL MODEL
 
@@ -128,7 +211,15 @@ PLOTDAT<-  expand.grid(mig=c(1,2,3),pop=seq(1:4),lat=seq(min(lat.mat.st, na.rm=T
                                   ifelse(pop==3,"Middle East","Southern")))) %>%
   mutate(Season=ifelse(mig==1,"stationary",ifelse(mig==2,"spring migration","fall migration"))) %>%
   arrange(Population,Season,lat) %>%
-  mutate(Latitude=(lat*sd.lat)+mean.lat) ## back transform latitude
+  mutate(Latitude=(lat*sd.lat)+mean.lat) %>% ## back transform latitude
+
+  ### REMOVE MIGRATION FOR SOUTHERN POPULATION
+  filter(!(Season %in% c("spring migration","fall migration") & pop==4)) %>%
+  
+  ### REMOVE LATITUDES OUTSIDE EACH POPULATION'S RANGE
+  left_join(poplatrange, by="pop") %>%
+  filter(!(Latitude>lat.max)) %>%
+  filter(!(Latitude<lat.min))
 
 head(PLOTDAT)
 range(PLOTDAT$Latitude)
@@ -143,7 +234,7 @@ ggplot(PLOTDAT)+
   
   ## format axis ticks
   scale_x_continuous(name="Latitude", limits=c(1.2,45), breaks=seq(5,45,5), labels=seq(5,45,5)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0.17,1), breaks=seq(0.2,1,0.1)) +
+  scale_y_continuous(name="Monthly survival probability", limits=c(0.1,1), breaks=seq(0.1,1,0.1)) +
   
   ## beautification of the axes
   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -165,56 +256,66 @@ ggsave("Fig2_JUV_Surv_by_Latitude.pdf", width=10,height=9)
 # FIGURE 3- PLOT MONTHLY SURVIVAL PROBABILITIES ON REAL SCALE ACROSS TIME SINCE RELEASE FOR ALL 4 POPULATIONS AND 3 MIG STAGES
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-### CALCULATE PREDICTED SURVIVAL BASED ON FINAL MODEL
+### REMOVED ON 3 JAN AFTER REVISING MODEL TO NOT INCLUDE TIME SINCE RELEASE
 
-PLOTDAT<-  #expand.grid(mig=c(1,2,3),pop=seq(1:4),free=seq(min(free.matrix[,-1], na.rm=T),max(free.matrix[,-1], na.rm=T),1)) %>%
-  expand.grid(mig=c(1,2,3),pop=seq(1:4),free=seq(0,10,1)) %>%
-  mutate(age=free+2) %>%
-  mutate(logit.surv=ifelse(mig==1,out10$mean[out10$parameter=="lp.mean[1]"],ifelse(mig==2,out10$mean[out10$parameter=="lp.mean[2]"],out10$mean[out10$parameter=="lp.mean[3]"]))+
-           out10$mean[out10$parameter=="b.phi.free"]*free+
-           out10$mean[out10$parameter=="b.phi.age"]*age+
-           out10$mean[grepl("b.phi.pop",out10$parameter)][pop])  %>% 
-  mutate(lcl.surv=ifelse(mig==1,as.numeric(out10[out10$parameter=="lp.mean[1]",3]),ifelse(mig==2,as.numeric(out10[out10$parameter=="lp.mean[2]",3]),as.numeric(out10[out10$parameter=="lp.mean[3]",3]))) +
-           as.numeric(out10[out10$parameter=="b.phi.free",3])*free +
-           as.numeric(out10[out10$parameter=="b.phi.age",3])*age +
-           as.numeric(out10[grepl("b.phi.pop",out10$parameter),3][pop])) %>% # +
-  mutate(ucl.surv=ifelse(mig==1,as.numeric(out10[out10$parameter=="lp.mean[1]",7]),ifelse(mig==2,as.numeric(out10[out10$parameter=="lp.mean[2]",7]),as.numeric(out10[out10$parameter=="lp.mean[3]",7]))) +
-           as.numeric(out10[out10$parameter=="b.phi.free",7])*free+
-           as.numeric(out10[out10$parameter=="b.phi.age",7])*age +
-           as.numeric(out10[grepl("b.phi.pop",out10$parameter),7][pop])) %>% # +
-  mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
-  mutate(Population=ifelse(pop==1,"Europe (West)",
-                           ifelse(pop==2,"Europe (East)",
-                                  ifelse(pop==3,"Middle East","Southern")))) %>%
-  mutate(Season=ifelse(mig==1,"stationary",ifelse(mig==2,"spring migration","fall migration"))) %>%
-  arrange(Population,Season,free) 
-
-head(PLOTDAT)
-
-
-## PLOT 
-
-ggplot(PLOTDAT)+
-  geom_ribbon(aes(x=free, ymin=lcl, ymax=ucl, fill=Season), alpha=0.2) +
-  geom_line(aes(x=free, y=surv, color=Season))+
-  facet_wrap(~Population,ncol=2) +
-  
-  ## format axis ticks
-  scale_x_continuous(name="Time since release (months)", limits=c(0,10), breaks=seq(0,10,2)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0,1), breaks=seq(0.2,1,0.1)) +
-  
-  ## beautification of the axes
-  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        axis.text.y=element_text(size=14, color="black"),
-        axis.text.x=element_text(size=14, color="black"), 
-        axis.title=element_text(size=18),
-        legend.text=element_text(size=14, color="black"),
-        legend.title=element_text(size=16, color="black"),  
-        strip.text=element_text(size=18, color="black"), 
-        strip.background=element_rect(fill="white", colour="black"))
-
-ggsave("Fig3_JUV_Surv_after_release.pdf", width=10,height=9)
-
+# ### CALCULATE PREDICTED SURVIVAL BASED ON FINAL MODEL
+# 
+# PLOTDAT<-  #expand.grid(mig=c(1,2,3),pop=seq(1:4),free=seq(min(free.matrix[,-1], na.rm=T),max(free.matrix[,-1], na.rm=T),1)) %>%
+#   expand.grid(mig=c(1,2,3),pop=seq(1:4),free=seq(0,10,1)) %>%
+#   mutate(age=free+2) %>%
+#   mutate(logit.surv=ifelse(mig==1,out10$mean[out10$parameter=="lp.mean[1]"],ifelse(mig==2,out10$mean[out10$parameter=="lp.mean[2]"],out10$mean[out10$parameter=="lp.mean[3]"]))+
+#            out10$mean[out10$parameter=="b.phi.free"]*free+
+#            out10$mean[out10$parameter=="b.phi.age"]*age+
+#            out10$mean[grepl("b.phi.pop",out10$parameter)][pop])  %>% 
+#   mutate(lcl.surv=ifelse(mig==1,as.numeric(out10[out10$parameter=="lp.mean[1]",3]),ifelse(mig==2,as.numeric(out10[out10$parameter=="lp.mean[2]",3]),as.numeric(out10[out10$parameter=="lp.mean[3]",3]))) +
+#            as.numeric(out10[out10$parameter=="b.phi.free",3])*free +
+#            as.numeric(out10[out10$parameter=="b.phi.age",3])*age +
+#            as.numeric(out10[grepl("b.phi.pop",out10$parameter),3][pop])) %>% # +
+#   mutate(ucl.surv=ifelse(mig==1,as.numeric(out10[out10$parameter=="lp.mean[1]",7]),ifelse(mig==2,as.numeric(out10[out10$parameter=="lp.mean[2]",7]),as.numeric(out10[out10$parameter=="lp.mean[3]",7]))) +
+#            as.numeric(out10[out10$parameter=="b.phi.free",7])*free+
+#            as.numeric(out10[out10$parameter=="b.phi.age",7])*age +
+#            as.numeric(out10[grepl("b.phi.pop",out10$parameter),7][pop])) %>% # +
+#   mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
+#   mutate(Population=ifelse(pop==1,"Europe (West)",
+#                            ifelse(pop==2,"Europe (East)",
+#                                   ifelse(pop==3,"Middle East","Southern")))) %>%
+#   mutate(Season=ifelse(mig==1,"stationary",ifelse(mig==2,"spring migration","fall migration"))) %>%
+#   arrange(Population,Season,free) %>%
+#   
+#   ### REMOVE MIGRATION FOR SOUTHERN POPULATION
+#   filter(!(Season %in% c("spring migration","fall migration") & pop==4)) %>%
+#   
+#   ### REMOVE LATITUDES OUTSIDE EACH POPULATION'S RANGE
+#   left_join(poplatrange, by="pop") %>%
+#   filter(!(Latitude>lat.max)) %>%
+#   filter(!(Latitude<lat.min))
+# 
+# head(PLOTDAT)
+# 
+# 
+# ## PLOT 
+# 
+# ggplot(PLOTDAT)+
+#   geom_ribbon(aes(x=free, ymin=lcl, ymax=ucl, fill=Season), alpha=0.2) +
+#   geom_line(aes(x=free, y=surv, color=Season))+
+#   facet_wrap(~Population,ncol=2) +
+#   
+#   ## format axis ticks
+#   scale_x_continuous(name="Time since release (months)", limits=c(0,10), breaks=seq(0,10,2)) +
+#   scale_y_continuous(name="Monthly survival probability", limits=c(0,1), breaks=seq(0.2,1,0.1)) +
+#   
+#   ## beautification of the axes
+#   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+#         axis.text.y=element_text(size=14, color="black"),
+#         axis.text.x=element_text(size=14, color="black"), 
+#         axis.title=element_text(size=18),
+#         legend.text=element_text(size=14, color="black"),
+#         legend.title=element_text(size=16, color="black"),  
+#         strip.text=element_text(size=18, color="black"), 
+#         strip.background=element_rect(fill="white", colour="black"))
+# 
+# ggsave("Fig3_JUV_Surv_after_release.pdf", width=10,height=9)
+# 
 
 
 
@@ -245,14 +346,7 @@ out10 %>% filter(grepl("b.phi",parameter)) %>%
         strip.background=element_rect(fill="white", colour="black"))
 
 
-ggsave("Fig4_parameter_estimates_logit.pdf", height=10, width=15)
-
-
-
-
-
-
-
+ggsave("Fig3_parameter_estimates_logit.pdf", height=10, width=15)
 
 
 
