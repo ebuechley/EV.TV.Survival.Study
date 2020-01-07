@@ -529,35 +529,35 @@ nb <- 1000
 nc <- 4
 
 # # Call JAGS from R (took 70 min)
-# EVsurv1 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-# 			"C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp1.jags",
-# 			n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-# 
-# 
-# EVsurv2 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp2.jags",
-#                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-# 
-# EVsurv3 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp3.jags",
-#                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-# 
-# EVsurv4 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp4.jags",
-#                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-# 
-# 
-# ### after inspection of the above 4 models the following was concocted
-# 
-# EVsurv5 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp5.jags",
-#                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-# 
-# ### after inspection of the fifth model try to fit one that does not distinguish between captive and wild individuals at all
-# 
-# EVsurv6 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp6.jags",
-#                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+EVsurv1 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+			"C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp1.jags",
+			n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+
+EVsurv2 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                   "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp2.jags",
+                   n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+EVsurv3 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                   "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp3.jags",
+                   n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+EVsurv4 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                   "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp4.jags",
+                   n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+
+### after inspection of the above 4 models the following was concocted
+
+EVsurv5 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp5.jags",
+                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+### after inspection of the fifth model try to fit one that does not distinguish between captive and wild individuals at all
+
+EVsurv6 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp6.jags",
+                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
 
 ### FINAL MODEL WITH REDUCED PARAMETERISATION OF AGE (not supported)
@@ -708,7 +708,7 @@ cat("
     for (t in f[i]:(n.occasions)){
       logit(phi[i,t]) <- lp.mean[mig[i,t]] + b.phi.age*(age[i,t])  +   ### age and migratory stage category-specific intercept and slope for non-adult bird to increase survival with age
                             b.phi.capt*(capt[i])*(adult[i,t])   +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
-                            b.phi.lat*(lat[i,t]) +                      #### probability of monthly survival dependent on latitude
+                            #b.phi.lat*(lat[i,t]) +                      #### probability of monthly survival dependent on latitude
                             b.phi.pop[pop[i]]                             #### probability of survival varies by population
       } #t
     } #i
@@ -723,7 +723,7 @@ cat("
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
     b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
-    b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
+    #b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
     #b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
 
     #### OFFSET FOR POPULATIONS
