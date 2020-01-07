@@ -60,6 +60,9 @@ EV<-EV %>%
 head(EV)
 
 
+EV %>%
+  filter(fate=="alive") %>%
+  arrange(id.tag)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -87,6 +90,12 @@ EV.obs.matrix<-EV %>% select(id.tag) %>%
   arrange(id.tag)
 EV.obs.matrix[,2:max(timeseries$col)]<-0
 
+# Initial values
+z.init <- EV.obs.matrix
+# for (i in 1:dim(y.telemetry)[1]){
+#   z.init[i,1:f.telemetry[i]] <- NA
+# }
+
 tag.age<-EV %>% select(id.tag) %>%
   arrange(id.tag)
 tag.age[,2:max(timeseries$col)]<-NA									
@@ -107,20 +116,18 @@ for(n in EV.obs.matrix$id.tag){
   tag.age[EV.obs.matrix$id.tag==n,startcol:max(timeseries$col)]<-seq(1,(max(timeseries$col)-(startcol-1)),1)/12  ## specify tag age in years
     
   ## ASSIGN OBSERVED STATE
-  EV.obs.matrix[EV.obs.matrix$id.tag==n,startcol:(stopcol-1)]<-1
-  if(startcol==stopcol){EV.obs.matrix[EV.obs.matrix$id.tag==n,2:(stopcol-1)]<-NA} ## for the few cases where stopcol-1 is actually before startcol
-  #EV.obs.matrix[EV.obs.matrix$id.tag==n,stopcol:max(timeseries$col)]<-xl$OS   ## this assumes that state never changes - some birds may have gone off air and then been found dead - this needs manual adjustment!  
+  EV.obs.matrix[EV.obs.matrix$id.tag==n,startcol:stopcol]<-1
+
+  ## CREATE INITIAL VALUES FOR Z
+  z.init[z.init$id.tag==n,]<-EV.obs.matrix[EV.obs.matrix$id.tag==n,]
+  z.init[z.init$id.tag==n,2:startcol]<-NA
   
   ## ASSIGN INITIAL TRUE STATE (to initialise z-matrix of model)
-  EV.obs.matrix[EV.obs.matrix$id.tag==n,max(timeseries$col)]<-ifelse(EV$OS[EV$id.tag==n]==1,1,0)   ## this sets the last observation to 1 for those birds that had confirmed transmitter failure
+  #EV.obs.matrix[EV.obs.matrix$id.tag==n,min((stopcol+10),max(timeseries$col))]<-ifelse(EV$OS[EV$id.tag==n]==1,1,0)   ## this sets the last observation to 1 for those birds that had confirmed transmitter failure
   
-  # EV.state.matrix[EV.state.matrix$id.tag==n,(startcol+1):(stopcol-1)]<-2      ## state at first capture is known, hence must be NA in z-matrix
-  # EV.state.matrix[EV.state.matrix$id.tag==n,stopcol:max(timeseries$col)]<-xl$TS   ## this assumes that state never changes - some birds may have gone off air and then been found dead - this needs manual adjustment!
-  # EV.state.matrix[EV.state.matrix$id.tag==n,2:startcol]<-NA ## error occurs if z at first occ is not NA, so we need to specify that for birds alive for <1 month because stopcol-1 = startcol
-  # 
 }
 
-
+EV.obs.matrix[,max(timeseries$col)]
 # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # # CREATE MATRIX OF SURVIVAL PARAMETERS BASED ON AGE AND SEASON
 # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -222,7 +229,7 @@ lat.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
   mutate(col=timeseries$col[match(yr.mo,timeseries$date)]) %>%
   group_by(id.tag,col) %>%
   summarise(lat=mean(mean.monthly.lat)) %>%
-  spread(key=col,value=lat) %>%
+  spread(key=col,value=lat, fill=0) %>%
   arrange(id.tag)
 
 ## CREATE LONGITUDE MATRIX
@@ -354,18 +361,12 @@ long.st<-(long.orig$long-mean.long)/sd.long
 
 
 #### create vector of first marking and of last alive record
-get.first.telemetry<-function(x)min(which(!is.na(x)))
-get.last.telemetry<-function(x)max(which(!is.na(x) & x==1))
+get.first.telemetry<-function(x)min(which(x>0))
 f.telemetry<-apply(y.telemetry,1,get.first.telemetry)
-l.telemetry<-apply(y.telemetry,1,get.last.telemetry)
-
-#### extract and standardise covariates
-tag.fail.indicator<-EV$mean.GPS.dist.last10fixes.degrees
 
 #### BUNDLE DATA INTO A LIST
 INPUT.telemetry <- list(y = y.telemetry,
                         f = f.telemetry,
-                        l = l.telemetry,
                         age = age.mat,
                         adult = ifelse(age.mat>53,0,1), ### provide a simple classification for adults and non-adults
                         mig = as.matrix(EV.phi.matrix[,2:max(timeseries$col)]),
@@ -388,16 +389,12 @@ INPUT.telemetry <- list(y = y.telemetry,
 # Parameters monitored
 parameters.telemetry <- c("mean.p","mean.phi","lp.mean","b.phi.age","b.phi.mig","b.phi.capt","b.phi.lat","b.phi.pop")
 
-# Initial values
-# Function to create a matrix of initial values for latent state z
-ch.init <- function(ch, f){
-  for (i in 1:dim(ch)[1]){ch[i,1:f[i]] <- NA}
-  return(ch)
-}
 
-inits.telemetry <- function(){list(z = ch.init(y.telemetry, f.telemetry),
+
+
+inits.telemetry <- function(){list(z = as.matrix(z.init[,2:max(timeseries$col)]),
                                    #mean.phi = matrix(runif(4, 0.5, 0.999),nrow=2), ### this is only valid for model 7
-                                   mean.phi = runif(2, 0.5, 0.999), ### this is only valid for models 1-6
+                                   mean.phi = runif(3, 0.5, 0.999), ### this is only valid for models 1-6
 					                         base.obs = rnorm(1,0, 0.001))} 
 
 # MCMC settings
