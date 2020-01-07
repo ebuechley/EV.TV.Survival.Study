@@ -108,6 +108,33 @@ fwrite(TABLE2,"EGVU_ann_survival_estimates.csv")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# FIGURE 1 - PLOT DESIRED BY RON
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+ggplot(TABLE2, aes(y=ann.surv, x=Ageclass, colour=Origin))+
+  geom_point(size=2)+
+  geom_errorbar(aes(ymin=ann.surv.lcl, ymax=ann.surv.ucl, colour=Origin), width=.1)+
+  facet_wrap(~Population,ncol=2) +
+  
+  ## format axis ticks
+  scale_y_continuous(name="Annual survival probability", limits=c(0,1), breaks=seq(0,1,0.2)) +
+  
+  ## beautification of the axes
+  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.y=element_text(size=14, color="black"),
+        axis.text.x=element_text(size=14, color="black"), 
+        axis.title=element_text(size=18),
+        legend.text=element_text(size=14, color="black"),
+        legend.title=element_text(size=16, color="black"),  
+        strip.text=element_text(size=18, color="black"), 
+        strip.background=element_rect(fill="white", colour="black"))
+
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # FIGURE 1 - PLOT MONTHLY SURVIVAL PROBABILITIES ON REAL SCALE ACROSS AGE FOR ALL 4 POPULATIONS AND 3 MIG STAGES
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -247,6 +274,55 @@ ggplot(PLOTDAT)+
         strip.background=element_rect(fill="white", colour="black"))
 
 ggsave("Fig2_JUV_Surv_by_Latitude.pdf", width=10,height=9)
+
+
+
+
+
+
+### PLOT EFFECT FOR LATITUDE
+
+PLOTDAT<-  expand.grid(mig=c(1,2,3),lat=seq(min(lat.mat.st, na.rm=T),max(lat.mat.st, na.rm=T),length=50)) %>%
+  mutate(logit.surv=ifelse(mig==1,out10$mean[out10$parameter=="lp.mean[1]"],ifelse(mig==2,out10$mean[out10$parameter=="lp.mean[2]"],out10$mean[out10$parameter=="lp.mean[3]"]))+
+           out10$mean[out10$parameter=="b.phi.lat"]*lat)  %>% 
+  mutate(lcl.surv=ifelse(mig==1,as.numeric(out10[out10$parameter=="lp.mean[1]",3]),ifelse(mig==2,as.numeric(out10[out10$parameter=="lp.mean[2]",3]),as.numeric(out10[out10$parameter=="lp.mean[3]",3]))) +
+           as.numeric(out10[out10$parameter=="b.phi.lat",3])*lat) %>% # +
+  mutate(ucl.surv=ifelse(mig==1,as.numeric(out10[out10$parameter=="lp.mean[1]",7]),ifelse(mig==2,as.numeric(out10[out10$parameter=="lp.mean[2]",7]),as.numeric(out10[out10$parameter=="lp.mean[3]",7]))) +
+           as.numeric(out10[out10$parameter=="b.phi.lat",7])*lat) %>% # +
+  mutate(surv=plogis(logit.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
+  mutate(Season=ifelse(mig==1,"stationary",ifelse(mig==2,"spring migration","fall migration"))) %>%
+  arrange(Season,lat) %>%
+  mutate(Latitude=(lat*sd.lat)+mean.lat) %>%
+  filter(Season=="stationary")## back transform latitude
+  
+
+head(PLOTDAT)
+range(PLOTDAT$Latitude)
+
+
+## PLOT 
+
+ggplot(PLOTDAT)+
+  geom_ribbon(aes(x=Latitude, ymin=lcl, ymax=ucl), alpha=0.2) +
+  geom_line(aes(x=Latitude, y=surv))+
+  
+  ## format axis ticks
+  scale_x_continuous(name="Latitude", limits=c(1.2,45), breaks=seq(5,45,5), labels=seq(5,45,5)) +
+  scale_y_continuous(name="Monthly survival probability", limits=c(0.1,1), breaks=seq(0.1,1,0.1)) +
+  
+  ## beautification of the axes
+  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.y=element_text(size=14, color="black"),
+        axis.text.x=element_text(size=14, color="black"), 
+        axis.title=element_text(size=18),
+        legend.text=element_text(size=14, color="black"),
+        legend.title=element_text(size=16, color="black"),  
+        strip.text=element_text(size=18, color="black"), 
+        strip.background=element_rect(fill="white", colour="black"))
+
+ggsave("Fig2_Surv_by_Latitude_MEAN.pdf", width=10,height=9)
+
+
 
 
 
