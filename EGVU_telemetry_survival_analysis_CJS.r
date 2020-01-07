@@ -409,34 +409,6 @@ EVsurv1 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
 			n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
 
-EVsurv2 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                   "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp2.jags",
-                   n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-
-EVsurv3 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                   "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp3.jags",
-                   n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-
-EVsurv4 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                   "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp4.jags",
-                   n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-
-EVsurv5 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp5.jags",
-                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-
-EVsurv6 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp6.jags",
-                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-
-EVsurv7 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp7.jags",
-                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-
-EVsurv8 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_FINAL.jags",
-                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-
 
 
 
@@ -449,40 +421,6 @@ out1$parameter<-row.names(EVsurv1$summary)
 out1$model<-"m1"
 write.table(out1,"EGVU_CJS_survival_estimates_m1.csv", sep=",", row.names=F)
 
-out2<-as.data.frame(EVsurv2$summary)
-out2$parameter<-row.names(EVsurv2$summary)
-out2$model<-"m2"
-write.table(out2,"EGVU_telemetry_survival_estimates_m2.csv", sep=",", row.names=F)
-
-out3<-as.data.frame(EVsurv3$summary)
-out3$parameter<-row.names(EVsurv3$summary)
-out3$model<-"m3"
-write.table(out3,"EGVU_telemetry_survival_estimates_m3.csv", sep=",", row.names=F)
-
-out4<-as.data.frame(EVsurv4$summary)
-out4$parameter<-row.names(EVsurv4$summary)
-out4$model<-"m4"
-write.table(out4,"EGVU_telemetry_survival_estimates_m4.csv", sep=",", row.names=F)
-
-out5<-as.data.frame(EVsurv5$summary)
-out5$parameter<-row.names(EVsurv5$summary)
-out5$model<-"m5"
-write.table(out5,"EGVU_telemetry_survival_estimates_m5.csv", sep=",", row.names=F)
-
-out6<-as.data.frame(EVsurv6$summary)
-out6$parameter<-row.names(EVsurv6$summary)
-out6$model<-"m6"
-write.table(out6,"EGVU_telemetry_survival_estimates_m6.csv", sep=",", row.names=F)
-
-out7<-as.data.frame(EVsurv7$summary)
-out7$parameter<-row.names(EVsurv7$summary)
-out7$model<-"m7"
-write.table(out7,"EGVU_telemetry_survival_estimates_m7.csv", sep=",", row.names=F)
-
-out8<-as.data.frame(EVsurv8$summary)
-out8$parameter<-row.names(EVsurv8$summary)
-out8$model<-"m8"
-write.table(out8,"EGVU_telemetry_survival_estimates_m8.csv", sep=",", row.names=F)
 
 save.image("EGVU_survival_CJS_output.RData")
 

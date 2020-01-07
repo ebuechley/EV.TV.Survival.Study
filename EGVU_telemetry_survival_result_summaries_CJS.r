@@ -24,11 +24,11 @@ select<-dplyr::select
 
 
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study"), silent=T)
-load("EGVU_survival_output_v3.RData")  ### need to load whole workspace for input matrices to create plotting data range
+load("EGVU_survival_output_CJS.RData")  ### need to load whole workspace for input matrices to create plotting data range
 #out10<-fread("EGVU_telemetry_survival_estimates_m10.csv") ## this causes some weird list error in the PLOTDAT creation below
-out10<-as.data.frame(EVsurv10$summary)
-out10$parameter<-row.names(EVsurv10$summary)
-out10$model<-"m10"
+out10<-as.data.frame(EVsurv1$summary)
+out10$parameter<-row.names(EVsurv1$summary)
+out10$model<-"m1"
 
 
 
