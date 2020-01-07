@@ -4,7 +4,6 @@
     # -------------------------------------------------
     # Parameters:
     # phi: monthly survival probability intercept
-
     # p.obs: probability to be tracked with functioning tag (=1)
     # -------------------------------------------------
 
@@ -16,8 +15,8 @@
   for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
       logit(phi[i,t]) <- lp.mean[mig[i,t]] + b.phi.age*(age[i,t])  +   ### age and migratory stage category-specific intercept and slope for non-adult bird to increase survival with age
-                            b.phi.capt*(capt[i])*(adult[i,t])   +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
-                            b.phi.lat*(lat[i,t]) +                      #### probability of monthly survival dependent on latitude
+                            #b.phi.capt*(capt[i])*(adult[i,t])   +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
+                            #b.phi.lat*(lat[i,t]) +                      #### probability of monthly survival dependent on latitude
                             b.phi.pop[pop[i]]                             #### probability of survival varies by population
       } #t
     } #i
@@ -31,8 +30,8 @@
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
-    b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
-    b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
+    #b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
+    #b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
 
     #### OFFSET FOR POPULATIONS
     for(p in 1:4){
@@ -42,15 +41,13 @@
     # TAG FAILURE AND LOSS PROBABILITY
     for (i in 1:nind){
       for (t in f[i]:(n.occasions)){
-        logit(p.obs[i,t]) <- mean.p + obs.error[i]   #### probability of observation
+        obs.error[i,t] ~ dnorm(0, tau) ### RANDOM INDIVIDUAL EFFECT
+        logit(p.obs[i,t]) <- mean.p + obs.error[i,t]   #### probability of observation
       } #t
     } #i
     
-    for (i in 1:nind){
-      obs.error[i] ~ dnorm(0, tau) ### RANDOM INDIVIDUAL EFFECT
-    }
-    
-    # SLOPE PARAMETERS FOR OBSERVATION PROBABILITY
+
+    # PARAMETERS FOR OBSERVATION PROBABILITY
     mean.p ~ dnorm(0, 0.001)                # Prior for intercept of observation probability on logit scale
     sigma ~ dunif(0, 10)                     # Prior on standard deviation for random error term
     tau <- pow(sigma, -2)

@@ -447,7 +447,7 @@ EVsurv8 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
 out1<-as.data.frame(EVsurv1$summary)
 out1$parameter<-row.names(EVsurv1$summary)
 out1$model<-"m1"
-write.table(out1,"EGVU_telemetry_survival_estimates_m1.csv", sep=",", row.names=F)
+write.table(out1,"EGVU_CJS_survival_estimates_m1.csv", sep=",", row.names=F)
 
 out2<-as.data.frame(EVsurv2$summary)
 out2$parameter<-row.names(EVsurv2$summary)
@@ -504,7 +504,6 @@ cat("
     # -------------------------------------------------
     # Parameters:
     # phi: monthly survival probability intercept
-
     # p.obs: probability to be tracked with functioning tag (=1)
     # -------------------------------------------------
 
@@ -516,8 +515,8 @@ cat("
   for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
       logit(phi[i,t]) <- lp.mean[mig[i,t]] + b.phi.age*(age[i,t])  +   ### age and migratory stage category-specific intercept and slope for non-adult bird to increase survival with age
-                            b.phi.capt*(capt[i])*(adult[i,t])   +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
-                            b.phi.lat*(lat[i,t]) +                      #### probability of monthly survival dependent on latitude
+                            #b.phi.capt*(capt[i])*(adult[i,t])   +     ### survival dependent on captive-release and time since the captive bird was released as long as captive-released bird is not an adult
+                            #b.phi.lat*(lat[i,t]) +                      #### probability of monthly survival dependent on latitude
                             b.phi.pop[pop[i]]                             #### probability of survival varies by population
       } #t
     } #i
@@ -531,8 +530,8 @@ cat("
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
-    b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
-    b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
+    #b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
+    #b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
 
     #### OFFSET FOR POPULATIONS
     for(p in 1:4){
@@ -542,15 +541,13 @@ cat("
     # TAG FAILURE AND LOSS PROBABILITY
     for (i in 1:nind){
       for (t in f[i]:(n.occasions)){
-        logit(p.obs[i,t]) <- mean.p + obs.error[i]   #### probability of observation
+        obs.error[i,t] ~ dnorm(0, tau) ### RANDOM INDIVIDUAL EFFECT
+        logit(p.obs[i,t]) <- mean.p + obs.error[i,t]   #### probability of observation
       } #t
     } #i
     
-    for (i in 1:nind){
-      obs.error[i] ~ dnorm(0, tau) ### RANDOM INDIVIDUAL EFFECT
-    }
-    
-    # SLOPE PARAMETERS FOR OBSERVATION PROBABILITY
+
+    # PARAMETERS FOR OBSERVATION PROBABILITY
     mean.p ~ dnorm(0, 0.001)                # Prior for intercept of observation probability on logit scale
     sigma ~ dunif(0, 10)                     # Prior on standard deviation for random error term
     tau <- pow(sigma, -2)
