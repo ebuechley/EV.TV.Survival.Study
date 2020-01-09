@@ -208,7 +208,7 @@ EV.phi.matrix<-EV.phi.states %>%
   mutate(col=timeseries$col[match(date,timeseries$date)]) %>%
   filter(!is.na(col)) %>%
   mutate(state=ifelse(state==2,2,1)) %>%  ## replace 0 as there will be no parameter with index 0
-  mutate(state=ifelse(state==1,1,ifelse(month<7,2,3))) %>%  ## state==2 for spring migration and state==3 for fall migration
+  #mutate(state=ifelse(state==1,1,ifelse(month<7,2,3))) %>%  ## state==2 for spring migration and state==3 for fall migration - removed on 8 Jan 2020 to increase precision in estimates
   select(-year,-month,-date) %>%
   spread(key=col,value=state, fill=1) %>%
   arrange(id.tag)
@@ -560,14 +560,17 @@ EVsurv6 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
 
-### FINAL MODEL WITH REDUCED PARAMETERISATION OF AGE (not supported)
-### change data before fitting models m7 and m8
-## m8 fitted first because it takes the same inits
-
+### FINAL MODEL WITH CATEGORIGAL MIGRATION INFORMATION
 ## categorical classification of migratory status
+
 INPUT.telemetry$mig<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
 
+EVsurv31 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp31.jags",
+                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
+### change data before fitting models m7 and m8
+## m8 fitted first because it takes the same inits
 # EVsurv8 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
 #                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp8.jags",
 #                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
@@ -585,6 +588,8 @@ inits.telemetry <- function(){list(z = z.telemetry,
 EVsurv10 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_FINAL.jags",
                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+
 
 
 
@@ -627,6 +632,11 @@ out3$parameter<-row.names(EVsurv3$summary)
 out3$model<-"m3"
 write.table(out3,"EGVU_telemetry_survival_estimates_m3.csv", sep=",", row.names=F)
 
+out31<-as.data.frame(EVsurv31$summary)
+out31$parameter<-row.names(EVsurv31$summary)
+out31$model<-"m31"
+write.table(out31,"EGVU_telemetry_survival_estimates_m31.csv", sep=",", row.names=F)
+
 out4<-as.data.frame(EVsurv4$summary)
 out4$parameter<-row.names(EVsurv4$summary)
 out4$model<-"m4"
@@ -658,7 +668,7 @@ out10$model<-"m10"
 write.table(out10,"EGVU_telemetry_survival_estimates_m10.csv", sep=",", row.names=F)
 
 
-save.image("EGVU_survival_output_v3.RData")
+save.image("EGVU_survival_output_v4.RData")
 
 
 

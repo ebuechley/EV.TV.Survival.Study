@@ -58,15 +58,15 @@ model {
   # TAG FAILURE AND LOSS PROBABILITY
   for (i in 1:nind){
    for (t in f[i]:(n.occasions)){
-      logit(p.obs[i,t]) <- base.obs + beta1*(t-l[i]) + obs.error[t]   #### probability of observation GIVEN THAT TAG IS WORKING is reciprocal to time since last good record
-      logit(tag.fail[i,t]) <- base.fail + beta2*tag.age[i,t] + beta3*tfail[i] + tag.fail.error[t]     #### probability of TAG FAILURE is influenced by tag type and tag age
+      logit(p.obs[i,t]) <- base.obs + beta1*(t-l[i]) #+ obs.error[t]   #### probability of observation GIVEN THAT TAG IS WORKING is reciprocal to time since last good record
+      logit(tag.fail[i,t]) <- base.fail + beta2*tag.age[i,t] + beta3*tfail[i] #+ tag.fail.error[t]     #### probability of TAG FAILURE is influenced by tag type and tag age
       } #t
    } #i
 
-  for (t in 1:(n.occasions)){
-    tag.fail.error[t] ~ dnorm(0, tau)
-    obs.error[t] ~ dnorm(0, tau)
-  }
+  #for (t in 1:(n.occasions)){
+  #  tag.fail.error[t] ~ dnorm(0, tau)
+  #  obs.error[t] ~ dnorm(0, tau)
+  #}
 
   # SLOPE PARAMETERS FOR OBSERVATION PROBABILITY
 	base.obs ~ dnorm(0, 0.001)                # Prior for intercept of observation probability on logit scale
