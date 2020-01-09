@@ -21,7 +21,7 @@ select<-dplyr::select
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study"), silent=T)
-EV<-fread("ev.tv.summary.proofed_RE1.csv")
+EV<-fread("ev.tv.summary.proofed_RE2.csv")
 EVcovar<-fread("ev.survival.prepared.csv")
 names(EV)[1]<-'species'
 head(EV)
@@ -34,7 +34,7 @@ EV<-EV %>% mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= pa
   filter(!is.na(start)) %>%
   filter(species=="Neophron percnopterus") %>%
   filter(start<ymd_hm("2019-04-01 12:00")) %>%  ## remove birds only alive for a few months in 2019
-  select(species,population,id.tag,sex,age.at.deployment,age.at.deployment.month,captive.raised,rehabilitated, start, end, fate, fate.Ron,how.fate.determined.clean, mean.GPS.dist.last10fixes.degrees)
+  select(species,population,id.tag,sex,age.at.deployment,age.at.deployment.month,captive.raised,rehabilitated, start, end, fate, fate.final,how.fate.determined.clean, mean.GPS.dist.last10fixes.degrees)
 head(EV)
 dim(EV)
 
@@ -46,22 +46,22 @@ EVcovar<-EVcovar %>% filter(id.tag %in% EV$id.tag)
 ####### ASSIGNMENT OF STATES ########
 unique(EV$how.fate.determined.clean)
 unique(EV$age.at.deployment)
-unique(EV$fate.Ron)
-quest.fates<-EV %>% filter(fate!=fate.Ron) %>% select(id.tag,population,age.at.deployment,start,end,fate,fate.Ron,how.fate.determined.clean) %>%
-  filter(fate.Ron=="confirmed transmitter failure")
+unique(EV$fate.final)
+quest.fates<-EV %>% filter(fate!=fate.final) %>% select(id.tag,population,age.at.deployment,start,end,fate,fate.final,how.fate.determined.clean) %>%
+  filter(fate.final=="confirmed transmitter failure")
 
 #### revert 4 questionable fates from Ron
-EV <- EV %>%
-  mutate(fate.Ron=ifelse(id.tag %in% quest.fates$id.tag,fate,fate.Ron))
+#EV <- EV %>%
+#  mutate(fate.final=ifelse(id.tag %in% quest.fates$id.tag,fate,fate.final))
 
 
 
 
 ### SHOW INVENTORY OF POSSIBLE COMBINATIONS OF STATES
-as.data.frame(table(EV$how.fate.determined.clean,EV$fate.Ron)) %>%
+as.data.frame(table(EV$how.fate.determined.clean,EV$fate.final)) %>%
 	filter(Freq!=0) %>%
 	rename(fate=Var2, how.fate.det=Var1)
-EV %>% filter(fate.Ron=="confirmed dead" & how.fate.determined.clean=="resighted / recaptured")
+EV %>% filter(fate.final=="confirmed dead" & how.fate.determined.clean=="resighted / recaptured")
 
 EV<-EV %>%
 
@@ -70,8 +70,8 @@ EV<-EV %>%
 # 2 alive with functioning tag
 # 3 alive with defunct tag OR without tag (when tag was lost)
 
-  mutate(TS= ifelse(fate.Ron=="alive",2,
-                    ifelse(fate.Ron %in% c("confirmed dead","likely dead","unknown"),1,3))) %>%
+  mutate(TS= ifelse(fate.final=="alive",2,
+                    ifelse(fate.final %in% c("confirmed dead","likely dead","unknown"),1,3))) %>%
   # mutate(OS= ifelse(fate=="alive",1,
   #                   ifelse(fate %in% c("unknown","suspected transmitter failure"),5,
   #                          ifelse(fate=="verified transmitter failure",3,
@@ -84,9 +84,9 @@ EV<-EV %>%
 # 3 Tag failed, bird observed alive
 # 4 Dead bird recovered
 # 5 No signal (=not seen)
-  mutate(OS= ifelse(fate.Ron=="alive",1,
-                    ifelse(fate.Ron %in% c("unknown","likely transmitter failure"),5,
-                           ifelse(fate.Ron=="confirmed transmitter failure",3,
+  mutate(OS= ifelse(fate.final=="alive",1,
+                    ifelse(fate.final %in% c("unknown","likely transmitter failure"),5,
+                           ifelse(fate.final=="confirmed transmitter failure",3,
                                   ifelse(how.fate.determined.clean %in% c("carcass found","resighted / recaptured","transmitter recovered"),4,2))))) %>%
   arrange(id.tag)
 
@@ -95,7 +95,7 @@ head(EV)
 ### CHECK WHETHER STATE ASSIGNMENT IS PLAUSIBLE ###
 table(EV$TS,EV$OS)
 
-EV %>% filter(OS==3 & TS==3) %>% select(id.tag,population,age.at.deployment,start,end,fate,fate.Ron,how.fate.determined.clean)
+EV %>% filter(OS==3 & TS==3) %>% select(id.tag,population,age.at.deployment,start,end,fate,fate.final,how.fate.determined.clean)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CREATE CAPTURE HISTORY FOR SURVIVAL ESTIMATIONS
@@ -200,7 +200,7 @@ EV.phi.matrix<-EV.phi.matrix %>% filter(id.tag %in% EV$id.tag) %>%
   arrange(id.tag)
 dim(EV.phi.matrix)
 
-
+#EV$id.tag[which((EV$id.tag %in% EV.phi.matrix$id.tag)==FALSE)]
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -429,7 +429,7 @@ cat("
         logit(phi[i,t]) <- lp.mean[adult[i,t]+1] + b.phi.age*(age[i,t])*(adult[i,t])  +   ### age category-specific intercept and slope for non-adult bird to increase survival with age
                             b.phi.mig[mig[i,t]] +       ### survival dependent on migratory stage of the month (stationary or migratory)
                             b.phi.capt*(capt[i]) +      ### survival dependent on captive-release (wild or captive-raised)
-                            b.phi.lat*(lat[i,t]) #+ b.phi.long*(long[i])  #### probability of monthly survival dependent on latitude and longitude
+                            b.phi.lat*(lat[i,t]) + b.phi.long*(long[i])  #### probability of monthly survival dependent on latitude and longitude
     } #t
   } #i
     
@@ -448,7 +448,7 @@ cat("
   b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
   b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
   b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
-  #b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
+  b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
 
 
   #### TAG FAILURE AND LOSS PROBABILITY
