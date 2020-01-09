@@ -372,10 +372,10 @@ EVsurv31 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
 out31<-as.data.frame(EVsurv31$summary)
 out31$parameter<-row.names(EVsurv31$summary)
 out31$model<-"m31"
-write.table(out31,"EGVU_telemetry_survival_estimates_m31.csv", sep=",", row.names=F)
+write.table(out31,"EGVU_telemetry_survival_estimates_FINAL.csv", sep=",", row.names=F)
 
 
-save.image("EGVU_survival_output_v4.RData")
+save.image("EGVU_survival_output_final.RData")
 
 
 
