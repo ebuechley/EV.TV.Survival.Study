@@ -46,8 +46,14 @@ EVcovar<-EVcovar %>% filter(id.tag %in% EV$id.tag)
 ####### ASSIGNMENT OF STATES ########
 unique(EV$how.fate.determined.clean)
 unique(EV$age.at.deployment)
-unique(EV$fate)
-EV %>% filter(fate!=fate.Ron)
+unique(EV$fate.Ron)
+quest.fates<-EV %>% filter(fate!=fate.Ron) %>% select(id.tag,population,age.at.deployment,start,end,fate,fate.Ron,how.fate.determined.clean) %>%
+  filter(fate.Ron=="confirmed transmitter failure")
+
+#### revert 4 questionable fates from Ron
+EV <- EV %>%
+  mutate(fate.Ron=ifelse(id.tag %in% quest.fates$id.tag,fate,fate.Ron))
+
 
 
 
@@ -89,7 +95,7 @@ head(EV)
 ### CHECK WHETHER STATE ASSIGNMENT IS PLAUSIBLE ###
 table(EV$TS,EV$OS)
 
-
+EV %>% filter(OS==3 & TS==3) %>% select(id.tag,population,age.at.deployment,start,end,fate,fate.Ron,how.fate.determined.clean)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CREATE CAPTURE HISTORY FOR SURVIVAL ESTIMATIONS
@@ -224,14 +230,12 @@ lat.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
   spread(key=col,value=lat) %>%
   arrange(id.tag)
 
-## CREATE LONGITUDE MATRIX
-long.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
+## CREATE LONGITUDE MATRIX AT ORIGIN (FIRST LONGITUDE VALUE FOR EACH BIRD)
+long.orig<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
   mutate(timestamp=ymd_hms(timestamp)) %>%
-  mutate(yr.mo=format(timestamp, format="%m-%Y")) %>%
-  mutate(col=timeseries$col[match(yr.mo,timeseries$date)]) %>%
-  group_by(id.tag,col) %>%
-  summarise(lat=mean(mean.monthly.long)) %>%
-  spread(key=col,value=lat) %>%
+  arrange(id.tag,timestamp) %>%
+  group_by(id.tag) %>%
+  summarise(long=first(mean.monthly.long)) %>%
   arrange(id.tag)
 
 ### THE ABOVE MATRICES HAVE GAPS
@@ -250,8 +254,6 @@ for(n in EV.obs.matrix$id.tag){
   for (col in (endcol+1):max(timeseries$col)){
     age.matrix[age.matrix$id.tag==n,col]<-min((age.matrix[age.matrix$id.tag==n,(col-1)]+1),54)
     lat.matrix[lat.matrix$id.tag==n,col]<-lat.matrix[lat.matrix$id.tag==n,(col-1)]
-    mig.matrix[mig.matrix$id.tag==n,col]<-mig.matrix[mig.matrix$id.tag==n,(col-1)]
-    long.matrix[long.matrix$id.tag==n,col]<-long.matrix[long.matrix$id.tag==n,(col-1)]
 
   } ## end loop over each occasion
   
@@ -263,7 +265,6 @@ for(n in EV.obs.matrix$id.tag){
   for (col in misscol){
     age.matrix[age.matrix$id.tag==n,col]<-min((age.matrix[age.matrix$id.tag==n,(col-1)]+1),54)
     lat.matrix[lat.matrix$id.tag==n,col]<-lat.matrix[lat.matrix$id.tag==n,(col-1)]
-    long.matrix[long.matrix$id.tag==n,col]<-long.matrix[long.matrix$id.tag==n,(col-1)]
 
   } ## end loop over each occasion
 
@@ -276,15 +277,6 @@ for(n in EV.obs.matrix$id.tag){
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CREATE INPUT DATA FOR JAGS
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-### CHECK THAT MATRICES HAVE IDENTICAL DIMENSIONS AND SORT ORDER
-# head(EV.obs.matrix)
-# dim(EV.obs.matrix)
-# head(EV.state.matrix)
-# dim(EV.state.matrix)
-# head(age.matrix)
-# dim(age.matrix)
-# head(lat.matrix)
-# dim(lat.matrix)
 
 #### Convert to numeric matrices that JAGS can loop over
 y.telemetry<-as.matrix(EV.obs.matrix[,2:max(timeseries$col)])
@@ -325,8 +317,8 @@ INPUT.telemetry <- list(y = y.telemetry,
                         age = age.mat,
                         adult = ifelse(age.mat>53,0,1), ### provide a simple classification for adults and non-adults
                         mig = as.matrix(EV.phi.matrix[,2:max(timeseries$col)]),
-                        lat = lat.mat.st,
-                        long = long.st, ##long.mat,      ### if we want this as a continuous pop definition we would need to use just one value per bird, not a monthly value
+                        lat = lat.mat,
+                        long = long.orig$long, ##long.mat,      ### if we want this as a continuous pop definition we would need to use just one value per bird, not a monthly value
                         capt = ifelse(EV$captive.raised=="N",0,1),
 				                tfail = as.numeric(tag.fail.indicator),
 				                tag.age = as.matrix(tag.age[,2:max(timeseries$col)]),
@@ -359,8 +351,8 @@ nc <- 4
 
 # # Call JAGS from R (took 70 min)
 
-EVsurv31 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_multistate_tagfail_phi_lp31.jags",
+EGVU_surv_mod <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVU_telemetry_survival.jags",
                      n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
 
@@ -369,10 +361,21 @@ EVsurv31 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
 # EXPORT THE OUTPUT
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-out31<-as.data.frame(EVsurv31$summary)
-out31$parameter<-row.names(EVsurv31$summary)
+out31<-as.data.frame(EGVU_surv_mod$summary)
+out31$parameter<-row.names(EGVU_surv_mod$summary)
 out31$model<-"m31"
 write.table(out31,"EGVU_telemetry_survival_estimates_FINAL.csv", sep=",", row.names=F)
+
+
+ron.out<-as.data.frame(EGVU_surv_mod$summary)
+ron.out$parameter<-row.names(EGVU_surv_mod$summary)
+ron.out$model<-"m31.ron.fate"
+write.table(ron.out,"EGVU_telemetry_survival_estimates_FINAL_Ron.fate.csv", sep=",", row.names=F)
+
+ron.out<-as.data.frame(EGVU_surv_mod$summary)
+ron.out$parameter<-row.names(EGVU_surv_mod$summary)
+ron.out$model<-"m31.ron.fate"
+write.table(ron.out,"EGVU_telemetry_survival_estimates_FINAL_Ron.fate.reduced.csv", sep=",", row.names=F)
 
 
 save.image("EGVU_survival_output_final.RData")
@@ -426,10 +429,15 @@ cat("
         logit(phi[i,t]) <- lp.mean[adult[i,t]+1] + b.phi.age*(age[i,t])*(adult[i,t])  +   ### age category-specific intercept and slope for non-adult bird to increase survival with age
                             b.phi.mig[mig[i,t]] +       ### survival dependent on migratory stage of the month (stationary or migratory)
                             b.phi.capt*(capt[i]) +      ### survival dependent on captive-release (wild or captive-raised)
-                            b.phi.lat*(lat[i,t]) + b.phi.long*(long[i])  #### probability of monthly survival dependent on latitude and longitude
+                            b.phi.lat*(lat[i,t]) #+ b.phi.long*(long[i])  #### probability of monthly survival dependent on latitude and longitude
     } #t
   } #i
     
+  #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
+  for(agecat in 1:2){
+      mean.phi[agecat] ~ dunif(0.5, 0.999999)   # uninformative prior for all MONTHLY survival probabilities
+      lp.mean[agecat] <- log(mean.phi[agecat]/(1 - mean.phi[agecat]))    # logit transformed survival intercept
+  }
     
   #### CATEGORICAL MIGRATORY STAGE OFFSET
   for(migcat in 1:2){
@@ -440,7 +448,7 @@ cat("
   b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
   b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
   b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
-  b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
+  #b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
 
 
   #### TAG FAILURE AND LOSS PROBABILITY
