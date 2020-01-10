@@ -374,8 +374,8 @@ write.table(ron.out,"EGVU_telemetry_survival_estimates_FINAL_Ron.fate.csv", sep=
 
 ron.out<-as.data.frame(EGVU_surv_mod$summary)
 ron.out$parameter<-row.names(EGVU_surv_mod$summary)
-ron.out$model<-"m31.ron.fate"
-write.table(ron.out,"EGVU_telemetry_survival_estimates_FINAL_Ron.fate.reduced.csv", sep=",", row.names=F)
+ron.out$model<-"m31.final.fate.red"
+write.table(ron.out,"EGVU_telemetry_survival_estimates_FINAL_final.fate.red.csv", sep=",", row.names=F)
 
 
 save.image("EGVU_survival_output_final.RData")
@@ -429,7 +429,7 @@ cat("
         logit(phi[i,t]) <- lp.mean[adult[i,t]+1] + b.phi.age*(age[i,t])*(adult[i,t])  +   ### age category-specific intercept and slope for non-adult bird to increase survival with age
                             b.phi.mig[mig[i,t]] +       ### survival dependent on migratory stage of the month (stationary or migratory)
                             b.phi.capt*(capt[i]) +      ### survival dependent on captive-release (wild or captive-raised)
-                            b.phi.lat*(lat[i,t]) + b.phi.long*(long[i])  #### probability of monthly survival dependent on latitude and longitude
+                            b.phi.lat*(lat[i,t]) #+ b.phi.long*(long[i])  #### probability of monthly survival dependent on latitude and longitude
     } #t
   } #i
     
@@ -448,7 +448,7 @@ cat("
   b.phi.age ~ dnorm(0, 0.001)                # Prior for slope of age on survival probability on logit scale
   b.phi.capt ~ dnorm(0, 0.001)         # Prior for slope of time since release on survival probability on logit scale
   b.phi.lat ~ dnorm(0, 0.001)         # Prior for slope of latitude on survival probability on logit scale
-  b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
+  #b.phi.long ~ dnorm(0, 0.001)         # Prior for slope of longitude on survival probability on logit scale
 
 
   #### TAG FAILURE AND LOSS PROBABILITY
