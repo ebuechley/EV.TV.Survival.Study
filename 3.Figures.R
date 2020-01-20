@@ -3,6 +3,7 @@
 library(ggplot2)
 library("gridExtra")
 library(lubridate)
+library(ggmap)
 
 #Clear workspace
 rm(list = ls())
@@ -11,8 +12,8 @@ rm(list = ls())
 setwd("~/Documents/GitHub/EV - TV Survival Study/")
 
 #read data
-#d = read.csv("ev.tv.filtered.csv")
-d.summ= read.csv("ev.tv.summary.proofed.csv")
+d = read.csv("Final Cleaned Data/ev.survival.prepared.csv")
+d.summ= read.csv("Final Cleaned Data/ev.tv.summary.proofed_RE2.csv")
 d.summ$start.date = mdy_hm(d.summ$start.date)
 
 #summary stats for study
@@ -49,27 +50,72 @@ colourpalette
 tv.summ$fate <- factor(tv.summ$fate, levels = c("alive","confirmed dead","likely dead","confirmed transmitter failure","likely transmitter failure","unknown"))
 ev.summ$fate <- factor(ev.summ$fate, levels = c("alive","confirmed dead","likely dead","confirmed transmitter failure","likely transmitter failure","unknown"))
 
-tiff("tv.overview.tiff", units="cm", width=20, height=20, res=300)
+#tiff("tv.overview.tiff", units="cm", width=20, height=20, res=300)
 tv.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() +
   geom_path(data = tv, aes(long,lat, group = id.tag), alpha = .5, show.legend = FALSE) + 
   geom_point(data = tv.summ, aes(end.long, end.lat, color = fate)) + 
   scale_color_manual(values=c('#4daf4a','#e41a1c','#ff7f00','#377eb8','#984ea3','#ffff33'), name = "fate") + 
   ggtitle("turkey vulture") + theme(plot.title = element_text(hjust = 0.5)) + labs(x = "longitude", y = "latitude") 
 tv.plot
-dev.off()
+#dev.off()
 
-tiff("ev.overview.tiff", units="cm", width=35, height=20, res=300)
-ev.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() +
+summary(ev.summ)
+ev.summ2 = ev.summ[!(ev.summ$fate== "alive"),]
+summary(ev.summ2$fate)
+ev.summ2$fate = as.character(ev.summ2$fate)
+ev.summ2$fate[which(ev.summ2$fate == "likely dead")] = "dead"
+ev.summ2$fate[which(ev.summ2$fate == "confirmed dead")] = "dead"
+ev.summ2$fate[which(ev.summ2$fate == "confirmed transmitter failure")] = "transmitter failure"
+ev.summ2$fate[which(ev.summ2$fate == "likely transmitter failure")] = "transmitter failure"
+ev.summ2$fate[which(ev.summ2$fate == "transmitter failure")] = "tx failure"
+summary(ev.summ2)
+head(ev.summ2)
+head(ev)
+ev$age.simple[which(ev$age.in.months < 8)] = "juvenile"
+ev$age.simple[which(ev$age.in.months > 8)] = "adult"
+
+#register_google(key = "xxxx")
+#overview.map = get_map(location = c(20,25), maptype = "terrain", source = "google", zoom = 4)
+tiff("ev.overview.simple.tiff", units="cm", width=18, height=11, res=300)
+  #ggmap(overview.map) + coord_quickmap() + theme_bw() +
+  ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() +
   geom_path(data = ev, aes(long,lat, group = id.tag), alpha = .5, show.legend = FALSE) + 
-  geom_point(data = ev.summ, aes(end.long, end.lat, color = fate)) + 
-  scale_color_manual(values=c('#4daf4a','#e41a1c','#ff7f00','#377eb8','#984ea3','#ffff33'), name = "fate") + 
-  ggtitle("egyptian vulture") + theme(plot.title = element_text(hjust = 0.5)) + labs(x = "longitude", y = "latitude")
-ev.plot
+  geom_point(data = ev.summ2, aes(end.long, end.lat, color = fate)) + 
+  #scale_color_manual(values=c('#e41a1c',"#4daf4a",'#ffff33'), name = "fate") + 
+  scale_color_viridis_d(begin =.5) +
+  #ggtitle("Egyptian vulture") + 
+  theme(plot.title = element_text(hjust = 0.5)) + labs(x = "longitude", y = "latitude")
 dev.off()
 
-tiff("all.overview.tiff", units="cm", width=35, height=20, res=300)
-combined <- grid.arrange(tv.plot, ev.plot, nrow = 1, ncol=2)
-dev.off()
+# summary stats on data summary
+ev.summ = read.csv("Final Cleaned Data/ev.tv.summary.proofed_RE2.csv")
+ev.summ = subset(ev.summ, ev.summ$species == "Neophron percnopterus", drop = TRUE)
+ev.summ <- droplevels(ev.summ)
+summary(ev.summ$species)
+head(ev.summ)
+names(ev.summ)
+#how many studies
+unique(ev.summ$id)
+unique(ev.summ$study.name)
+unique(ev.summ$start.country)
+summary(ev.summ$fate)
+summary(ev.summ$migrant)
+summary(ev.summ$age.at.deployment.clean)
+summary(ev.summ$captive.raised)
+summary(ev.summ$rehabilitated)
+summary(ev.summ$sex)
+summary(ev.summ$deployment.duration)
+#fates
+summary(ev.summ$how.fate.determined.clean)
+summary(ev.summ$cause.of.death)
+
+#mortality summary
+death = read.csv("Final Cleaned Data/ev.mortality.summary.csv")
+summary(death$cause.of.death)
+
+#tiff("all.overview.tiff", units="cm", width=35, height=20, res=300)
+#combined <- grid.arrange(tv.plot, ev.plot, nrow = 1, ncol=2)
+#dev.off()
 
 #map.plot = map.plot + geom_point(data = d.summ, aes(start.long, start.lat, color = "tag deployment"))  
 #map.plot = map.plot + theme(legend.title = element_blank()) 
