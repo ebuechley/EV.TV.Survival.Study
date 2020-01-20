@@ -1,9 +1,10 @@
-model,b.phi.age,b.phi.capt,b.phi.free,b.phi.lat,b.phi.lat2,b.phi.long,b.phi.mig,b.phi.resident,n.parameters,DIC,deltaDIC
-m5,0.1,not included,-0.009,-0.522,not included,-0.416,0.981,not included,38.8832515506077,3942.40291981297,0
-m6,0.094,not included,not included,-0.539,not included,-0.413,0.994,not included,40.9536271486015,3944.80839410376,2.40547429078742
-m2,0.1,-0.71,0.03,-0.473,not included,-0.388,0.85,-0.06,41.5587766693005,3945.24927919123,2.84635937825851
-m8,0.082,-0.46,not included,-0.565,not included,-0.437,not included,not included,40.3991735233177,3945.25581064439,2.85289083142015
-m1,0.097,-0.947,0.032,-0.494,-0.322,-0.374,0.743,0.326,43.7879015774181,3948.49845732402,6.09553751104932
-m4,0.103,-0.825,not included,-0.483,-0.393,-0.501,-0.438,not included,46.2313168025026,3951.52798231026,9.12506249728722
-m7,0.107,-0.652,not included,-0.478,not included,-0.456,not included,not included,48.6272459318815,3953.61705213475,11.2141323217775
-m3,0.106,-0.6,not included,-0.493,not included,-0.386,0.883,not included,50.9049288562186,3956.73968996853,14.3367701555653
+model,b.phi.age,b.phi.capt,b.phi.free,b.phi.lat,b.phi.lat2,b.phi.long,b.phi.mig,b.phi.pop[1],b.phi.pop[2],b.phi.pop[3],b.phi.pop[4],b.phi.resident,n.parameters,DIC,deltaDIC
+m10,0.073,not included,0.004,-0.573,not included,not included,not included,2.418,0.645,1.371,1.451,not included,38.3731205522505,3942.33112076192,0
+m5,0.1,not included,-0.009,-0.522,not included,-0.416,0.981,not included,not included,not included,not included,not included,38.8832515506077,3942.40291981297,0.0717990510484015
+m6,0.094,not included,not included,-0.539,not included,-0.413,0.994,not included,not included,not included,not included,not included,40.9536271486015,3944.80839410376,2.47727334183583
+m2,0.1,-0.71,0.03,-0.473,not included,-0.388,0.85,not included,not included,not included,not included,-0.06,41.5587766693005,3945.24927919123,2.91815842930691
+m8,0.082,-0.46,not included,-0.565,not included,-0.437,not included,not included,not included,not included,not included,not included,40.3991735233177,3945.25581064439,2.92468988246856
+m1,0.097,-0.947,0.032,-0.494,-0.322,-0.374,0.743,not included,not included,not included,not included,0.326,43.7879015774181,3948.49845732402,6.16733656209772
+m4,0.103,-0.825,not included,-0.483,-0.393,-0.501,-0.438,not included,not included,not included,not included,not included,46.2313168025026,3951.52798231026,9.19686154833562
+m7,0.107,-0.652,not included,-0.478,not included,-0.456,not included,not included,not included,not included,not included,not included,48.6272459318815,3953.61705213475,11.2859313728259
+m3,0.106,-0.6,not included,-0.493,not included,-0.386,0.883,not included,not included,not included,not included,not included,50.9049288562186,3956.73968996853,14.4085692066137
