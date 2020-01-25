@@ -37,6 +37,7 @@ MCMCout<-rbind(EGVU_surv_mod$samples[[1]],EGVU_surv_mod$samples[[2]],EGVU_surv_m
 str(MCMCout)
 
 
+#traceplot(EGVU_surv_mod)
 
 
 
@@ -44,11 +45,11 @@ str(MCMCout)
 # FIG S1 - PARAMETER ESTIMATES ON LOGIT SCALE
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-out31 %>% mutate(parameter=ifelse(parameter=="lp.mean[1]","adult.intercept",parameter)) %>%
+PLOTDAT<-out31 %>% mutate(parameter=ifelse(parameter=="lp.mean[1]","adult.intercept",parameter)) %>%
   mutate(parameter=ifelse(parameter=="lp.mean[2]","juv.intercept",parameter)) %>%
-  filter(grepl("b.phi",parameter)| grepl("intercept",parameter)) %>%
+  filter(grepl("b.phi",parameter)| grepl("intercept",parameter))
   
-  ggplot()+
+  ggplot(PLOTDAT)+
   geom_point(aes(x=parameter, y=mean))+
   geom_errorbar(aes(x=parameter, ymin=`2.5%`, ymax=`97.5%`), width=.1) +
   geom_hline(aes(yintercept=0), colour="darkgrey") +
@@ -67,7 +68,7 @@ out31 %>% mutate(parameter=ifelse(parameter=="lp.mean[1]","adult.intercept",para
 
 
 ggsave("FigS1_parameter_estimates_logit.jpg", height=10, width=11)
-
+fwrite(PLOTDAT,"FigS1_data.csv")
 
 
 
@@ -107,7 +108,7 @@ PLOTDAT<-  MCMCpred %>% group_by(age,adult,lat) %>%
   mutate(Ageclass=ifelse(age==54,"adult","juvenile"))
 
 head(PLOTDAT)
-
+dim(MCMCpred)
 
 ## PLOT 
 
@@ -130,7 +131,7 @@ ggplot(PLOTDAT)+
         strip.background=element_rect(fill="white", colour="black"))
 
 ggsave("Fig2_Surv_by_Latitude.jpg", width=10,height=9)
-
+fwrite(PLOTDAT,"Fig2_data.csv")
 
 
 
@@ -191,7 +192,7 @@ ggplot(PLOTDAT)+
         strip.background=element_rect(fill="white", colour="black"))
 
 ggsave("Fig3_Surv_by_Longitude.jpg", width=10,height=9)
-
+fwrite(PLOTDAT,"Fig3_data.csv")
 
 
 
@@ -249,7 +250,7 @@ ggplot(PLOTDAT)+
         strip.background=element_rect(fill="white", colour="black"))
 
 ggsave("Fig4_Surv_by_AgeCapt.jpg", width=10,height=9)
-
+fwrite(PLOTDAT,"Fig4_data.csv")
 
 
 
@@ -293,7 +294,7 @@ head(PLOTDAT)
 
 ggplot(PLOTDAT)+
   geom_point(aes(x=plotseq, y=surv,colour=Stage), alpha=0.2) +
-  geom_errorbar(aes(x=plotseq, ymin=lcl, ymax=ucl, y=surv,color=Stage))+
+  geom_errorbar(aes(x=plotseq, ymin=lcl, ymax=ucl, color=Stage))+
   
   ## format axis ticks
   scale_x_continuous(name="", limits=c(0,4), breaks=c(0.8,2,3), labels=c("wild adult","wild juvenile","captive-reared \n juvenile")) +
@@ -310,7 +311,7 @@ ggplot(PLOTDAT)+
         strip.background=element_rect(fill="white", colour="black"))
 
 ggsave("Fig5_Surv_by_MigStage.jpg", width=10,height=9)
-
+fwrite(PLOTDAT,"Fig5_data.csv")
 
 
 
@@ -409,10 +410,10 @@ TABLE2 %>% ungroup() %>%
 
 ggplot()+
   geom_point(aes(x=plotseq, y=med.surv,colour=Age), alpha=0.2) +
-  geom_errorbar(aes(x=plotseq, ymin=lcl.surv, ymax=ucl.surv, y=med.surv,color=Age))+
+  geom_errorbar(aes(x=plotseq, ymin=lcl.surv, ymax=ucl.surv, color=Age))+
   
   ## format axis ticks
-  scale_x_continuous(name="", limits=c(0,4), breaks=c(1,2,3), labels=c("Europe (West)","Europe (East)","Resident \n Africa")) +
+  scale_x_continuous(name="", limits=c(0,4), breaks=c(1,2,3), labels=c("Europe (East)","Europe (West)","Resident \n Africa")) +
   scale_y_continuous(name="Annual survival probability", limits=c(0,1), breaks=seq(0,1,0.2)) +
   
   ## beautification of the axes
@@ -429,6 +430,67 @@ ggsave("Fig6_AnnualSurvival.jpg", width=10,height=9)
 
 
 
+
+
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# HYPOTHETICAL SURVIVAL FOR BIRDS RESIDING ON BREEDING GROUNDS [to compare with actual survival of migratory birds]
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+west<-data.frame(age=c(1:12,rep(54,12)),
+                 mig=rep(1,24),
+                 lat=c(rep(41.8,24)),
+                 long=rep(-5,24),
+                 pop="west")
+
+east<-data.frame(age=c(1:12,rep(54,12)),
+                 mig=rep(1,24),
+                 lat=c(rep(41.7,24)),
+                 long=rep(25.9,24),
+                 pop="east")
+
+
+
+### CALCULATE PREDICTED VALUE FOR EACH SAMPLE
+MCMCpred<-data.frame()
+for(s in 1:nrow(MCMCout)) {
+  
+  X<-  rbind(west,east) %>%
+    mutate(adult=ifelse(age==54,0,1)) %>%
+    
+    ### CALCULATE MONTHLY SURVIVAL
+    mutate(logit.surv=ifelse(adult==1,as.numeric(MCMCout[s,match("lp.mean[2]",parmcols)]),as.numeric(MCMCout[s,match("lp.mean[1]",parmcols)]))+
+             as.numeric(MCMCout[s,match("b.phi.age",parmcols)])*age*adult +
+             ifelse(mig==1,as.numeric(MCMCout[s,match("b.phi.mig[1]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.mig[2]",parmcols)]))+
+             as.numeric(MCMCout[s,match("b.phi.long",parmcols)])*long +
+             as.numeric(MCMCout[s,match("b.phi.lat",parmcols)])*lat) %>%
+    
+    ### BACKTRANSFORM TO NORMAL SCALE
+    mutate(surv=plogis(logit.surv)) %>%
+    
+    ### CALCULATE ANNUAL SURVIVAL
+    group_by(adult,pop) %>%
+    summarise(ann.surv=prod(surv))
+  
+  MCMCpred<-bind_rows(MCMCpred,X)
+}
+
+
+
+
+
+HYPTABLE2 <- MCMCpred %>% group_by(adult,pop) %>%
+  summarise(med.surv=quantile(ann.surv,0.5),lcl.surv=quantile(ann.surv,0.025),ucl.surv=quantile(ann.surv,0.975)) %>%
+  
+  ### ANNOTATE GROUPS
+  mutate(Population=ifelse(pop=="west","Europe (West)",
+                           ifelse(pop=="east","Europe (East)","Southern"))) %>%
+  mutate(Age=ifelse(adult==0,"adult","juvenile"))
+
+fwrite(HYPTABLE2,"EGVU_ann_survival_estimates_hypothetical_nonmigrant.csv")
 
 
 
