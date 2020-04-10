@@ -24,7 +24,7 @@ select<-dplyr::select
 # LOAD ALL 3 MODEL RESULTS 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study"), silent=T)
+try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T)
 load("EGVU_survival_output_simplage.RData")  ### need to load whole workspace for input matrices to create plotting data range
 
 ### LINEAR PREDICTOR EQUATION
@@ -54,9 +54,13 @@ out5<-as.data.frame(EGVU_surv_mod_4stage_fallmig$summary)
 out5$parameter<-row.names(EGVU_surv_mod_4stage_fallmig$summary)
 out5$model<-"4_mig_stages_season"
 
+out6<-as.data.frame(EGVU_surv_mod_3stage$summary)
+out6$parameter<-row.names(EGVU_surv_mod_3stage$summary)
+out6$model<-"3_mig_stages"
+
 
 ### COMBINE OUTPUT FROM ALL 3 MODELS
-out<-bind_rows(out1,out2,out3,out4,out5)
+out<-bind_rows(out1,out2,out3,out4,out5, out6)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,8 +69,8 @@ out<-bind_rows(out1,out2,out3,out4,out5)
 pd_dic <- function(x) {
   data.frame(n.parameters=x$pD, DIC=x$DIC)
 }
-DIC_tab<-bind_rows(pd_dic(EGVU_surv_mod_5stage),pd_dic(EGVU_surv_mod_4stage),pd_dic(EGVU_surv_mod_2stage_addpop),pd_dic(EGVU_surv_mod_2stage),pd_dic(EGVU_surv_mod_4stage_fallmig)) %>%
-  mutate(model=c("5_mig_stages_geog","4_mig_stages_geog","2_mig_stage_addpop","2_mig_stage","4_mig_stages_season")) %>%
+DIC_tab<-bind_rows(pd_dic(EGVU_surv_mod_5stage),pd_dic(EGVU_surv_mod_4stage),pd_dic(EGVU_surv_mod_2stage_addpop),pd_dic(EGVU_surv_mod_2stage),pd_dic(EGVU_surv_mod_4stage_fallmig),pd_dic(EGVU_surv_mod_3stage)) %>%
+  mutate(model=c("5_mig_stages_geog","4_mig_stages_geog","2_mig_stage_addpop","2_mig_stage","4_mig_stages_season","3_mig_stages")) %>%
   arrange(DIC) %>%
   mutate(deltaDIC=DIC-DIC[1])
 DIC_tab
