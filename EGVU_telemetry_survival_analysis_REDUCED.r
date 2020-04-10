@@ -25,7 +25,7 @@ select<-dplyr::select
 # LOAD DATA FROM SPREADSHEETS AND ASSIGN FINAL STATES OF EACH ANIMAL
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study"), silent=T)
+try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T) ## changed after re-cloning remote
 EV<-fread("ev.tv.summary.proofed_RE4_migrantsonly.csv")   ## updated on 9 April 2020
 EVcovar<-fread("ev.survival.prepared.csv")
 names(EV)[1]<-'species'
@@ -445,10 +445,50 @@ EGVU_surv_mod_3stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.te
 
 
 ### MODEL WITH 4 stages - breeding, winter, spring, fall migration
-##### CHANGE INPUT DATA FOR A SINGLE RESIDENT STAGE AND 3 migratory stages #####
+## this requires creating the mig.stage matrix from scratch to separate spring and fall migration ##
+
+EV.phi.states<-fread("Mig_stage_matrix.csv")
+EV.phi.matrix<-EV.phi.states %>%
+  mutate(id.tag=substr(id.year,1,nchar(id.year)-9)) %>%
+  mutate(year=as.numeric(substr(id.year,nchar(id.year)-7,nchar(id.year)-4))) %>%  
+  select(-Seq,-id.year) %>%
+  gather(key="month",value="state",-id.tag,-year) %>%
+  mutate(date=ymd(paste(year,month,"01",sep="-"))) %>%
+  mutate(date=format(date, format="%m-%Y")) %>%
+  mutate(col=timeseries$col[match(date,timeseries$date)]) %>%
+  filter(!is.na(col)) %>%
+  mutate(state=ifelse(state==1,1,ifelse(month<7,3,4))) %>%  ## state==3 for spring migration and state==4 for fall migration - updated on 10 April to allow for 2 resident states
+  select(-year,-month,-date) %>%
+  spread(key=col,value=state, fill=1) %>%
+  arrange(id.tag)
+
+EV.phi.matrix$id.tag = as.character(EV.phi.matrix$id.tag)
+EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="1_1"] <- "52027_1"
+EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="93_14"] <- "81_14"
+EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="AF5AF11F_NA"] <- "Bianca_IHB_AF5AF11F"
+EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="B05AF11F_NA"] <- "Clara_IHC_B05AF11F"
+EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="Provence_2016_Ad_wild_EO5018_Salomé_8P_5018"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P_5018"
+EV.phi.matrix<-EV.phi.matrix[!(EV.phi.matrix$id.tag=="Djibouti_127589"),]
+
+EV.phi.matrix<-EV.phi.matrix %>% filter(id.tag %in% EV$id.tag) %>%
+  arrange(id.tag)
+
+for(row in 1:nrow(EV.phi.matrix)) {
+  id<-EV.phi.matrix$id.tag[row]
+
+  for(col in 2:ncol(EV.phi.matrix)) {
+    if(EV.phi.matrix[row,col]==1){
+      EV.phi.matrix[row,col]<-ifelse(lat.matrix[row,col]>30,1,2)
+      EV.phi.matrix[row,col]<-ifelse(is.na(lat.matrix[row,col]),1,EV.phi.matrix[row,col])
+    }
+  }
+}
+
+EV.phi.matrix 
+
+
 INPUT.telemetry$mig<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
-INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig==2,1,INPUT.telemetry$mig)
-INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig==5,2,INPUT.telemetry$mig)
+
 EGVU_surv_mod_4stage_fallmig <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVUsurv_simplage_4migstage.jags",
                                          n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
