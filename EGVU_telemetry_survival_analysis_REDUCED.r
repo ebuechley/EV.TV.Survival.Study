@@ -417,9 +417,13 @@ INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,1,0)
 
 # Call JAGS from R (took 70 min DIC = 3353.559)
 EGVU_surv_mod_2stage_addpop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_intpop.jags",
+                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_addpop.jags",
                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
+# Call JAGS from R (took 70 min DIC = 3353.559)
+EGVU_surv_mod_2stage_intpop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_intpop.jags",
+                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
 
 
