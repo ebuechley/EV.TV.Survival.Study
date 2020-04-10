@@ -394,7 +394,7 @@ nc <- 4
 
 # Call JAGS from R (took 70 min DIC = 3350.327)
 EGVU_surv_mod_5stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVUsurv_simplage_5migstage.jags",
+                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_5migstage.jags",
                      n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
 ##### CHANGE INPUT DATA FOR A SINGLE RESIDENT STAGE AND 3 migratory stages #####
@@ -405,7 +405,7 @@ INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig==5,2,INPUT.telemetry$mig)
 
 # Call JAGS from R (took 70 min DIC = 3347.666)
 EGVU_surv_mod_4stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVUsurv_simplage_4migstage.jags",
+                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_4migstage.jags",
                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
 
@@ -417,7 +417,7 @@ INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,1,0)
 
 # Call JAGS from R (took 70 min DIC = 3353.559)
 EGVU_surv_mod_2stage_addpop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_intpop.jags",
+                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_intpop.jags",
                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
 
@@ -428,7 +428,7 @@ EGVU_surv_mod_2stage_addpop <- autojags(INPUT.telemetry, inits.telemetry, parame
 
 # Call JAGS from R (took 70 min DIC = 3353.559)
 EGVU_surv_mod_2stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage.jags",
+                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage.jags",
                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
 
@@ -438,7 +438,7 @@ INPUT.telemetry$mig<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
 INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,3,INPUT.telemetry$mig)
 
 EGVU_surv_mod_3stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                 "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVUsurv_simplage_3migstage.jags",
+                                 "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_3migstage.jags",
                                  n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
 
@@ -490,7 +490,7 @@ EV.phi.matrix
 INPUT.telemetry$mig<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
 
 EGVU_surv_mod_4stage_fallmig <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\Survival\\EV.TV.Survival.Study\\EGVUsurv_simplage_4migstage.jags",
+                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_4migstage.jags",
                                          n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
 
