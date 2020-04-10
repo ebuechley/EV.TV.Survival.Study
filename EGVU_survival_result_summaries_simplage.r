@@ -7,6 +7,8 @@
 ## revised on 6 April 2020 after 3 alternative models were run
 ## revised on 9 April 2020 to adjust for lack of age effect
 
+## updated on 10 April to include several models with 2-5 migration stages
+
 library(jagsUI)
 library(tidyverse)
 library(data.table)
@@ -34,19 +36,27 @@ load("EGVU_survival_output_simplage.RData")  ### need to load whole workspace fo
 
 out1<-as.data.frame(EGVU_surv_mod_5stage$summary)
 out1$parameter<-row.names(EGVU_surv_mod_5stage$summary)
-out1$model<-"5_mig_stages"
+out1$model<-"5_mig_stages_geog"
 
 out2<-as.data.frame(EGVU_surv_mod_4stage$summary)
 out2$parameter<-row.names(EGVU_surv_mod_4stage$summary)
-out2$model<-"4_mig_stages"
+out2$model<-"4_mig_stages_geog"
 
-out3<-as.data.frame(EGVU_surv_res_mig$summary)
-out3$parameter<-row.names(EGVU_surv_res_mig$summary)
-out3$model<-"5_mig_stages"
+out3<-as.data.frame(EGVU_surv_mod_2stage_addpop$summary)
+out3$parameter<-row.names(EGVU_surv_mod_2stage_addpop$summary)
+out3$model<-"2_mig_stage_addpop"
+
+out4<-as.data.frame(EGVU_surv_mod_2stage$summary)
+out4$parameter<-row.names(EGVU_surv_mod_2stage$summary)
+out4$model<-"2_mig_stage"
+
+out5<-as.data.frame(EGVU_surv_mod_4stage_fallmig$summary)
+out5$parameter<-row.names(EGVU_surv_mod_4stage_fallmig$summary)
+out5$model<-"4_mig_stages_season"
 
 
 ### COMBINE OUTPUT FROM ALL 3 MODELS
-out<-bind_rows(out1,out2,out3)
+out<-bind_rows(out1,out2,out3,out4,out5)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,8 +65,8 @@ out<-bind_rows(out1,out2,out3)
 pd_dic <- function(x) {
   data.frame(n.parameters=x$pD, DIC=x$DIC)
 }
-DIC_tab<-bind_rows(pd_dic(EGVU_surv_mod_5stage),pd_dic(EGVU_surv_mod_4stage),pd_dic(EGVU_surv_res_mig)) %>%
-  mutate(model=c("5_mig_stages","4_mig_stages")) %>%
+DIC_tab<-bind_rows(pd_dic(EGVU_surv_mod_5stage),pd_dic(EGVU_surv_mod_4stage),pd_dic(EGVU_surv_mod_2stage_addpop),pd_dic(EGVU_surv_mod_2stage),pd_dic(EGVU_surv_mod_4stage_fallmig)) %>%
+  mutate(model=c("5_mig_stages_geog","4_mig_stages_geog","2_mig_stage_addpop","2_mig_stage","4_mig_stages_season")) %>%
   arrange(DIC) %>%
   mutate(deltaDIC=DIC-DIC[1])
 DIC_tab
@@ -68,7 +78,7 @@ ModSelTab<-out %>% dplyr::select(model, parameter,mean) %>%
   left_join(DIC_tab, by="model")%>%
   arrange(DIC) 
 
-fwrite(ModSelTab,"EGVU_surv_model_selection_nolatlong_935EW.csv")
+fwrite(ModSelTab,"EGVU_surv_model_selection_simplage.csv")
 
 
 
@@ -80,13 +90,12 @@ fwrite(ModSelTab,"EGVU_surv_model_selection_nolatlong_935EW.csv")
 out %>% filter(grepl("b.phi",parameter)) %>%
   left_join(DIC_tab, by="model") %>%
   mutate(header= paste(model,"delta DIC:",as.integer(deltaDIC)," ")) %>%
-  filter(!(model=="4_mig_stages" & parameter=="b.phi.mig[5]")) %>%
   
   ggplot()+
   geom_point(aes(x=parameter, y=mean))+
   geom_errorbar(aes(x=parameter, ymin=`2.5%`, ymax=`97.5%`), width=.1) +
   geom_hline(aes(yintercept=0), colour="darkgrey") +
-  facet_wrap(~header, ncol=1) +
+  facet_wrap(~header, ncol=2) +
   
   ## format axis ticks
   xlab("Parameter") +

@@ -426,7 +426,7 @@ EGVU_surv_mod_2stage_addpop <- autojags(INPUT.telemetry, inits.telemetry, parame
 
 ### MIGRATION ONLY MODELS WITH NO GEOGRAPHIC STRUCTURE ############################
 
-# Call JAGS from R (took 70 min DIC = 3353.559)
+# Call JAGS from R (took 70 min DIC = 3364.502)
 EGVU_surv_mod_2stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage.jags",
                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
@@ -444,7 +444,7 @@ EGVU_surv_mod_3stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.te
 
 
 
-### MODEL WITH 4 stages - breeding, winter, spring, fall migration
+### MODEL WITH 4 stages - breeding, winter, spring, fall migration (DIC= 3373.8)
 ## this requires creating the mig.stage matrix from scratch to separate spring and fall migration ##
 
 EV.phi.states<-fread("Mig_stage_matrix.csv")
@@ -483,9 +483,6 @@ for(row in 1:nrow(EV.phi.matrix)) {
     }
   }
 }
-
-EV.phi.matrix 
-
 
 INPUT.telemetry$mig<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
 
