@@ -580,3 +580,24 @@ ggsave("Monthly_Surv_2stage_addpop.jpg", width=11,height=9)
 
 
 
+### PLOT PARAMETERS ON LOGIT SCALE
+
+out3 %>% filter(grepl("b.phi",parameter)) %>%
+  ggplot()+
+  geom_point(aes(x=parameter, y=mean))+
+  geom_errorbar(aes(x=parameter, ymin=`2.5%`, ymax=`97.5%`), width=.1) +
+  geom_hline(aes(yintercept=0), colour="darkgrey") +
+  
+  ## format axis ticks
+  xlab("Parameter") +
+  ylab("estimate (logit scale)") +
+  
+  ## beautification of the axes
+  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.y=element_text(size=18, color="black"),
+        axis.text.x=element_text(size=12, color="black",angle=45, vjust = 1, hjust=1), 
+        axis.title=element_text(size=18), 
+        strip.text.x=element_text(size=18, color="black"), 
+        strip.background=element_rect(fill="white", colour="black"))
+
+ggsave("EGVU_parameter_estimates_logit_2stage_addpop.pdf", height=7, width=10)
