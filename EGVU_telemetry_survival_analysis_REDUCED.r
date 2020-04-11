@@ -352,8 +352,8 @@ tag.fail.indicator<-EV$mean.GPS.dist.last10fixes.degrees
 INPUT.telemetry <- list(y = y.telemetry,
                         f = f.telemetry,
                         l = l.telemetry,
-                        #age = age.mat,
-                        adult = ifelse(age.mat>18,0,1), ### provide a simple classification for adults and non-adults
+                        age = age.mat,
+                        #adult = ifelse(age.mat>18,0,1), ### provide a simple classification for adults and non-adults
                         mig = as.matrix(EV.phi.matrix[,2:max(timeseries$col)]),
                         lat = lat.mat,
                         pop = ifelse(EV$pop=="western europe",1,ifelse(EV$pop %in% c("italy","balkans"),2,3)),
@@ -431,6 +431,10 @@ EGVU_surv_mod_2stage_intpop_mig <- autojags(INPUT.telemetry, inits.telemetry, pa
                                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
 
+# Call JAGS from R (took 79 min DIC = 3349.905)
+EGVU_surv_mod_2stage_intpop_AGE <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_age_2migstage_intpop.jags",
+                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
 
 ### MIGRATION ONLY MODELS WITH NO GEOGRAPHIC STRUCTURE ############################
