@@ -58,9 +58,13 @@ out6<-as.data.frame(EGVU_surv_mod_3stage$summary)
 out6$parameter<-row.names(EGVU_surv_mod_3stage$summary)
 out6$model<-"3_mig_stages"
 
+out7<-as.data.frame(EGVU_surv_mod_2stage_intpop$summary)
+out7$parameter<-row.names(EGVU_surv_mod_2stage_intpop$summary)
+out7$model<-"2_mig_stage_intpop"
+
 
 ### COMBINE OUTPUT FROM ALL 3 MODELS
-out<-bind_rows(out1,out2,out3,out4,out5, out6)
+out<-bind_rows(out1,out2,out3,out4,out5, out6,out7)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,8 +73,8 @@ out<-bind_rows(out1,out2,out3,out4,out5, out6)
 pd_dic <- function(x) {
   data.frame(n.parameters=x$pD, DIC=x$DIC)
 }
-DIC_tab<-bind_rows(pd_dic(EGVU_surv_mod_5stage),pd_dic(EGVU_surv_mod_4stage),pd_dic(EGVU_surv_mod_2stage_addpop),pd_dic(EGVU_surv_mod_2stage),pd_dic(EGVU_surv_mod_4stage_fallmig),pd_dic(EGVU_surv_mod_3stage)) %>%
-  mutate(model=c("5_mig_stages_geog","4_mig_stages_geog","2_mig_stage_addpop","2_mig_stage","4_mig_stages_season","3_mig_stages")) %>%
+DIC_tab<-bind_rows(pd_dic(EGVU_surv_mod_5stage),pd_dic(EGVU_surv_mod_4stage),pd_dic(EGVU_surv_mod_2stage_addpop),pd_dic(EGVU_surv_mod_2stage_intpop),pd_dic(EGVU_surv_mod_2stage),pd_dic(EGVU_surv_mod_4stage_fallmig),pd_dic(EGVU_surv_mod_3stage)) %>%
+  mutate(model=c("5_mig_stages_geog","4_mig_stages_geog","2_mig_stage_addpop","2_mig_stage_intpop","2_mig_stage","4_mig_stages_season","3_mig_stages")) %>%
   arrange(DIC) %>%
   mutate(deltaDIC=DIC-DIC[1])
 DIC_tab
@@ -653,9 +657,9 @@ for(s in 1:nrow(MCMCout)) {
     ### CALCULATE MONTHLY SURVIVAL
     mutate(logit.surv=ifelse(age==2,as.numeric(MCMCout[s,match("lp.mean[2]",parmcols)]),as.numeric(MCMCout[s,match("lp.mean[1]",parmcols)]))+
              as.numeric(MCMCout[s,match("b.phi.capt",parmcols)])*capt +
-             as.numeric(MCMCout[s,match("b.phi.mig",parmcols)])*mig *
-             ifelse(pop==1,as.numeric(MCMCout[s,match("b.phi.pop[1]",parmcols)]),
-                    ifelse(pop==2,as.numeric(MCMCout[s,match("b.phi.pop[2]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[3]",parmcols)])))) %>%
+             ifelse(pop==1,ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,1]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,1]",parmcols)])),
+                    ifelse(pop==2,ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,2]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,2]",parmcols)])),
+                           ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,3]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,3]",parmcols)]))))) %>%
     
     ### BACKTRANSFORM TO NORMAL SCALE
     mutate(surv=plogis(logit.surv)) %>%
@@ -709,10 +713,10 @@ for(s in 1:nrow(MCMCout)) {
     
     ### CALCULATE MONTHLY SURVIVAL
     mutate(logit.surv=ifelse(age==2,as.numeric(MCMCout[s,match("lp.mean[2]",parmcols)]),as.numeric(MCMCout[s,match("lp.mean[1]",parmcols)]))+
-             as.numeric(MCMCout[s,match("b.phi.mig",parmcols)])*mig *
-             ifelse(pop==1,as.numeric(MCMCout[s,match("b.phi.pop[1]",parmcols)]),
-                    ifelse(pop==2,as.numeric(MCMCout[s,match("b.phi.pop[2]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[3]",parmcols)]))))
-  
+             ifelse(pop==1,ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,1]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,1]",parmcols)])),
+                    ifelse(pop==2,ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,2]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,2]",parmcols)])),
+                           ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,3]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,3]",parmcols)])))))
+    
   MCMCpred<-rbind(MCMCpred,X) 
 }
 
@@ -741,7 +745,7 @@ ggplot(PLOTDAT)+
   
   ## format axis ticks
   #scale_x_continuous(name="", limits=c(0,5), breaks=c(1,2,3,4), labels=c("wild adult","wild juvenile","captive-reared \n juvenile")) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0.8,1), breaks=seq(0.8,1,0.02)) +
+  scale_y_continuous(name="Monthly survival probability", limits=c(0.79,1), breaks=seq(0.8,1,0.02)) +
   
   ## beautification of the axes
   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -754,28 +758,3 @@ ggplot(PLOTDAT)+
         strip.background=element_rect(fill="white", colour="black"))
 
 ggsave("Monthly_Surv_2stage_intpop.jpg", width=11,height=9)
-
-
-
-### PLOT PARAMETERS ON LOGIT SCALE
-
-out3 %>% filter(grepl("b.phi",parameter)) %>%
-  ggplot()+
-  geom_point(aes(x=parameter, y=mean))+
-  geom_errorbar(aes(x=parameter, ymin=`2.5%`, ymax=`97.5%`), width=.1) +
-  geom_hline(aes(yintercept=0), colour="darkgrey") +
-  
-  ## format axis ticks
-  xlab("Parameter") +
-  ylab("estimate (logit scale)") +
-  
-  ## beautification of the axes
-  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        axis.text.y=element_text(size=18, color="black"),
-        axis.text.x=element_text(size=12, color="black",angle=45, vjust = 1, hjust=1), 
-        axis.title=element_text(size=18), 
-        strip.text.x=element_text(size=18, color="black"), 
-        strip.background=element_rect(fill="white", colour="black"))
-
-ggsave("EGVU_parameter_estimates_logit_2stage_intpop.pdf", height=7, width=10)
-
