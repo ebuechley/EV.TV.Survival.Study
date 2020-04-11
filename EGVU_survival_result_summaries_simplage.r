@@ -601,3 +601,181 @@ out3 %>% filter(grepl("b.phi",parameter)) %>%
         strip.background=element_rect(fill="white", colour="black"))
 
 ggsave("EGVU_parameter_estimates_logit_2stage_addpop.pdf", height=7, width=10)
+
+
+
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+############ MODEL 4: 2 MIGRATORY STAGES and GEOGRAPHIC POPULATION STRUCTURE INTERACTION           #############################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### CALCULATE PREDICTED SURVIVAL BASED ON MODEL with 2 migratory stages
+## MIG STAGES ARE: 0=stationary, 1=migratory
+## POPULATION CLASSES ARE: 1=western Europe, 2=Balkans/Italy,3=Caucasus/Middle East
+## summarise annual survival by using 10*stationary, 1*spring mig and 1*fall mig FOR WEST populations, 2* fall mig for EAST and Caucasus populations
+
+
+### PREPARE RAW MCMC OUTPUT
+parmcols<-dimnames(EGVU_surv_mod_2stage_intpop$samples[[1]])[[2]]
+
+### COMBINE SAMPLES ACROSS CHAINS
+MCMCout<-rbind(EGVU_surv_mod_2stage_intpop$samples[[1]],EGVU_surv_mod_2stage_intpop$samples[[2]],EGVU_surv_mod_2stage_intpop$samples[[3]])
+str(MCMCout)
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# OUTPUT TABLE FOR PREDICTED ANNUAL SURVIVAL FOR ADULT AND JUVENILE FOR EACH POPULATION
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### SET UP ANNUAL TABLE
+
+AnnTab<-data.frame(pop=rep(c(1,2,3), each=24),
+                   capt=0,
+                   age=rep(c(rep(2,12),rep(1,12)),3),
+                   mig=c(c(0,1,0,0,0,0,0,0,0,0,0,0), ## juveniles west
+                         c(0,1,0,0,0,0,1,0,0,0,0,0), ## adults west
+                         c(0,1,1,0,0,0,0,0,0,0,0,0),  ## juveniles east
+                         c(0,1,0,0,0,0,0,1,0,0,0,0),   ## adults east
+                         c(0,1,1,0,0,0,0,0,0,0,0,0),  ## juveniles caucasus
+                         c(0,1,0,0,0,0,0,1,0,0,0,0)))  ## adults caucasus
+Xin<-AnnTab %>% mutate(capt=1) %>% bind_rows(AnnTab) %>% filter(!(age==1 & capt==1))
+
+
+### CALCULATE PREDICTED VALUE FOR EACH SAMPLE
+MCMCpred<-data.frame()
+for(s in 1:nrow(MCMCout)) {
+  
+  X<-  Xin %>%
+    
+    ### CALCULATE MONTHLY SURVIVAL
+    mutate(logit.surv=ifelse(age==2,as.numeric(MCMCout[s,match("lp.mean[2]",parmcols)]),as.numeric(MCMCout[s,match("lp.mean[1]",parmcols)]))+
+             as.numeric(MCMCout[s,match("b.phi.capt",parmcols)])*capt +
+             as.numeric(MCMCout[s,match("b.phi.mig",parmcols)])*mig *
+             ifelse(pop==1,as.numeric(MCMCout[s,match("b.phi.pop[1]",parmcols)]),
+                    ifelse(pop==2,as.numeric(MCMCout[s,match("b.phi.pop[2]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[3]",parmcols)])))) %>%
+    
+    ### BACKTRANSFORM TO NORMAL SCALE
+    mutate(surv=plogis(logit.surv)) %>%
+    
+    ### CALCULATE ANNUAL SURVIVAL
+    group_by(age,pop, capt) %>%
+    summarise(ann.surv=prod(surv)) %>%
+    mutate(simul=s)            
+  
+  
+  MCMCpred<-rbind(MCMCpred,as.data.frame(X)) 
+  
+}
+
+
+### CALCULATE PREDICTED SURVIVAL BASED ON FINAL MODEL
+
+TABLE2<-  MCMCpred %>% 
+  
+  ### ANNOTATE GROUPS
+  mutate(Ageclass=ifelse(age==1,"adult","juvenile")) %>%
+  mutate(Origin=ifelse(capt==0,"wild","captive")) %>%
+  mutate(pop=ifelse(pop==1,"western europe",ifelse(pop==2,"Italy/Balkans","Caucasus/Middle East"))) %>%
+  
+  ### CALCULATE CREDIBLE INTERVALS
+  group_by(pop,Ageclass,Origin) %>%
+  summarise(med.surv=quantile(ann.surv,0.5),lcl.surv=quantile(ann.surv,0.025),ucl.surv=quantile(ann.surv,0.975)) %>%
+  arrange(pop,Ageclass,Origin)
+
+TABLE2
+
+
+fwrite(TABLE2,"EGVU_AnnSurv_2stage_intpop.csv")
+
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SURVIVAL WITH MIGRATORY STAGE
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### SET UP ANNUAL TABLE
+
+MigTab<-expand.grid(age=c(1,2),mig=c(0,1),pop=c(1,2,3))
+
+### CALCULATE PREDICTED VALUE FOR EACH SAMPLE
+MCMCpred<-data.frame()
+for(s in 1:nrow(MCMCout)) {
+  
+  X<-  MigTab %>%
+    
+    ### CALCULATE MONTHLY SURVIVAL
+    mutate(logit.surv=ifelse(age==2,as.numeric(MCMCout[s,match("lp.mean[2]",parmcols)]),as.numeric(MCMCout[s,match("lp.mean[1]",parmcols)]))+
+             as.numeric(MCMCout[s,match("b.phi.mig",parmcols)])*mig *
+             ifelse(pop==1,as.numeric(MCMCout[s,match("b.phi.pop[1]",parmcols)]),
+                    ifelse(pop==2,as.numeric(MCMCout[s,match("b.phi.pop[2]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[3]",parmcols)]))))
+  
+  MCMCpred<-rbind(MCMCpred,X) 
+}
+
+
+### CALCULATE PREDICTED SURVIVAL BASED ON FINAL MODEL
+
+PLOTDAT<-  MCMCpred %>% group_by(age,mig, pop) %>%
+  summarise(med.surv=quantile(logit.surv,0.5),lcl.surv=quantile(logit.surv,0.025),ucl.surv=quantile(logit.surv,0.975)) %>%
+  
+  ### BACKTRANSFORM TO NORMAL SCALE
+  mutate(surv=plogis(med.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
+  
+  ### ANNOTATE GROUPS
+  mutate(Ageclass=ifelse(age==1,"adult","juvenile")) %>%
+  mutate(stage=ifelse(mig==0,"stationary","migrating")) %>%
+  mutate(pop=ifelse(pop==1,"western europe",ifelse(pop==2,"Italy/Balkans","Caucasus/Middle East")))
+head(PLOTDAT)
+
+
+## PLOT 
+
+ggplot(PLOTDAT)+
+  geom_point(aes(x=pop, y=surv,colour=stage), alpha=0.2, position=position_dodge(width=0.1)) +
+  geom_errorbar(aes(x=pop, ymin=lcl, ymax=ucl, color=stage), width=0.05, position=position_dodge(width=0.1))+
+  facet_wrap(~Ageclass, ncol=1) +
+  
+  ## format axis ticks
+  #scale_x_continuous(name="", limits=c(0,5), breaks=c(1,2,3,4), labels=c("wild adult","wild juvenile","captive-reared \n juvenile")) +
+  scale_y_continuous(name="Monthly survival probability", limits=c(0.8,1), breaks=seq(0.8,1,0.02)) +
+  
+  ## beautification of the axes
+  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.y=element_text(size=14, color="black"),
+        axis.text.x=element_text(size=14, color="black"), 
+        axis.title=element_text(size=18),
+        legend.text=element_text(size=14, color="black"),
+        legend.title=element_text(size=16, color="black"),  
+        strip.text=element_text(size=18, color="black"), 
+        strip.background=element_rect(fill="white", colour="black"))
+
+ggsave("Monthly_Surv_2stage_intpop.jpg", width=11,height=9)
+
+
+
+### PLOT PARAMETERS ON LOGIT SCALE
+
+out3 %>% filter(grepl("b.phi",parameter)) %>%
+  ggplot()+
+  geom_point(aes(x=parameter, y=mean))+
+  geom_errorbar(aes(x=parameter, ymin=`2.5%`, ymax=`97.5%`), width=.1) +
+  geom_hline(aes(yintercept=0), colour="darkgrey") +
+  
+  ## format axis ticks
+  xlab("Parameter") +
+  ylab("estimate (logit scale)") +
+  
+  ## beautification of the axes
+  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.y=element_text(size=18, color="black"),
+        axis.text.x=element_text(size=12, color="black",angle=45, vjust = 1, hjust=1), 
+        axis.title=element_text(size=18), 
+        strip.text.x=element_text(size=18, color="black"), 
+        strip.background=element_rect(fill="white", colour="black"))
+
+ggsave("EGVU_parameter_estimates_logit_2stage_intpop.pdf", height=7, width=10)
+
