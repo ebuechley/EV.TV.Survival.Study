@@ -758,3 +758,94 @@ ggplot(PLOTDAT)+
         strip.background=element_rect(fill="white", colour="black"))
 
 ggsave("Monthly_Surv_2stage_intpop.jpg", width=11,height=9)
+
+
+
+
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+############ MODEL 5: 2 MIGRATORY STAGES and INTERACTION WITH GEOGRAPHIC POPULATION STRUCTURE            #############################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### CALCULATE PREDICTED SURVIVAL BASED ON MODEL with 2 migratory stages
+## MIG STAGES ARE: 0=stationary, 1=migratory
+## POPULATION CLASSES ARE: 1=western Europe, 2=Balkans/Italy,3=Caucasus/Middle East
+## summarise annual survival by using 10*stationary, 1*spring mig and 1*fall mig FOR WEST populations, 2* fall mig for EAST and Caucasus populations
+
+
+### PREPARE RAW MCMC OUTPUT
+parmcols<-dimnames(EGVU_surv_mod_2stage_intpop_mig$samples[[1]])[[2]]
+
+### COMBINE SAMPLES ACROSS CHAINS
+MCMCout<-rbind(EGVU_surv_mod_2stage_intpop_mig$samples[[1]],EGVU_surv_mod_2stage_intpop_mig$samples[[2]],EGVU_surv_mod_2stage_intpop_mig$samples[[3]],EGVU_surv_mod_2stage_addpop$samples[[4]])
+str(MCMCout)
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# OUTPUT TABLE FOR PREDICTED ANNUAL SURVIVAL FOR ADULT AND JUVENILE FOR EACH POPULATION
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### SET UP ANNUAL TABLE
+
+AnnTab<-data.frame(pop=rep(c(1,2,3), each=24),
+                   capt=0,
+                   age=rep(c(rep(2,12),rep(1,12)),3),
+                   mig=c(c(0,1,0,0,0,0,0,0,0,0,0,0), ## juveniles west
+                         c(0,1,0,0,0,0,1,0,0,0,0,0), ## adults west
+                         c(0,1,1,0,0,0,0,0,0,0,0,0),  ## juveniles east
+                         c(0,1,0,0,0,0,0,1,0,0,0,0),   ## adults east
+                         c(0,1,1,0,0,0,0,0,0,0,0,0),  ## juveniles caucasus
+                         c(0,1,0,0,0,0,0,1,0,0,0,0)))  ## adults caucasus
+Xin<-AnnTab %>% mutate(capt=1) %>% bind_rows(AnnTab) %>% filter(!(age==1 & capt==1))
+
+
+### CALCULATE PREDICTED VALUE FOR EACH SAMPLE
+MCMCpred<-data.frame()
+for(s in 1:nrow(MCMCout)) {
+  
+  X<-  Xin %>%
+    
+    ### CALCULATE MONTHLY SURVIVAL
+    mutate(logit.surv=ifelse(age==2,as.numeric(MCMCout[s,match("lp.mean[2]",parmcols)]),as.numeric(MCMCout[s,match("lp.mean[1]",parmcols)]))+
+             as.numeric(MCMCout[s,match("b.phi.capt",parmcols)])*capt +
+             as.numeric(MCMCout[s,match("b.phi.mig",parmcols)])*mig *
+             ifelse(pop==1,as.numeric(MCMCout[s,match("b.phi.pop[1]",parmcols)]),
+                    ifelse(pop==2,as.numeric(MCMCout[s,match("b.phi.pop[2]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[3]",parmcols)])))) %>%
+    
+    ### BACKTRANSFORM TO NORMAL SCALE
+    mutate(surv=plogis(logit.surv)) %>%
+    
+    ### CALCULATE ANNUAL SURVIVAL
+    group_by(age,pop, capt) %>%
+    summarise(ann.surv=prod(surv)) %>%
+    mutate(simul=s)            
+  
+  
+  MCMCpred<-rbind(MCMCpred,as.data.frame(X)) 
+  
+}
+
+
+### CALCULATE PREDICTED SURVIVAL BASED ON FINAL MODEL
+
+TABLE2<-  MCMCpred %>% 
+  
+  ### ANNOTATE GROUPS
+  mutate(Ageclass=ifelse(age==1,"adult","juvenile")) %>%
+  mutate(Origin=ifelse(capt==0,"wild","captive")) %>%
+  mutate(pop=ifelse(pop==1,"western europe",ifelse(pop==2,"Italy/Balkans","Caucasus/Middle East"))) %>%
+  
+  ### CALCULATE CREDIBLE INTERVALS
+  group_by(pop,Ageclass,Origin) %>%
+  summarise(med.surv=quantile(ann.surv,0.5),lcl.surv=quantile(ann.surv,0.025),ucl.surv=quantile(ann.surv,0.975)) %>%
+  arrange(pop,Ageclass,Origin)
+
+TABLE2
+
+### abandoned because confidence intervals way too large!
+fwrite(TABLE2,"EGVU_AnnSurv_2stage_intpop_mig.csv")
+
+
