@@ -385,9 +385,9 @@ inits.telemetry <- function(){list(z = z.telemetry,
 						                      beta3 = rnorm(1,0, 0.001))} 
 
 # MCMC settings
-ni <- 15000
-nt <- 5
-nb <- 5000
+ni <- 5000
+nt <- 3
+nb <- 2000
 nc <- 3
 
 

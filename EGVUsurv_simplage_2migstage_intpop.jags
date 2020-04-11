@@ -33,8 +33,8 @@
     for (i in 1:nind){
       for (t in f[i]:(n.occasions)){
         logit(phi[i,t]) <- lp.mean[adult[i,t]+1] +      ### age category-specific intercept 
-          b.phi.mig*mig[i,t] *       ### survival dependent on migratory stage of the month (stationary or migratory)
-          b.phi.pop[pop[i]] +       ### survival dependent on migratory stage of the month (stationary or migratory)
+          #b.phi.mig*mig[i,t] *       ### survival dependent on migratory stage of the month (stationary or migratory)
+          b.phi.pop[(mig[i,t]+1),pop[i]] +       ### survival dependent on migratory stage of the month (stationary or migratory)
           b.phi.capt*(capt[i])      ### survival dependent on captive-release (wild or captive-raised)
       } #t
     } #i
@@ -46,9 +46,13 @@
     }
     
     #### CATEGORICAL POPULATION OFFSET
-    for(pop in 1:3){
-      b.phi.pop[pop] ~ dnorm(0, 0.001)               # Prior for population on survival probability on logit scale
+    for (mig in 1:2){
+        for(pop in 1:3){
+          b.phi.pop[mig,pop] ~ dnorm(0, 0.001)               # Prior for population on survival probability on logit scale
+        }
+    
     }
+
 
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.mig ~ dnorm(0, 0.001)           # Prior for COST OF MIGRATION migration on survival probability on logit scale
