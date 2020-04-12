@@ -21,7 +21,7 @@ select<-dplyr::select
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# LOAD ALL 3 MODEL RESULTS 
+# LOAD ALL MODEL RESULTS 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T)
@@ -62,9 +62,13 @@ out7<-as.data.frame(EGVU_surv_mod_2stage_intpop$summary)
 out7$parameter<-row.names(EGVU_surv_mod_2stage_intpop$summary)
 out7$model<-"2_mig_stage_intpop"
 
+out8<-as.data.frame(EGVU_surv_mod_2stage_intpop_AGE$summary)
+out8$parameter<-row.names(EGVU_surv_mod_2stage_intpop_AGE$summary)
+out8$model<-"2_mig_stage_intpop_AGE"
+
 
 ### COMBINE OUTPUT FROM ALL 3 MODELS
-out<-bind_rows(out1,out2,out3,out4,out5, out6,out7)
+out<-bind_rows(out1,out2,out3,out4,out5, out6,out7,out8)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -73,8 +77,8 @@ out<-bind_rows(out1,out2,out3,out4,out5, out6,out7)
 pd_dic <- function(x) {
   data.frame(n.parameters=x$pD, DIC=x$DIC)
 }
-DIC_tab<-bind_rows(pd_dic(EGVU_surv_mod_5stage),pd_dic(EGVU_surv_mod_4stage),pd_dic(EGVU_surv_mod_2stage_addpop),pd_dic(EGVU_surv_mod_2stage_intpop),pd_dic(EGVU_surv_mod_2stage),pd_dic(EGVU_surv_mod_4stage_fallmig),pd_dic(EGVU_surv_mod_3stage)) %>%
-  mutate(model=c("5_mig_stages_geog","4_mig_stages_geog","2_mig_stage_addpop","2_mig_stage_intpop","2_mig_stage","4_mig_stages_season","3_mig_stages")) %>%
+DIC_tab<-bind_rows(pd_dic(EGVU_surv_mod_5stage),pd_dic(EGVU_surv_mod_4stage),pd_dic(EGVU_surv_mod_2stage_addpop),pd_dic(EGVU_surv_mod_2stage_intpop),pd_dic(EGVU_surv_mod_2stage),pd_dic(EGVU_surv_mod_4stage_fallmig),pd_dic(EGVU_surv_mod_3stage),pd_dic(EGVU_surv_mod_2stage_intpop_AGE)) %>%
+  mutate(model=c("5_mig_stages_geog","4_mig_stages_geog","2_mig_stage_addpop","2_mig_stage_intpop","2_mig_stage","4_mig_stages_season","3_mig_stages","2_mig_stage_intpop_AGE")) %>%
   arrange(DIC) %>%
   mutate(deltaDIC=DIC-DIC[1])
 DIC_tab
@@ -847,5 +851,163 @@ TABLE2
 
 ### abandoned because confidence intervals way too large!
 fwrite(TABLE2,"EGVU_AnnSurv_2stage_intpop_mig.csv")
+
+
+
+
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+############ MODEL 6: 2 MIGRATORY STAGES and GEOGRAPHIC POPULATION STRUCTURE INTERACTION           #############################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### CALCULATE PREDICTED SURVIVAL BASED ON MODEL with 2 migratory stages
+## MIG STAGES ARE: 0=stationary, 1=migratory
+## POPULATION CLASSES ARE: 1=western Europe, 2=Balkans/Italy,3=Caucasus/Middle East
+## AGE IN MONTHS AS A CONTINUOUS COVARIATE
+## summarise annual survival by using 10*stationary, 1*spring mig and 1*fall mig FOR WEST populations, 2* fall mig for EAST and Caucasus populations
+
+### PREPARE RAW MCMC OUTPUT
+parmcols<-dimnames(EGVU_surv_mod_2stage_intpop_AGE$samples[[1]])[[2]]
+
+### COMBINE SAMPLES ACROSS CHAINS
+MCMCout<-rbind(EGVU_surv_mod_2stage_intpop_AGE$samples[[1]],EGVU_surv_mod_2stage_intpop_AGE$samples[[2]],EGVU_surv_mod_2stage_intpop_AGE$samples[[3]])
+str(MCMCout)
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# OUTPUT TABLE FOR PREDICTED ANNUAL SURVIVAL FOR ADULT AND JUVENILE FOR EACH POPULATION
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### SET UP ANNUAL TABLE
+
+AnnTab<-data.frame(pop=rep(c(1,2,3), each=24),
+                   capt=0,
+                   age=rep(c(seq(1:12),rep(54,12)),3),
+                   mig=c(c(0,1,0,0,0,0,0,0,0,0,0,0), ## juveniles west
+                         c(0,1,0,0,0,0,1,0,0,0,0,0), ## adults west
+                         c(0,1,1,0,0,0,0,0,0,0,0,0),  ## juveniles east
+                         c(0,1,0,0,0,0,0,1,0,0,0,0),   ## adults east
+                         c(0,1,1,0,0,0,0,0,0,0,0,0),  ## juveniles caucasus
+                         c(0,1,0,0,0,0,0,1,0,0,0,0)))  ## adults caucasus
+Xin<-AnnTab %>% mutate(capt=1) %>% bind_rows(AnnTab) %>% filter(!(age==54 & capt==1))
+
+
+### CALCULATE PREDICTED VALUE FOR EACH SAMPLE
+MCMCpred<-data.frame()
+for(s in 1:nrow(MCMCout)) {
+  
+  X<-  Xin %>%
+    
+    ### CALCULATE MONTHLY SURVIVAL
+    mutate(logit.surv=as.numeric(MCMCout[s,match("lp.mean",parmcols)])+
+             as.numeric(MCMCout[s,match("b.phi.capt",parmcols)])*capt +
+             as.numeric(MCMCout[s,match("b.phi.age",parmcols)])*age +
+             ifelse(pop==1,ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,1]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,1]",parmcols)])),
+                    ifelse(pop==2,ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,2]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,2]",parmcols)])),
+                           ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,3]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,3]",parmcols)]))))) %>%
+    
+    ### BACKTRANSFORM TO NORMAL SCALE
+    mutate(surv=plogis(logit.surv)) %>%
+    mutate(Ageclass=ifelse(age==54,"adult","juvenile")) %>%
+    ### CALCULATE ANNUAL SURVIVAL
+    group_by(Ageclass,pop, capt) %>%
+    summarise(ann.surv=prod(surv)) %>%
+    mutate(simul=s)            
+  
+  
+  MCMCpred<-rbind(MCMCpred,as.data.frame(X)) 
+  
+}
+
+
+### CALCULATE PREDICTED SURVIVAL BASED ON FINAL MODEL
+
+TABLE2<-  MCMCpred %>% 
+  
+  ### ANNOTATE GROUPS
+  #mutate(Ageclass=ifelse(age==54,"adult","juvenile")) %>%
+  mutate(Origin=ifelse(capt==0,"wild","captive")) %>%
+  mutate(pop=ifelse(pop==1,"western europe",ifelse(pop==2,"Italy/Balkans","Caucasus/Middle East"))) %>%
+  
+  ### CALCULATE CREDIBLE INTERVALS
+  group_by(pop,Ageclass,Origin) %>%
+  summarise(med.surv=quantile(ann.surv,0.5),lcl.surv=quantile(ann.surv,0.025),ucl.surv=quantile(ann.surv,0.975)) %>%
+  arrange(pop,Ageclass,Origin)
+
+TABLE2
+
+
+fwrite(TABLE2,"EGVU_AnnSurv_2stage_intpop_age.csv")
+
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SURVIVAL WITH MIGRATORY STAGE
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### SET UP TABLE
+
+MigTab<-expand.grid(age=seq(1,54,1),mig=c(0,1),pop=c(1,2,3))
+
+### CALCULATE PREDICTED VALUE FOR EACH SAMPLE
+MCMCpred<-data.frame()
+for(s in 1:nrow(MCMCout)) {
+  
+  X<-  MigTab %>%
+    
+    ### CALCULATE MONTHLY SURVIVAL
+    mutate(logit.surv=as.numeric(MCMCout[s,match("lp.mean",parmcols)])+
+             as.numeric(MCMCout[s,match("b.phi.age",parmcols)])*age +
+             ifelse(pop==1,ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,1]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,1]",parmcols)])),
+                    ifelse(pop==2,ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,2]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,2]",parmcols)])),
+                           ifelse(mig==0,as.numeric(MCMCout[s,match("b.phi.pop[1,3]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[2,3]",parmcols)])))))
+    
+  MCMCpred<-rbind(MCMCpred,X) 
+}
+
+
+### CALCULATE PREDICTED SURVIVAL BASED ON FINAL MODEL
+
+PLOTDAT<-  MCMCpred %>% group_by(age,mig, pop) %>%
+  summarise(med.surv=quantile(logit.surv,0.5),lcl.surv=quantile(logit.surv,0.025),ucl.surv=quantile(logit.surv,0.975)) %>%
+  
+  ### BACKTRANSFORM TO NORMAL SCALE
+  mutate(surv=plogis(med.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
+  
+  ### ANNOTATE GROUPS
+  #mutate(Ageclass=ifelse(age==1,"adult","juvenile")) %>%
+  mutate(stage=ifelse(mig==0,"stationary","migrating")) %>%
+  mutate(pop=ifelse(pop==1,"western europe",ifelse(pop==2,"Italy/Balkans","Caucasus/Middle East")))
+head(PLOTDAT)
+
+
+## PLOT 
+
+ggplot(PLOTDAT)+
+  
+  geom_ribbon(aes(x=age, ymin=lcl, ymax=ucl, fill=stage), alpha=0.2) +   ##, type=Origin
+  geom_line(aes(x=age, y=surv, color=stage))+     ## , linetype=Origin
+  facet_wrap(~pop,ncol=1, scales="free_y") +
+  
+  ## format axis ticks
+  scale_x_continuous(name="Age in years", limits=c(1,54), breaks=seq(1,54,6), labels=seq(0,4,0.5)) +
+  ylab("Monthly survival probability") +
+
+  ## beautification of the axes
+  theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.y=element_text(size=14, color="black"),
+        axis.text.x=element_text(size=14, color="black"), 
+        axis.title=element_text(size=18),
+        legend.text=element_text(size=14, color="black"),
+        legend.title=element_text(size=16, color="black"),  
+        strip.text=element_text(size=18, color="black"), 
+        strip.background=element_rect(fill="white", colour="black"))
+
+ggsave("Monthly_Surv_2stage_intpop_age.jpg", width=11,height=9)
+
 
 
