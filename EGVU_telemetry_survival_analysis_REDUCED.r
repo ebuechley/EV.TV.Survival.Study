@@ -353,7 +353,7 @@ INPUT.telemetry <- list(y = y.telemetry,
                         f = f.telemetry,
                         l = l.telemetry,
                         age = age.mat,
-                        #adult = ifelse(age.mat>18,0,1), ### provide a simple classification for adults and non-adults
+                        adult = ifelse(age.mat>18,0,1), ### provide a simple classification for adults and non-adults
                         mig = as.matrix(EV.phi.matrix[,2:max(timeseries$col)]),
                         lat = lat.mat,
                         pop = ifelse(EV$pop=="western europe",1,ifelse(EV$pop %in% c("italy","balkans"),2,3)),
@@ -373,7 +373,7 @@ INPUT.telemetry <- list(y = y.telemetry,
 
 # Parameters monitored
 parameters.telemetry <- c("p.seen.alive","base.obs","base.fail","base.recover","beta1","beta2","beta3","beta4",
-                          "mean.phi","lp.mean","b.phi.mig","b.phi.capt","b.phi.pop")
+                          "mean.phi","lp.mean","b.phi.mig","b.phi.capt","b.phi.pop","b.phi.age")
 
 # Initial values for some parameters
 inits.telemetry <- function(){list(z = z.telemetry,
@@ -432,6 +432,14 @@ EGVU_surv_mod_2stage_intpop_mig <- autojags(INPUT.telemetry, inits.telemetry, pa
 
 
 # Call JAGS from R (took 79 min DIC = 3349.905)
+# Initial values for some parameters
+inits.telemetry <- function(){list(z = z.telemetry,
+                                   mean.phi = runif(1, 0.5, 0.999), ### two intercepts for juvenile and adults
+                                   base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
+                                   base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
+                                   beta1 = rnorm(1,0, 0.001),         # Prior for slope parameter for obs prob with time since
+                                   beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
+                                   beta3 = rnorm(1,0, 0.001))} 
 EGVU_surv_mod_2stage_intpop_AGE <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_age_2migstage_intpop.jags",
                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
