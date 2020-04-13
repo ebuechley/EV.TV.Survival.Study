@@ -457,6 +457,10 @@ EGVU_surv_mod_2stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.te
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage.jags",
                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
+# Call JAGS from R (took 137 min DIC = 3362.817)
+EGVU_surv_mod_2stage_int <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                 "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage.jags",
+                                 n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
 
 ### MODEL WITH 3 stages - breeding, winter, and migration

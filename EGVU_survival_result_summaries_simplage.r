@@ -46,9 +46,9 @@ out3<-as.data.frame(EGVU_surv_mod_2stage_addpop$summary)
 out3$parameter<-row.names(EGVU_surv_mod_2stage_addpop$summary)
 out3$model<-"2_mig_stage_addpop"
 
-out4<-as.data.frame(EGVU_surv_mod_2stage$summary)
-out4$parameter<-row.names(EGVU_surv_mod_2stage$summary)
-out4$model<-"2_mig_stage"
+out4<-as.data.frame(EGVU_surv_mod_2stage_int$summary)
+out4$parameter<-row.names(EGVU_surv_mod_2stage_int$summary)
+out4$model<-"2_mig_stage_int"
 
 out5<-as.data.frame(EGVU_surv_mod_4stage_fallmig$summary)
 out5$parameter<-row.names(EGVU_surv_mod_4stage_fallmig$summary)
@@ -77,8 +77,8 @@ out<-bind_rows(out1,out2,out3,out4,out5, out6,out7,out8)
 pd_dic <- function(x) {
   data.frame(n.parameters=x$pD, DIC=x$DIC)
 }
-DIC_tab<-bind_rows(pd_dic(EGVU_surv_mod_5stage),pd_dic(EGVU_surv_mod_4stage),pd_dic(EGVU_surv_mod_2stage_addpop),pd_dic(EGVU_surv_mod_2stage_intpop),pd_dic(EGVU_surv_mod_2stage),pd_dic(EGVU_surv_mod_4stage_fallmig),pd_dic(EGVU_surv_mod_3stage),pd_dic(EGVU_surv_mod_2stage_intpop_AGE)) %>%
-  mutate(model=c("5_mig_stages_geog","4_mig_stages_geog","2_mig_stage_addpop","2_mig_stage_intpop","2_mig_stage","4_mig_stages_season","3_mig_stages","2_mig_stage_intpop_AGE")) %>%
+DIC_tab<-bind_rows(pd_dic(EGVU_surv_mod_5stage),pd_dic(EGVU_surv_mod_4stage),pd_dic(EGVU_surv_mod_2stage_addpop),pd_dic(EGVU_surv_mod_2stage_intpop),pd_dic(EGVU_surv_mod_2stage_int),pd_dic(EGVU_surv_mod_4stage_fallmig),pd_dic(EGVU_surv_mod_3stage),pd_dic(EGVU_surv_mod_2stage_intpop_AGE)) %>%
+  mutate(model=c("5_mig_stages_geog","4_mig_stages_geog","2_mig_stage_addpop","2_mig_stage_intpop","2_mig_stage_int","4_mig_stages_season","3_mig_stages","2_mig_stage_intpop_AGE")) %>%
   arrange(DIC) %>%
   mutate(deltaDIC=DIC-DIC[1])
 DIC_tab
