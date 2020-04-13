@@ -420,6 +420,11 @@ EGVU_surv_mod_2stage_addpop <- autojags(INPUT.telemetry, inits.telemetry, parame
                           "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_addpop.jags",
                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
+# Call JAGS from R (took 90 min DIC = 3383.845)
+EGVU_surv_mod_2stage_addpop_agemig <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_addpop_agemig.jags",
+                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
+
 # Call JAGS from R (took 79 min DIC = 3349.905)
 EGVU_surv_mod_2stage_intpop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_intpop.jags",

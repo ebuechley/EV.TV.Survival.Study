@@ -449,10 +449,10 @@ ggsave("Monthly_Surv_by_5MigStage_simplage.jpg", width=11,height=9)
 
 
 ### PREPARE RAW MCMC OUTPUT
-parmcols<-dimnames(EGVU_surv_mod_2stage_addpop$samples[[1]])[[2]]
+parmcols<-dimnames(EGVU_surv_mod_2stage_addpop_agemig$samples[[1]])[[2]]
 
 ### COMBINE SAMPLES ACROSS CHAINS
-MCMCout<-rbind(EGVU_surv_mod_2stage_addpop$samples[[1]],EGVU_surv_mod_2stage_addpop$samples[[2]],EGVU_surv_mod_2stage_addpop$samples[[3]],EGVU_surv_mod_2stage_addpop$samples[[4]])
+MCMCout<-rbind(EGVU_surv_mod_2stage_addpop_agemig$samples[[1]],EGVU_surv_mod_2stage_addpop_agemig$samples[[2]],EGVU_surv_mod_2stage_addpop_agemig$samples[[3]])
 str(MCMCout)
 
 
@@ -482,9 +482,9 @@ for(s in 1:nrow(MCMCout)) {
   X<-  Xin %>%
     
     ### CALCULATE MONTHLY SURVIVAL
-    mutate(logit.surv=ifelse(age==2,as.numeric(MCMCout[s,match("lp.mean[2]",parmcols)]),as.numeric(MCMCout[s,match("lp.mean[1]",parmcols)]))+
-             as.numeric(MCMCout[s,match("b.phi.capt",parmcols)])*capt +
+    mutate(logit.surv=ifelse(age==2,as.numeric(MCMCout[s,match("lp.mean[2]",parmcols)]),as.numeric(MCMCout[s,match("lp.mean[1]",parmcols)]))*
              as.numeric(MCMCout[s,match("b.phi.mig",parmcols)])*mig +
+             as.numeric(MCMCout[s,match("b.phi.capt",parmcols)])*capt +
              ifelse(pop==1,as.numeric(MCMCout[s,match("b.phi.pop[1]",parmcols)]),
                           ifelse(pop==2,as.numeric(MCMCout[s,match("b.phi.pop[2]",parmcols)]),as.numeric(MCMCout[s,match("b.phi.pop[3]",parmcols)])))) %>%
     
@@ -519,7 +519,7 @@ TABLE2<-  MCMCpred %>%
 TABLE2
 
 
-fwrite(TABLE2,"EGVU_AnnSurv_2stage_addpop.csv")
+fwrite(TABLE2,"EGVU_AnnSurv_2stage_addpop_agemig.csv")
 
 
 
