@@ -55,7 +55,7 @@
 
 
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
-    b.phi.mig ~ dnorm(0, 0.001)           # Prior for COST OF MIGRATION migration on survival probability on logit scale
+    #b.phi.mig ~ dnorm(0, 0.001)           # Prior for COST OF MIGRATION migration on survival probability on logit scale
     b.phi.capt ~ dnorm(0, 0.001)         # Prior for captive release on survival probability on logit scale
     
     
