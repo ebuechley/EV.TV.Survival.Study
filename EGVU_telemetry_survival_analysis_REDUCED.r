@@ -1,6 +1,6 @@
 ##########################################################################
 #
-# EGYPTIAN AND TURKEY VULTURE MONTHLY SURVIVAL ANALYSIS FROM TELEMETRY
+# EGYPTIAN VULTURE MONTHLY SURVIVAL ANALYSIS FROM TELEMETRY
 #
 ##########################################################################
 # written by Steffen Oppel, July 2019
@@ -12,6 +12,8 @@
 ## removed all residents
 ## removed age effect and simply retained 2 age groups (<18 months and >18 months)
 ## test 3 models with breed,mig, and winter stage and west, Balkan and Caucasus populations, either additive or interactive
+
+## INCLUDED NEW DATA on 14 APRIL 2020 and re-ran models
 
 library(jagsUI)
 library(tidyverse)
@@ -177,7 +179,7 @@ for(n in EV.obs.matrix$id.tag){
 # 1	Stationary
 # 3	Migratory - set this to 3 so we have states 1 and 2 for stationary, and 3,4,5 for migratory
 
-EV.phi.states<-fread("Mig_stage_matrix.csv")
+EV.phi.states<-fread("Mig_stage_matrix_final.csv")
 head(EV.phi.states)
 dim(EV.phi.states)
 
@@ -386,7 +388,7 @@ inits.telemetry <- function(){list(z = z.telemetry,
 
 # MCMC settings
 ni <- 5000
-nt <- 3
+nt <- 4
 nb <- 2000
 nc <- 3
 
