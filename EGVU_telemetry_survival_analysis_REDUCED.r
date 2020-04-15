@@ -198,7 +198,7 @@ EV.phi.matrix<-EV.phi.states %>%
   select(-year,-month,-date) %>%
   spread(key=col,value=state, fill=1) %>%
   arrange(id.tag)
-
+dim(EV.phi.matrix)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # FIX ID TAG VALUES
@@ -301,6 +301,9 @@ for(n in EV.obs.matrix$id.tag){
 # Option 1: stationary for summer and winter, migration for 3 geographic populations
 # Option 2: stationary for summer and winter, migration
 
+### CREATE A VULNERABLE MATRIX WITH 1/0 and 1 for juveniles from Italy/Balkans on migration 
+vul.mat<-EV.phi.matrix
+
 
 dim(lat.matrix)
 
@@ -312,17 +315,19 @@ for(row in 1:nrow(EV.phi.matrix)) {
     age<-age.matrix[match(id,age.matrix$id.tag),col]
     age<-ifelse(is.na(age),1,age)
     if(EV.phi.matrix[row,col]==1){
+      vul.mat[row,col]<-0
       EV.phi.matrix[row,col]<-ifelse(lat.matrix[row,col]>30,1,2)
       EV.phi.matrix[row,col]<-ifelse(is.na(lat.matrix[row,col]),1,EV.phi.matrix[row,col])
       EV.phi.matrix[row,col]<-ifelse(age<10,2,EV.phi.matrix[row,col])     ### b.phi.mig[1] never converges for juveniles because there are too few data, so we set this to 2 for the month after fledging.
     }
     if(EV.phi.matrix[row,col]==3){
       EV.phi.matrix[row,col]<-ifelse(pop=="western europe",3,ifelse(pop %in% c("italy","balkans"),4,5))
+      vul.mat[row,col]<-ifelse(age<19,ifelse(pop %in% c("italy","balkans"),1,0),0)
     }
   }
 }
 
-EV.phi.matrix 
+EV.phi.matrix
 
 
 
@@ -359,6 +364,7 @@ INPUT.telemetry <- list(y = y.telemetry,
                         mig = as.matrix(EV.phi.matrix[,2:max(timeseries$col)]),
                         lat = lat.mat,
                         pop = ifelse(EV$pop=="western europe",1,ifelse(EV$pop %in% c("italy","balkans"),2,3)),
+                        vul = as.matrix(vul.mat[,2:max(timeseries$col)]),
                         #long = long.orig$long, ##long.mat,      ### if we want this as a continuous pop definition we would need to use just one value per bird, not a monthly value
                         capt = ifelse(EV$captive.raised=="N",0,1),
                         #resid = ifelse(EV$population %in% c("unknown","oman","horn of africa"),0,1),
@@ -375,7 +381,7 @@ INPUT.telemetry <- list(y = y.telemetry,
 
 # Parameters monitored
 parameters.telemetry <- c("p.seen.alive","base.obs","base.fail","base.recover","beta1","beta2","beta3","beta4",
-                          "mean.phi","lp.mean","b.phi.mig","b.phi.capt","b.phi.pop","b.phi.age")
+                          "mean.phi","lp.mean","b.phi.mig","b.phi.capt","b.phi.pop","b.phi.age","b.phi.vul")
 
 # Initial values for some parameters
 inits.telemetry <- function(){list(z = z.telemetry,
@@ -391,6 +397,7 @@ ni <- 5000
 nt <- 4
 nb <- 2000
 nc <- 3
+
 
 
 
@@ -450,6 +457,37 @@ inits.telemetry <- function(){list(z = z.telemetry,
 EGVU_surv_mod_2stage_intpop_AGE <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_age_2migstage_intpop.jags",
                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
+
+
+
+#### LATEST SIMPLEST AND MAYBE EASIEST MODEL TO INTERPRET ##########
+INPUT.telemetry$mig<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
+INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,1,0)
+INPUT.telemetry$pop<-ifelse(INPUT.telemetry$pop>1,0,1)
+
+inits.telemetry <- function(){list(z = z.telemetry,
+                                   mean.phi = runif(1, 0.9, 1), ### two intercepts for juvenile and adults
+                                   base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
+                                   base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
+                                   beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
+                                   beta3 = rnorm(1,0, 0.001))} 
+
+# Call JAGS from R (took 92.958 min DIC = 3352.662)
+EGVU_surv_mod_full_additive <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive.jags",
+                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
+
+EGVU_surv_mod_no_mig <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_nomig.jags",
+                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
+
+EGVU_surv_mod_no_capt <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_nocapt.jags",
+                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
+
+
+
+
 
 
 ### MIGRATION ONLY MODELS WITH NO GEOGRAPHIC STRUCTURE ############################
@@ -528,7 +566,7 @@ EGVU_surv_mod_4stage_fallmig <- autojags(INPUT.telemetry, inits.telemetry, param
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # EXPORT THE OUTPUT
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-save.image("EGVU_survival_output_simplage.RData")
+load("EGVU_survival_output_full_additive.RData")
 
 
 
@@ -973,5 +1011,148 @@ cat("
     ",fill = TRUE)
 sink()
 
+
+
+
+# Specify model in BUGS language
+sink("EGVU_binary_additive.jags")
+cat("
+  model {
+    
+    # -------------------------------------------------
+    # Parameters:
+    # phi: monthly survival probability intercept
+    # tag.fail: probability that tag will fail
+    # tag.loss: probability that tag will fall off - not identifiable, so not included
+    
+    # p.obs: probability to be tracked with functioning tag (=1)
+    # p.found.dead: probability for carcass to be recovered
+    # p.seen.alive: probability to be observed alive despite the tag being defunct
+    
+    # -------------------------------------------------
+    # States (S):
+    # 1 dead
+    # 2 alive with functioning tag
+    # 3 alive with defunct tag or tag lost
+    
+    # Observations (O):
+    # 1 Tag ok, bird moving
+    # 2 Tag ok, bird not moving (dead, or tag lost and no longer on bird)
+    # 3 Tag failed, bird observed alive
+    # 4 Dead bird recovered
+    # 5 No signal (=not seen)
+    
+    # -------------------------------------------------
+    
+    # Priors and constraints
+    
+    
+    #### MONTHLY SURVIVAL PROBABILITY
+    for (i in 1:nind){
+      for (t in f[i]:(n.occasions)){
+        logit(phi[i,t]) <- lp.mean +      ### age category-specific intercept 
+          b.phi.mig*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
+          b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
+          b.phi.age*(adult[i,t]) +     ### survival dependent on age (wild or juvenile or other)
+          b.phi.pop*(pop[i])  +    ### survival dependent on population (western Europe or other)
+          b.phi.vul*(vul[i,t])      ### survival dependent on highly vulnerable stage (juveniles on migration in Balkans/Italy)
+      } #t
+    } #i
+    
+    #### BASELINE FOR SURVIVAL PROBABILITY (wild adult stationary from east)
+    mean.phi ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
+    lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
+    
+    #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
+    b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
+    b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
+    b.phi.age ~ dnorm(0, 0.01)          # Prior for age effect on survival probability on logit scale
+    b.phi.pop ~ dnorm(0, 0.01)          # Prior for population effect on survival probability on logit scale
+    b.phi.vul ~ dnorm(0, 0.001)         # Prior for vulnerable state on survival probability on logit scale
+    
+    
+    #### TAG FAILURE AND LOSS PROBABILITY
+    for (i in 1:nind){
+      for (t in f[i]:(n.occasions)){
+        logit(p.obs[i,t]) <- base.obs + beta1*(t-l[i]) #### probability of observation GIVEN THAT TAG IS WORKING is reciprocal to time since last good record
+        logit(tag.fail[i,t]) <- base.fail + beta2*tag.age[i,t] + beta3*tfail[i] #### probability of TAG FAILURE is influenced by tag type and tag age
+        logit(p.found.dead[i,t]) <- base.recover + beta4*lat[i,t] #### probability of recovery is influenced by latitude
+      } #t
+    } #i
+    
+    
+    ##### SLOPE PARAMETERS FOR OBSERVATION PROBABILITY
+    base.obs ~ dnorm(0, 0.001)                # Prior for intercept of observation probability on logit scale
+    base.fail ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
+    base.recover ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
+    beta1 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for obs prob with time since
+    beta2 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tag age
+    beta3 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tage movement during last 10 GPS fixes
+    beta4 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for dead detection with latitude
+    sigma ~ dunif(0, 10)                     # Prior on standard deviation for random error term
+    tau <- pow(sigma, -2)
+    
+    p.seen.alive ~ dunif(0, 1)    # Prior for probability that bird with defunct or lost tag is observed alive
+    
+    
+    # -------------------------------------------------
+    # Define state-transition and observation matrices 
+    # -------------------------------------------------
+    
+    for (i in 1:nind){
+      
+      for (t in f[i]:(n.occasions-1)){
+        
+        # Define probabilities of state S(t+1) [last dim] given S(t) [first dim]
+        
+        ps[1,i,t,1]<-1    ## dead birds stay dead
+        ps[1,i,t,2]<-0
+        ps[1,i,t,3]<-0
+        
+        ps[2,i,t,1]<-(1-phi[i,t])
+        ps[2,i,t,2]<-phi[i,t] * (1-tag.fail[i,t])
+        ps[2,i,t,3]<-phi[i,t] * tag.fail[i,t]
+        
+        ps[3,i,t,1]<-(1-phi[i,t])
+        ps[3,i,t,2]<-0
+        ps[3,i,t,3]<-phi[i,t]
+        
+        # Define probabilities of O(t) [last dim] given S(t)  [first dim]
+        
+        po[1,i,t,1]<-0
+        po[1,i,t,2]<-p.obs[i,t] * (1-tag.fail[i,t]) * (1-p.found.dead[i,t])
+        po[1,i,t,3]<-0
+        po[1,i,t,4]<-p.found.dead[i,t]
+        po[1,i,t,5]<-(1-p.obs[i,t]) * tag.fail[i,t] * (1-p.found.dead[i,t])
+        
+        po[2,i,t,1]<-p.obs[i,t] * (1-tag.fail[i,t])
+        po[2,i,t,2]<-0
+        po[2,i,t,3]<-0
+        po[2,i,t,4]<-0
+        po[2,i,t,5]<-(1-p.obs[i,t]) * tag.fail[i,t]
+        
+        po[3,i,t,1]<-0
+        po[3,i,t,2]<-0
+        po[3,i,t,3]<-p.seen.alive
+        po[3,i,t,4]<-0
+        po[3,i,t,5]<-(1-p.seen.alive)
+        
+      } #t
+    } #i
+    
+    # Likelihood 
+    for (i in 1:nind){
+      # Define latent state at first capture
+      z[i,f[i]] <- 2 ## alive when first marked
+      for (t in (f[i]+1):n.occasions){
+        # State process: draw S(t) given S(t-1)
+        z[i,t] ~ dcat(ps[z[i,t-1], i, t-1,])
+        # Observation process: draw O(t) given S(t)
+        y[i,t] ~ dcat(po[z[i,t], i, t-1,])
+      } #t
+    } #i
+  }
+    ",fill = TRUE)
+sink()
 
 
