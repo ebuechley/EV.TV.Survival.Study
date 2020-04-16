@@ -58,8 +58,6 @@ head(TrackMonths)
 ### SUMMARISE THE NUMBER OF TRACKING MONTHS AND LOSSES
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-
 SUMMARY <- TrackMonths %>%
 	mutate(LatBand=ifelse(Lat<20,"< 20 N",ifelse(Lat>30,"> 30 N","20-30 N"))) %>%
 	mutate(Dead=ifelse(State %in% c(2,4),1,0)) %>%

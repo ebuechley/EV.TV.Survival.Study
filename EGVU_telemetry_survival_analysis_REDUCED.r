@@ -477,13 +477,15 @@ EGVU_surv_mod_full_additive <- autojags(INPUT.telemetry, inits.telemetry, parame
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive.jags",
                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
-EGVU_surv_mod_no_mig <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_nomig.jags",
-                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-
-EGVU_surv_mod_no_capt <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_nocapt.jags",
-                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
+# # Call JAGS from R (took 68.06 min DIC = 3360.895)
+# EGVU_surv_mod_no_mig <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_nomig.jags",
+#                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
+# 
+# # Call JAGS from R (took 69.078 min DIC = 3363.334)
+# EGVU_surv_mod_no_capt <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_nocapt.jags",
+#                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
 
 
@@ -566,6 +568,9 @@ EGVU_surv_mod_4stage_fallmig <- autojags(INPUT.telemetry, inits.telemetry, param
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # EXPORT THE OUTPUT
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T)
+save.image("EGVU_survival_output_simplage.RData") 
+
 load("EGVU_survival_output_full_additive.RData")
 
 
@@ -575,7 +580,7 @@ load("EGVU_survival_output_full_additive.RData")
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SPECIFY JAGS MODEL [NEEDS TO BE RUN FIRST]
+# SPECIFY JAGS MODELS [NEEDS TO BE RUN FIRST]
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Specify model in BUGS language
