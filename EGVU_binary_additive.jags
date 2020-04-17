@@ -48,15 +48,15 @@
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
     b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
-    b.phi.age ~ dnorm(-2, 0.01)          # Prior for age effect on survival probability on logit scale
-    b.phi.pop ~ dnorm(0, 0.01)          # Prior for population effect on survival probability on logit scale
-    b.phi.vul ~ dunif(-0.01,-3)         # Prior for vulnerable state on survival probability on logit scale
+    b.phi.age ~ dnorm(-1, 0.01)           # Prior for age effect on survival probability on logit scale
+    b.phi.pop ~ dnorm(0, 0.01)         # Prior for population effect on survival probability on logit scale
+    b.phi.vul ~ dunif(-1.5,0)  ##dnorm(-1, 0.01)        # Prior for vulnerable state on survival probability on logit scale
     
     
     #### TAG FAILURE AND LOSS PROBABILITY
     for (i in 1:nind){
       for (t in f[i]:(n.occasions)){
-        logit(p.obs[i,t]) <- base.obs + beta1*(t-l[i]) #### probability of observation GIVEN THAT TAG IS WORKING is reciprocal to time since last good record
+        logit(p.obs[i,t]) <- base.obs ##+ beta1*(t-l[i]) #### probability of observation GIVEN THAT TAG IS WORKING is reciprocal to time since last good record
         logit(tag.fail[i,t]) <- base.fail + beta2*tag.age[i,t] + beta3*tfail[i] #### probability of TAG FAILURE is influenced by tag type and tag age
         logit(p.found.dead[i,t]) <- base.recover + beta4*lat[i,t] #### probability of recovery is influenced by latitude
       } #t
@@ -67,7 +67,6 @@
     base.obs ~ dnorm(0, 0.001)                # Prior for intercept of observation probability on logit scale
     base.fail ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
     base.recover ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
-    beta1 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for obs prob with time since
     beta2 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tag age
     beta3 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tage movement during last 10 GPS fixes
     beta4 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for dead detection with latitude

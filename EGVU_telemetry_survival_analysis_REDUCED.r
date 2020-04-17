@@ -363,7 +363,7 @@ INPUT.telemetry <- list(y = y.telemetry,
                         adult = ifelse(age.mat>18,0,1), ### provide a simple classification for adults and non-adults
                         mig = as.matrix(EV.phi.matrix[,2:max(timeseries$col)]),
                         lat = lat.mat,
-                        pop = ifelse(EV$pop %in% c("italy","western europe"),1,0),
+                        pop = ifelse(EV$pop %in% c("western europe"),1,0),  ##"italy",
                         vul = as.matrix(vul.mat[,2:max(timeseries$col)]),
                         #long = long.orig$long, ##long.mat,      ### if we want this as a continuous pop definition we would need to use just one value per bird, not a monthly value
                         capt = ifelse(EV$captive.raised=="N",0,1),
@@ -373,7 +373,9 @@ INPUT.telemetry <- list(y = y.telemetry,
                         nind = dim(y.telemetry)[1],
                         n.occasions = dim(y.telemetry)[2])
 
-
+# EV %>% filter(population %in% c("italy","balkans")) %>% filter(age.at.deployment=="juv") %>%
+#   group_by(population, fate) %>%
+#   summarise(n=length(id.tag))
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SPECIFY AND SET UP MODEL RUNS
@@ -384,7 +386,7 @@ parameters.telemetry <- c("p.seen.alive","base.obs","base.fail","base.recover","
                           "mean.phi","lp.mean","b.phi.mig","b.phi.capt","b.phi.pop","b.phi.age","b.phi.vul")
 
 # MCMC settings
-ni <- 5000
+ni <- 10000
 nt <- 4
 nb <- 2000
 nc <- 3
@@ -394,7 +396,7 @@ nc <- 3
 
 #### LATEST SIMPLEST AND MAYBE EASIEST MODEL TO INTERPRET ##########
 INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,1,0)
-INPUT.telemetry$pop<-ifelse(INPUT.telemetry$pop>1,0,1)
+#INPUT.telemetry$pop<-ifelse(INPUT.telemetry$pop>1,0,1)
 
 inits.telemetry <- function(){list(z = z.telemetry,
                                    mean.phi = runif(1, 0.9, 1), ### two intercepts for juvenile and adults
@@ -406,7 +408,7 @@ inits.telemetry <- function(){list(z = z.telemetry,
 # Call JAGS from R (took 92.958 min DIC = 3352.662)
 EGVU_surv_mod_full_additive <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive.jags",
-                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
+                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
 
 # # Call JAGS from R (took 68.06 min DIC = 3360.895)
 # EGVU_surv_mod_no_mig <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
@@ -568,7 +570,7 @@ EGVU_surv_mod_full_additive <- autojags(INPUT.telemetry, inits.telemetry, parame
 # EXPORT THE OUTPUT
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T)
-save.image("EGVU_survival_output_simplage.RData") 
+save.image("EGVU_survival_output_full_additive.RData") 
 
 load("EGVU_survival_output_full_additive.RData")
 
@@ -633,15 +635,15 @@ cat("
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
     b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
-    b.phi.age ~ dnorm(-2, 0.01)          # Prior for age effect on survival probability on logit scale
-    b.phi.pop ~ dnorm(0, 0.01)          # Prior for population effect on survival probability on logit scale
-    b.phi.vul ~ dunif(-0.01,-3)         # Prior for vulnerable state on survival probability on logit scale
+    b.phi.age ~ dnorm(-1, 0.01)           # Prior for age effect on survival probability on logit scale
+    b.phi.pop ~ dnorm(0, 0.01)         # Prior for population effect on survival probability on logit scale
+    b.phi.vul ~ dunif(-1.5,0)  ##dnorm(-1, 0.01)        # Prior for vulnerable state on survival probability on logit scale
     
     
     #### TAG FAILURE AND LOSS PROBABILITY
     for (i in 1:nind){
       for (t in f[i]:(n.occasions)){
-        logit(p.obs[i,t]) <- base.obs + beta1*(t-l[i]) #### probability of observation GIVEN THAT TAG IS WORKING is reciprocal to time since last good record
+        logit(p.obs[i,t]) <- base.obs ##+ beta1*(t-l[i]) #### probability of observation GIVEN THAT TAG IS WORKING is reciprocal to time since last good record
         logit(tag.fail[i,t]) <- base.fail + beta2*tag.age[i,t] + beta3*tfail[i] #### probability of TAG FAILURE is influenced by tag type and tag age
         logit(p.found.dead[i,t]) <- base.recover + beta4*lat[i,t] #### probability of recovery is influenced by latitude
       } #t
@@ -652,7 +654,6 @@ cat("
     base.obs ~ dnorm(0, 0.001)                # Prior for intercept of observation probability on logit scale
     base.fail ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
     base.recover ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
-    beta1 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for obs prob with time since
     beta2 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tag age
     beta3 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tage movement during last 10 GPS fixes
     beta4 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for dead detection with latitude

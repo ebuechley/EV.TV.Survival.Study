@@ -13,6 +13,7 @@
 library(jagsUI)
 library(tidyverse)
 library(data.table)
+
 library(lubridate)
 library(gtools)
 filter<-dplyr::filter
@@ -87,7 +88,7 @@ AnnTab<-data.frame(pop=rep(c(2,1,3), each=24),
                          c(0,1,1,0,0,0,0,0,0,0,0,0),  ## juveniles caucasus
                          c(0,1,0,0,0,0,0,1,0,0,0,0)))  ## adults caucasus
 Xin<-AnnTab %>% mutate(capt=1) %>% bind_rows(AnnTab) %>% 
-  mutate(Population=ifelse(pop==1,"western Europe",ifelse(pop==2,"Italy/Balkans","Caucasus/Middle East"))) %>%
+  mutate(Population=ifelse(pop==1,"western Europe",ifelse(pop==2,"Balkans/Italy","Caucasus/Middle East"))) %>%
   mutate(pop=ifelse(pop==1,1,0))
 
 ### CALCULATE PREDICTED VALUE FOR EACH SAMPLE
