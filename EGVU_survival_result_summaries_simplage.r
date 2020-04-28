@@ -42,7 +42,7 @@ load("EGVU_survival_output_full_additive.RData")
 out10<-as.data.frame(EGVU_surv_mod_full_additive$summary)
 out10$parameter<-row.names(EGVU_surv_mod_full_additive$summary)
 out10$model<-"binary_additive"
-fwrite(out10,"EGVU_binary_additive_parameter_estimates.csv")
+#fwrite(out10,"EGVU_binary_additive_parameter_estimates.csv")
 
 out10 %>% filter(grepl("b.phi",parameter)) %>%
   mutate(parameter=ifelse(parameter=="b.phi.vul","sea crossing",parameter)) %>%
@@ -233,7 +233,7 @@ ggsave("Monthly_Surv_binary_additive.jpg", width=11,height=9)
 out10<-as.data.frame(EGVU_surv_mod_full_additive_age$summary)
 out10$parameter<-row.names(EGVU_surv_mod_full_additive_age$summary)
 out10$model<-"binary_additive_age"
-fwrite(out10,"EGVU_binary_additive_age_parameter_estimates.csv")
+#fwrite(out10,"EGVU_binary_additive_age_parameter_estimates.csv")
 
 out10 %>% filter(grepl("b.phi",parameter)) %>%
   mutate(parameter=ifelse(parameter=="b.phi.vul","sea crossing",parameter)) %>%
@@ -276,7 +276,7 @@ str(MCMCout)
 
 AnnTab<-data.frame(pop=rep(c(2,1,3), each=24),
                    capt=0,
-                   age=rep(c(seq(1:12),rep(54,12)),3),
+                   age=rep(c(seq(2:13),rep(54,12)),3),
                    vul=c(rep(1,12),rep(0,60)),
                    mig=c(c(0,1,0,0,0,0,0,0,0,0,0,0), ## juveniles east
                          c(0,1,0,0,0,0,1,0,0,0,0,0), ## adults east
