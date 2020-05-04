@@ -45,6 +45,8 @@ EV<-EV %>% mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= pa
 head(EV)
 dim(EV)
 
+### SUM TOTAL OF TRACKING EFFORT
+EV %>% mutate(tracklength=difftime(end,start, unit="days")) %>% summarise(TOTAL=sum(tracklength)/30)
 
 ### REDUCE COVARIATES TO THOSE TAGS IN EV DATA
 EVcovar<-EVcovar %>% filter(id.tag %in% EV$id.tag)
