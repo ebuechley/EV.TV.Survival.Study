@@ -40,7 +40,7 @@ EVcovar$id.tag = as.character(EVcovar$id.tag)
 EV<-EV %>% mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= parse_date_time(end.date, c("mdy", "mdy HM"))) %>%
   filter(!is.na(start)) %>%
   filter(species=="Neophron percnopterus") %>%
-  filter(start<ymd_hm("2019-04-01 12:00")) %>%  ## remove birds only alive for a few months in 2019
+  filter(start<ymd_hm("2019-04-01 12:00")) %>%  ## remove birds only alive for a few months in 2019 (removes 1 bird: Baronnies_2019_Imm_wild_OR181635_5T_181635)
   select(species,population,id.tag,sex,age.at.deployment,age.at.deployment.month,captive.raised,rehabilitated, start, end, fate, how.fate.determined.clean, mean.GPS.dist.last10fixes.degrees)
 head(EV)
 dim(EV)
