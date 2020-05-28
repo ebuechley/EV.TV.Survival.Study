@@ -28,7 +28,7 @@ select<-dplyr::select
 ############ PROPOSED FINAL OUTPUT FROM MODEL WITH BINARY ADDITIVE STRUCTURE  #############################
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T)
-load("EGVU_survival_output_full_additive.RData")
+load("EGVU_survival_output_full_additive_v2.RData")
 
 ### CALCULATE PREDICTED SURVIVAL BASED ON MODEL with binary additive parameters
 ## MIG STAGES ARE: 0=stationary, 1=migratory

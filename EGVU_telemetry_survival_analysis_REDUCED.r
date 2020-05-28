@@ -28,7 +28,8 @@ select<-dplyr::select
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T) ## changed after re-cloning remote
-EV<-fread("ev.tv.summary.proofed_RE4_migrantsonly.csv")   ## updated on 9 April 2020
+EVtagfail<-fread("ev.tv.summary.proofed_RE4_migrantsonly.csv")   ## updated on 9 April 2020
+EV<-fread("ev.summary.final.csv")   ## new file provided by Evan on 27 May 2020
 EVcovar<-fread("ev.survival.prepared.csv")
 names(EV)[1]<-'species'
 head(EV)
@@ -38,13 +39,19 @@ EVcovar$id.tag = as.character(EVcovar$id.tag)
 
 #EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
 EV<-EV %>% mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= parse_date_time(end.date, c("mdy", "mdy HM"))) %>%
+  mutate(captive.raised=ifelse(origin=="wild","N","Y")) %>% ## added on 28 May as column was missing
+  rename(fate=fate.final) %>%
   filter(!is.na(start)) %>%
   filter(species=="Neophron percnopterus") %>%
   filter(start<ymd_hm("2019-04-01 12:00")) %>%  ## remove birds only alive for a few months in 2019 (removes 1 bird: Baronnies_2019_Imm_wild_OR181635_5T_181635)
-  select(species,population,id.tag,sex,age.at.deployment,age.at.deployment.month,captive.raised,rehabilitated, start, end, fate, how.fate.determined.clean, mean.GPS.dist.last10fixes.degrees)
+  select(species,population,id.tag,sex,age.at.deployment,age.at.deployment.month,captive.raised,rehabilitated, start, end, fate, how.fate.determined.clean)  ##, mean.GPS.dist.last10fixes.degrees
 head(EV)
 dim(EV)
 
+### ADD DATA NOT IN 28 MAY 2020 version of final summary
+EV$mean.GPS.dist.last10fixes.degrees<-EVtagfail$mean.GPS.dist.last10fixes.degrees[match(EV$id.tag,EVtagfail$id.tag)]
+
+  
 ### SUM TOTAL OF TRACKING EFFORT
 EV %>% mutate(tracklength=difftime(end,start, unit="days")) %>% summarise(TOTAL=sum(tracklength)/30)
 
@@ -55,7 +62,7 @@ EVcovar<-EVcovar %>% filter(id.tag %in% EV$id.tag)
 ####### ASSIGNMENT OF STATES ########
 unique(EV$how.fate.determined.clean)
 unique(EV$age.at.deployment)
-unique(EV$fate.final)
+unique(EV$fate)
 #quest.fates<-EV %>% filter(fate!=fate.final) %>% select(id.tag,population,age.at.deployment,start,end,fate,fate.final,how.fate.determined.clean)
 
 #### revert 3 fates to 'unknown'
@@ -104,7 +111,6 @@ head(EV)
 table(EV$TS,EV$OS)
 
 EV %>% filter(OS==3 & TS==3) %>% select(id.tag,population,age.at.deployment,start,end,fate,fate,how.fate.determined.clean)
-
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -221,7 +227,6 @@ EV.phi.matrix<-EV.phi.matrix %>% filter(id.tag %in% EV$id.tag) %>%
 dim(EV.phi.matrix)
 
 #EV$id.tag[which((EV$id.tag %in% EV.phi.matrix$id.tag)==FALSE)]
-
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -342,10 +347,11 @@ y.telemetry<-as.matrix(EV.obs.matrix[,2:max(timeseries$col)])
 z.telemetry<-as.matrix(EV.state.matrix[,2:max(timeseries$col)])
 age.mat<-as.matrix(age.matrix[,2:max(timeseries$col)])
 lat.mat<-as.matrix(lat.matrix[,2:max(timeseries$col)])
+#mig.mat<- as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
 
 range(age.mat, na.rm=T)
 range(lat.mat, na.rm=T)
-
+#range(mig.mat)
 
 
 #### create vector of first marking and of last alive record
@@ -353,6 +359,7 @@ get.first.telemetry<-function(x)min(which(!is.na(x)))
 get.last.telemetry<-function(x)max(which(!is.na(x) & x==1))
 f.telemetry<-apply(y.telemetry,1,get.first.telemetry)
 l.telemetry<-apply(y.telemetry,1,get.last.telemetry)
+l.telemetry[3]<-85
 
 #### extract and standardise covariates
 tag.fail.indicator<-EV$mean.GPS.dist.last10fixes.degrees
@@ -363,7 +370,7 @@ INPUT.telemetry <- list(y = y.telemetry,
                         l = l.telemetry,
                         age = age.mat,
                         adult = ifelse(age.mat>18,0,1), ### provide a simple classification for adults and non-adults
-                        mig = as.matrix(EV.phi.matrix[,2:max(timeseries$col)]),
+                        mig = as.matrix(EV.phi.matrix[,2:max(timeseries$col)]), ### provide a simple binary classification for stationary and migratory periods
                         lat = lat.mat,
                         pop = ifelse(EV$pop %in% c("western europe"),1,0),  ##"italy",
                         vul = as.matrix(vul.mat[,2:max(timeseries$col)]),
@@ -397,7 +404,7 @@ nc <- 3
 
 
 #### LATEST SIMPLEST AND MAYBE EASIEST MODEL TO INTERPRET ##########
-INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,1,0)
+INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,1,0) 
 #INPUT.telemetry$pop<-ifelse(INPUT.telemetry$pop>1,0,1)
 
 inits.telemetry <- function(){list(z = z.telemetry,
@@ -579,7 +586,7 @@ EGVU_surv_mod_full_additive_age <- autojags(INPUT.telemetry, inits.telemetry, pa
 # EXPORT THE OUTPUT
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T)
-save.image("EGVU_survival_output_full_additive.RData") 
+save.image("EGVU_survival_output_full_additive_v2.RData") 
 
 load("EGVU_survival_output_full_additive.RData")
 
