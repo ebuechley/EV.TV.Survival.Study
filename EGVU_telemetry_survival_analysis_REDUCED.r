@@ -28,8 +28,9 @@ select<-dplyr::select
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T) ## changed after re-cloning remote
-EVtagfail<-fread("ev.tv.summary.proofed_RE4_migrantsonly.csv")   ## updated on 9 April 2020
-EV<-fread("ev.summary.final.csv")   ## new file provided by Evan on 27 May 2020
+EV<-fread("ev.tv.summary.proofed_RE4_migrantsonly.csv")   ## updated on 9 April 2020
+#EV<-fread("ev.summary.final.csv")   ## new file provided by Evan on 27 May 2020
+#EV<-fread("FINAL_ANALYSIS_DATA.csv")   ## new file reated by Steffen on 28 May 2020 - just changed from RE4 by switching 'Apollo' from unknown to confirmed dead
 EVcovar<-fread("ev.survival.prepared.csv")
 names(EV)[1]<-'species'
 head(EV)
@@ -39,18 +40,22 @@ EVcovar$id.tag = as.character(EVcovar$id.tag)
 
 #EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
 EV<-EV %>% mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= parse_date_time(end.date, c("mdy", "mdy HM"))) %>%
-  mutate(captive.raised=ifelse(origin=="wild","N","Y")) %>% ## added on 28 May as column was missing
-  rename(fate=fate.final) %>%
+  #mutate(captive.raised=ifelse(origin=="wild","N","Y")) %>% ## added on 28 May as column was missing
+  #rename(fate=fate.final) %>%
   filter(!is.na(start)) %>%
   filter(species=="Neophron percnopterus") %>%
   filter(start<ymd_hm("2019-04-01 12:00")) %>%  ## remove birds only alive for a few months in 2019 (removes 1 bird: Baronnies_2019_Imm_wild_OR181635_5T_181635)
-  select(species,population,id.tag,sex,age.at.deployment,age.at.deployment.month,captive.raised,rehabilitated, start, end, fate, how.fate.determined.clean)  ##, mean.GPS.dist.last10fixes.degrees
+  select(species,population,id.tag,sex,age.at.deployment,age.at.deployment.month,captive.raised,rehabilitated, start, end, fate, how.fate.determined.clean, mean.GPS.dist.last10fixes.degrees)  ##
 head(EV)
 dim(EV)
 
 ### ADD DATA NOT IN 28 MAY 2020 version of final summary
-EV$mean.GPS.dist.last10fixes.degrees<-EVtagfail$mean.GPS.dist.last10fixes.degrees[match(EV$id.tag,EVtagfail$id.tag)]
+#EV$mean.GPS.dist.last10fixes.degrees<-EVtagfail$mean.GPS.dist.last10fixes.degrees[match(EV$id.tag,EVtagfail$id.tag)]
 
+### CHANGE FATE OF APOLLO - inserted after Guido Ceccolini's comments
+EV %>% filter(grepl("Apollo",id.tag))
+EV$fate[EV$id.tag=="Apollo_16093"]<-"confirmed dead"
+EV$how.fate.determined.clean[EV$id.tag=="Apollo_16093"]<-"carcass found"
   
 ### SUM TOTAL OF TRACKING EFFORT
 EV %>% mutate(tracklength=difftime(end,start, unit="days")) %>% summarise(TOTAL=sum(tracklength)/30)
@@ -415,9 +420,9 @@ inits.telemetry <- function(){list(z = z.telemetry,
                                    beta3 = rnorm(1,0, 0.001))} 
 
 # Call JAGS from R (took 92.958 min DIC = 3352.662)
-EGVU_surv_mod_full_additive <- jags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+EGVU_surv_mod_full_additive <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive.jags",
-                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T, n.iter = ni)
+                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 ## continuous age model with scaled age
 agescale<-scale(1:54)
 INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
