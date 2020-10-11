@@ -147,6 +147,9 @@ timeseries<-data.frame(date=seq(mindate, maxdate, "1 month")) %>%
   mutate(col=seq_along(date)+1)
 dim(timeseries)
 
+### CREATE YEAR AND MONTH VECTORS TO USE FOR RANDOM TIME EFFECT
+years<-timeseries$year-2006
+months<-timeseries$month
 
 ### CREATE BLANK MATRICES TO HOLD INFORMATION ABOUT TRUE AND OBSERVED STATES ###
 
@@ -392,7 +395,9 @@ INPUT.telemetry <- list(y = y.telemetry,
 				                tfail = as.numeric(tag.fail.indicator),
 				                tag.age = as.matrix(tag.age[,2:max(timeseries$col)]),
                         nind = dim(y.telemetry)[1],
-                        n.occasions = dim(y.telemetry)[2])
+                        n.occasions = dim(y.telemetry)[2],
+				                year=years,
+				                nyears=length(unique(years)))
 
 # EV %>% filter(population %in% c("italy","balkans")) %>% filter(age.at.deployment=="juv") %>%
 #   group_by(population, fate) %>%
@@ -404,7 +409,7 @@ INPUT.telemetry <- list(y = y.telemetry,
 
 # Parameters monitored
 parameters.telemetry <- c("p.seen.alive","base.obs","base.fail","base.recover","beta1","beta2","beta3","beta4",
-                          "mean.phi","lp.mean","b.phi.mig","b.phi.capt","b.phi.pop","b.phi.age","b.phi.vul")
+                          "mean.phi","lp.mean","b.phi.mig","b.phi.capt","b.phi.pop","b.phi.age","b.phi.vul","b2.phi.age")
 
 # MCMC settings
 ni <- 25000
@@ -431,17 +436,26 @@ EGVU_surv_mod_full_additive <- jags(INPUT.telemetry, inits.telemetry, parameters
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive.jags",
                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T, n.iter = ni)
 ## continuous age model with scaled age
-agescale<-scale(1:54)
-INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
-EGVU_surv_mod_full_additive_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_age.jags",
-                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
+# agescale<-scale(1:54)
+# INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
+# EGVU_surv_mod_full_additive_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_age.jags",
+#                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
+
+
+
+#### MODELS FOR REVISION
+
+# Call JAGS from R (took 92.958 min DIC = 3352.662)
+REV1_EGVU_surv_mod_rand_year <- jags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_random_year.jags",
+                                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T, n.iter = ni)
 
 
 ## continuous age model with quadratic age effect to satisfy senescence comment by editor
 agescale<-scale(1:max(age.mat, na.rm=T))
 INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
-EGVU_surv_mod_full_additive_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+REV1_EGVU_surv_mod_quad_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                             "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_age_2.jags",
                                             n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
@@ -620,7 +634,7 @@ load("EGVU_survival_output_full_additive.RData")
 # SPECIFY JAGS MODELS [NEEDS TO BE RUN FIRST]
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Specify model in BUGS language
-sink("EGVU_binary_additive.jags")
+sink("EGVU_binary_additive_random_year.jags")
 cat("
   model {
     
@@ -651,6 +665,14 @@ cat("
     
     # Priors and constraints
     
+    ## RANDOM ANNUAL TIME EFFECT ON SURVIVAL
+    for (ny in 1:(nyears)){
+      surv.raneff[ny] ~ dnorm(0, tau.surv)
+    }
+    
+    ### PRIORS FOR RANDOM EFFECTS
+    sigma.surv ~ dunif(0, 2)                     # Prior for standard deviation of survival
+    tau.surv <- pow(sigma.surv, -2)
     
     #### MONTHLY SURVIVAL PROBABILITY
     for (i in 1:nind){
@@ -660,7 +682,8 @@ cat("
           b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
           b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
           b.phi.pop*(pop[i])  +    ### survival dependent on population (western Europe or other)
-          b.phi.vul*(vul[i,t])      ### survival dependent on highly vulnerable stage (juveniles on migration in Balkans/Italy)
+          b.phi.vul*(vul[i,t]) +     ### survival dependent on highly vulnerable stage (juveniles on migration in Balkans/Italy)
+          surv.raneff[year[t]]
       } #t
     } #i
     
