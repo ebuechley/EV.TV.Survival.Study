@@ -420,9 +420,9 @@ inits.telemetry <- function(){list(z = z.telemetry,
                                    beta3 = rnorm(1,0, 0.001))} 
 
 # Call JAGS from R (took 92.958 min DIC = 3352.662)
-EGVU_surv_mod_full_additive <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+EGVU_surv_mod_full_additive <- jags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive.jags",
-                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
+                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T, n.iter = ni)
 ## continuous age model with scaled age
 agescale<-scale(1:54)
 INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
