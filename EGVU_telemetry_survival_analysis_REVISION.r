@@ -620,9 +620,9 @@ REV1_EGVU_surv_mod_quad_age <- autojags(INPUT.telemetry, inits.telemetry, parame
 # EXPORT THE OUTPUT
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T)
-save.image("EGVU_survival_output_full_additive_v2.RData") 
+save.image("EGVU_survival_output_REV1.RData")
 
-load("EGVU_survival_output_full_additive.RData")
+load("EGVU_survival_output_full_additive_v2.RData")
 
 
 
