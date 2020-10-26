@@ -27,18 +27,17 @@ require(pander)
 rm(list = ls())
 
 #set wd
-setwd("~/Documents/GitHub/EV - TV Survival Study/")
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/")
 
 ################################################################
 # cleaning data
 ################################################################
-
 #filter data to remove bad fixes
-d = read.csv("ev.tv.1ptperday.csv")
-unique(d$id.tag)
-unique(d$study.name)
-unique(d$species)
-summary(d$population)
+d = read.csv("./Data/ev.1ptperday.csv")
+unique(d$id.tag) #226
+unique(d$study.name) #15
+unique(d$species) #1
+unique(d$population) #5
 
 #lubridate
 summary(d$timestamp)
@@ -49,12 +48,12 @@ summary(d$timestamp)
 d<-d[!(d$long==0 & d$lat==0),]
 d<-d[!(d$long<=-25 & d$species=="Neophron percnopterus"),]
 d<-d[!(d$long>=70 & d$species=="Neophron percnopterus"),]
-d<-d[!(d$long<5 & d$study.name=="Neophron percnopterus Bulgaria/Greece"),]
+d<-d[!(d$long<0 & d$study.name=="Neophron percnopterus Bulgaria/Greece"),]
 d<-d[!(d$long<19 & d$lat>35 & d$study.name=="Neophron percnopterus Bulgaria/Greece"),]
 d<-d[!(d$lat>35 & d$id=="Mille"),]
 d<-d[!(d$long<=-1 & d$study.name=="Released Egyptian Vultures in Italy"),]
-d<-d[!(d$long>=-40 & d$species=="Cathartes aura"),]
-d<-d[!(d$lat==0 & d$species=="Cathartes aura"),]
+#d<-d[!(d$long>=-40 & d$species=="Cathartes aura"),]
+#d<-d[!(d$lat==0 & d$species=="Cathartes aura"),]
 
 #remove height above elipsoid < -100 and > 30,000
 summary(d$height.above.ellipsoid)
@@ -71,7 +70,7 @@ summary(d[1:4])
 #quick plot of data
 library(ggplot2)
 map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id)) + labs(x = "longitude", y = "latitude")
+map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id, colour = population)) + labs(x = "longitude", y = "latitude")
 map.plot = map.plot + theme(legend.title = element_blank()) 
 map.plot #notice bad fixes in dataset
 
@@ -90,10 +89,8 @@ tr = trip(d)
 #?speedfilter
 #?sda
 tr$spd = speedfilter(tr, max.speed = 15)
-
-#what % are not filtered out? (not clear how this works...)
-mean(tr$spd)
-summary(tr$spd)
+mean(tr$spd) #what % are not filtered out
+summary(tr$spd) # number filtered
 
 #plot with censored
 #plot(tr)
@@ -106,9 +103,9 @@ summary(tr$spd)
 #convert to spdf for plotting
 b = as(tr, "SpatialPointsDataFrame")
 b2 = subset(b, b$spd == "TRUE")
-#plot(b2)
+plot(b2)
 b1 = subset(b, b$spd == "FALSE")
-#plot(b1, color = "red", add = T)
+plot(b1, color = "red", add = T)
 
 #save as df
 d.filtered = as.data.frame(b2)
@@ -116,21 +113,21 @@ head(d.filtered)
 
 #quick plot of data
 map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = d.filtered, aes(long,lat, group = id.tag), alpha = .5) + labs(x = "longitude", y = "latitude")
+map.plot = map.plot + geom_path(data = d.filtered, aes(long,lat, group = id, colour = population), alpha = .5) + labs(x = "longitude", y = "latitude")
 map.plot = map.plot + theme(legend.title = element_blank()) 
 map.plot
 
 #write
-write.csv(d.filtered, "ev.tv.filtered.csv", row.names=FALSE)
+write.csv(d.filtered, "./Data/ev.filtered.csv", row.names=FALSE)
 
 #####################################################
 #compute movement stats in adeHabitatLT
 #####################################################
-d = read.csv("ev.tv.filtered.csv")
+d = read.csv("./Data/ev.filtered.csv")
 head(d)
 names(d)
 unique(d$population)
-unique(d$id.tag) #note 267 unique id.tag
+unique(d$id.tag) #note 226 unique id.tag
 
 #lubridate
 summary(d$timestamp)
@@ -170,10 +167,10 @@ head(d)
 names(d)
 
 #write
-write.csv(d, "ev.tv.filtered.csv", row.names = FALSE)
+write.csv(d, "./Data/ev.filtered.csv", row.names = FALSE)
 
 ########################################
-#data summary
+#data summary 
 ########################################
 #convert to data.table to summarize
 d.dt = setDT(d)
@@ -205,8 +202,8 @@ summary(ev.tv.summary)
 ev.tv.summary$deployment.duration = as.numeric(difftime(ev.tv.summary$end.date, ev.tv.summary$start.date, units = "days"))
 head(ev.tv.summary)
 
-#add fate = alive if still transmitting May 1
-ev.tv.summary = cbind(ev.tv.summary, ifelse(ev.tv.summary$end.date > ymd(20190501), "alive", 'NA'))
+#add fate = alive if still transmitting Oct 1, 2020
+ev.tv.summary = cbind(ev.tv.summary, ifelse(ev.tv.summary$end.date > ymd(20201001), "alive", 'NA'))
 names(ev.tv.summary)
 names(ev.tv.summary)[16] = 'fate'
 ev.tv.summary$fate = as.factor(ev.tv.summary$fate)
@@ -251,7 +248,7 @@ ev.tv.summary$comments[which(ev.tv.summary$id == "Yellow 04")]= 'looks like erro
 
 #add start / end country
 require(rgdal)
-world = readOGR(dsn = "./TM_WORLD_BORDERS_SIMPL-0.3/", layer = "TM_WORLD_BORDERS_SIMPL-0.3")
+world = readOGR(dsn = "./Data/TM_WORLD_BORDERS_SIMPL-0.3/", layer = "TM_WORLD_BORDERS_SIMPL-0.3")
 
 #convert summary to spdf
 names(ev.tv.summary)
@@ -259,7 +256,7 @@ xy.start <- ev.tv.summary[,c(9,8)]
 spdf.start <- SpatialPointsDataFrame(coords = xy.start, data = ev.tv.summary,
                                      proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 
-#check that the prjections match
+#check that the projections match
 proj4string(spdf.start) == proj4string(world)
 plot(spdf.start)
 plot(world, add = T)
@@ -379,7 +376,7 @@ write.csv(mcgrady.summary, "./Fate summaries/McGrady summaries.csv", row.names =
 write.csv(ev.tv.summary, "ev.tv.summary.csv", row.names = FALSE)
 
 #####################################################################
-#merging data summary with coauthor info input in Google Sheet
+#merging data summary with coauthor info input in summary sheet
 #set wd
 setwd("~/Documents/GitHub/EV - TV Survival Study/")
 
