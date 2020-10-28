@@ -952,6 +952,7 @@ ev.tv$hour <- hour(ev.tv$timestamp)
 #censor to one point per day 
 #(at least to start, to have a workable dataset, as well as to standardize across transmitter types)
 ev.tv.1ptperday = ev.tv[!duplicated(ev.tv[,c('id', 'year', 'month', 'day')]),]
+summary(ev.tv.1ptperday)
 unique(ev.tv.1ptperday$id)
 unique(ev.tv.1ptperday$population)
 
