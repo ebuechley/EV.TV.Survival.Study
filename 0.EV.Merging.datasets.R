@@ -52,7 +52,7 @@ ev8 = read.csv("./Raw data/Egyptian vultures Dagestan2.csv")
 ev8$population = "caucasus"
 #ev9 = read.csv("./Raw data/Egyptian vultures in Djibouti.csv")
 #ev9$population = "horn of africa"
-ev10 = read.csv("./Raw data/Egyptian_Vulture_Reintroduction_Israel.csv")
+ev10 = read.csv("./Raw data/Egyptian Vulture Reintroduction Israel.csv")
 ev10$population = "middle east"
 ev11 = read.csv("./Raw data/LIFE_Rupis_EgyptianVultures.csv")
 ev11$population = "western europe"
@@ -233,29 +233,602 @@ summary(ev.movebank$timestamp)
 
 ###################################################################
 # read and process additional raw (non Movebank) data
-ev30 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/AF5AF11F_2018_EV_Italy.csv")
+library(stringi)
+library(stringr)
+ev30 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/190554_Clint.csv", header = TRUE, sep = ";")
+head(ev30)
 names(ev30)
 names(ev30)[1] = "individual.local.identifier"
-names(ev30)[34] = "timestamp"
-names(ev30)[30] = "location.lat"
-names(ev30)[31] = "location.long"
-ev30$timestamp = ymd_hms(ev30$timestamp)
+names(ev30)[2] = "timestamp"
+names(ev30)[11] = "location.lat"
+names(ev30)[12] = "location.long"
+head(ev30$timestamp)
+ev30$timestamp = dmy_hm(ev30$timestamp)
 head(ev30)
 summary(ev30)
 #
-ev31 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/B05AF11F_2018_EV_Italy.csv")
+test = ev30
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+test<-test[!(test$location.long==0 & test$location.lat==0),]
+test$location.lat = as.numeric(test$location.lat)
+test$location.long = as.numeric(test$location.long)
+test$X = NULL
+head(test)
+summary(test)
+#fix lat
+head(test$location.lat)
+test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+head(test$location.lat)
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+summary(test$location.long)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev30 = test
+#
+ev31 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/190554_Francesca.csv", header = TRUE, sep = ";")
 head(ev31)
 names(ev31)
 names(ev31)[1] = "individual.local.identifier"
-names(ev31)[34] = "timestamp"
-names(ev31)[30] = "location.lat"
-names(ev31)[31] = "location.long"
-ev31$timestamp = ymd_hms(ev31$timestamp)
+names(ev31)[2] = "timestamp"
+names(ev31)[11] = "location.lat"
+names(ev31)[12] = "location.long"
+ev31$timestamp = dmy_hm(ev31$timestamp)
 head(ev31)
 summary(ev31)
+#
+test = ev31
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+test<-test[!(test$location.long==0 & test$location.lat==0),]
+test$location.lat = as.numeric(test$location.lat)
+test$location.long = as.numeric(test$location.long)
+head(test)
+summary(test)
+#fix lat
+head(test$location.lat)
+test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+head(test$location.lat)
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+summary(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+summary(test$location.long)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev31 = test
+#
+ev32 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/190555_Diego.csv", header = TRUE, sep = ";")
+head(ev32)
+names(ev32)
+names(ev32)[1] = "individual.local.identifier"
+names(ev32)[2] = "timestamp"
+names(ev32)[11] = "location.lat"
+names(ev32)[12] = "location.long"
+ev32$timestamp = dmy_hm(ev32$timestamp)
+head(ev32)
+summary(ev32)
+#
+test = ev32
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+test<-test[!(test$location.long==0 & test$location.lat==0),]
+test$location.lat = as.numeric(test$location.lat)
+test$location.long = as.numeric(test$location.long)
+head(test)
+summary(test)
+#fix lat
+head(test$location.lat)
+test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+head(test$location.lat)
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+summary(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+summary(test$location.long)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev32 = test
+#
+ev33 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/190556_Jane.csv", header = TRUE, sep = ";")
+head(ev33)
+names(ev33)
+names(ev33)[1] = "individual.local.identifier"
+names(ev33)[2] = "timestamp"
+names(ev33)[11] = "location.lat"
+names(ev33)[12] = "location.long"
+ev33$timestamp = dmy_hm(ev33$timestamp)
+head(ev33)
+summary(ev33)
+#
+test = ev33
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+test<-test[!(test$location.long==0 & test$location.lat==0),]
+test$location.lat = as.numeric(test$location.lat)
+test$location.long = as.numeric(test$location.long)
+head(test)
+summary(test)
+#fix lat
+head(test$location.lat)
+test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+head(test$location.lat)
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+summary(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+test<-test[!(test$location.long>10 & test$location.lat<20),]
+summary(test$location.long)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev33 = test
+#
+ev34 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/190557_Fabio.csv", header = TRUE, sep = ";")
+head(ev34)
+names(ev34)
+names(ev34)[1] = "individual.local.identifier"
+names(ev34)[2] = "timestamp"
+names(ev34)[11] = "location.lat"
+names(ev34)[12] = "location.long"
+ev34$timestamp = dmy_hm(ev34$timestamp)
+head(ev34)
+summary(ev34)
+#
+test = ev34
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+test<-test[!(test$location.long==0 & test$location.lat==0),]
+test$location.lat = as.numeric(test$location.lat)
+test$location.long = as.numeric(test$location.long)
+head(test)
+summary(test)
+#fix lat
+head(test$location.lat)
+test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+head(test$location.lat)
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+summary(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+summary(test$location.long)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev34 = test
+#
+ev35 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/190557_Kate.csv", header = TRUE, sep = ";")
+head(ev35)
+names(ev35)
+names(ev35)[1] = "individual.local.identifier"
+names(ev35)[2] = "timestamp"
+names(ev35)[11] = "location.lat"
+names(ev35)[12] = "location.long"
+ev35$timestamp = dmy_hm(ev35$timestamp)
+head(ev35)
+summary(ev35)
+#
+test = ev35
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+test<-test[!(test$location.long==0 & test$location.lat==0),]
+test$location.lat = as.numeric(test$location.lat)
+test$location.long = as.numeric(test$location.long)
+head(test)
+summary(test)
+#fix lat
+head(test$location.lat)
+test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+head(test$location.lat)
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+summary(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+summary(test$location.long)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev35 = test
+
+#
+ev36 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/200140_Birba.csv", header = TRUE, sep = ";")
+head(ev36)
+names(ev36)
+names(ev36)[1] = "individual.local.identifier"
+names(ev36)[2] = "timestamp"
+names(ev36)[11] = "location.lat"
+names(ev36)[12] = "location.long"
+ev36$timestamp = dmy_hm(ev36$timestamp)
+head(ev36)
+summary(ev36)
+#
+test = ev36
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+test<-test[!(test$location.long==0 & test$location.lat==0),]
+test$location.lat = as.numeric(test$location.lat)
+test$location.long = as.numeric(test$location.long)
+head(test)
+summary(test)
+#fix lat
+head(test$location.lat)
+test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+head(test$location.lat)
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+summary(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+summary(test$location.long)
+summary(test$timestamp)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev36 = test
+#
+ev37 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/202342_Zoe.csv", header = TRUE, sep = ";")
+head(ev37)
+names(ev37)
+names(ev37)[1] = "individual.local.identifier"
+names(ev37)[2] = "timestamp"
+names(ev37)[11] = "location.lat"
+names(ev37)[12] = "location.long"
+ev37$timestamp = dmy_hm(ev37$timestamp)
+head(ev37)
+summary(ev37)
+#
+test = ev37
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+test<-test[!(test$location.long==0 & test$location.lat==0),]
+test$location.lat = as.numeric(test$location.lat)
+test$location.long = as.numeric(test$location.long)
+head(test)
+summary(test)
+#fix lat
+head(test$location.lat)
+test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+head(test$location.lat)
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+summary(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+summary(test$location.long)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev37 = test
+#
+ev38 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/AC5AF11F_Noe.csv", header = TRUE, sep = ";")
+head(ev38)
+names(ev38)
+names(ev38)[1] = "individual.local.identifier"
+names(ev38)[34] = "timestamp"
+names(ev38)[30] = "location.lat"
+names(ev38)[31] = "location.long"
+ev38$timestamp = ymd_hms(ev38$timestamp)
+head(ev38)
+ev38 = ev38[!is.na(ev38$location.lat),] #remove NAs
+summary(ev38)
+#
+test = ev38
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+summary(test)
+#test$location.lat = gsub("[a-zA-Z ]", "", test$location.lat) #remove characters from numeric string
+#test$location.long = gsub("[a-zA-Z ]", "", test$location.long) #remove characters from numeric string
+#test$location.lat = as.numeric(test$location.lat)
+#test$location.long = as.numeric(test$location.long)
+summary(test$location.lat)
+summary(test)
+#test<-test[!(test$location.long==0 & test$location.lat==0),]
+#fix lat
+head(test$location.lat)
+test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+test$location.lat = str_remove(test$location.lat, "[.]")
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+test = test[!is.na(test$location.lat),] #remove NAs
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+summary(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+test<-test[!(test$location.lat>42),] #removing outliers
+summary(test$location.long)
+head(test$timestamp)
+tail(test$timestamp)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev38 = test
+
+#
+ev39 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/AF5AF11F_Beatrice.csv", header = TRUE, sep = ";")
+head(ev39)
+names(ev39)
+names(ev39)[1] = "individual.local.identifier"
+names(ev39)[34] = "timestamp"
+names(ev39)[30] = "location.lat"
+names(ev39)[31] = "location.long"
+ev39$timestamp = ymd_hms(ev39$timestamp)
+head(ev39)
+ev39 = ev39[!is.na(ev39$location.lat),] #remove NAs
+summary(ev39)
+#
+test = ev39
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+test<-test[!(test$location.long==0 & test$location.lat==0),]
+test$location.lat = as.numeric(test$location.lat)
+test$location.long = as.numeric(test$location.long)
+head(test)
+summary(test)
+#fix lat
+head(test$location.lat)
+#test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+#head(test$location.lat)
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+#test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+summary(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+summary(test$location.long)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev39 = test
+
+#
+ev40 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/B05AF11F_Lucrezia.csv", header = TRUE, sep = ";")
+head(ev40)
+names(ev40)
+names(ev40)[1] = "individual.local.identifier"
+names(ev40)[34] = "timestamp"
+names(ev40)[30] = "location.lat"
+names(ev40)[31] = "location.long"
+ev40$timestamp = ymd_hms(ev40$timestamp)
+head(ev40)
+summary(ev40)
+#
+test = ev40
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+summary(test)
+#test$location.lat = gsub("[a-zA-Z ]", "", test$location.lat) #remove characters from numeric string
+#test$location.long = gsub("[a-zA-Z ]", "", test$location.long) #remove characters from numeric string
+#test$location.lat = as.numeric(test$location.lat)
+#test$location.long = as.numeric(test$location.long)
+summary(test$location.lat)
+summary(test)
+#test<-test[!(test$location.long==0 & test$location.lat==0),]
+#fix lat
+head(test$location.lat)
+test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+test$location.lat = str_remove(test$location.lat, "[.]")
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+test = test[!is.na(test$location.lat),] #remove NAs
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+summary(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+summary(test$location.long)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev40 = test
+
+#
+ev41 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/B15AF11F_Leonardo.csv", header = TRUE, sep = ";")
+head(ev41)
+names(ev41)
+names(ev41)[1] = "individual.local.identifier"
+names(ev41)[34] = "timestamp"
+names(ev41)[30] = "location.lat"
+names(ev41)[31] = "location.long"
+ev41$timestamp = ymd_hms(ev41$timestamp)
+head(ev41)
+summary(ev41)
+#
+test = ev41
+head(test)
+test = dplyr::arrange(test, timestamp) #order by date
+#remove lat/long with 0
+summary(test)
+#test$location.lat = gsub("[a-zA-Z ]", "", test$location.lat) #remove characters from numeric string
+#test$location.long = gsub("[a-zA-Z ]", "", test$location.long) #remove characters from numeric string
+#test$location.lat = as.numeric(test$location.lat)
+#test$location.long = as.numeric(test$location.long)
+summary(test$location.lat)
+summary(test)
+#test<-test[!(test$location.long==0 & test$location.lat==0),]
+#fix lat
+head(test$location.lat)
+test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
+test$location.lat = str_remove(test$location.lat, "[.]")
+test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
+stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
+head(test$location.lat) 
+tail(test$location.lat) #looks good
+test$location.lat = as.numeric(test$location.lat)
+test = test[!is.na(test$location.lat),] #remove NAs
+summary(test$location.lat)
+#fix long
+head(test$location.long)
+test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
+test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
+test$location.long = as.numeric(test$location.long)
+summary(test$location.long)
+test$location.long = as.character(test$location.long)
+test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
+head(test$location.long)
+tail(test$location.long)
+test<-test[!(test$location.long<5),] #removing outliers
+test<-test[!(test$location.lat>42),] #removing outliers
+head(test$timestamp)
+tail(test$timestamp)
+summary(test$location.long)
+#quick plot of data
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
+  theme(legend.title = element_blank()) 
+ev41 = test
 
 #merge (vertically) the data, keeping all unique columns
-ev.ISPRA = rbind.fill(ev30,ev31)
+ev.ISPRA = rbind.fill(ev30,ev31,ev32,ev33,ev34,ev35,ev36,ev37,ev38,ev39,ev40,ev41)
 ev.ISPRA$population = "italy"
 ev.ISPRA$study.name = "ISPRA"
 head(ev.ISPRA)
@@ -289,47 +862,47 @@ summary(ev.all$individual.taxon.canonical.name)
 ev.all$individual.taxon.canonical.name = "Neophron percnopterus" #standardize the species name for all remaining which were confirmed EV
 
 ########################################################
-#TV - skip for now
+#TV - SKIP FOR NOW
 ########################################################
 # read data
-tv1 = read.csv("./Original Data/Turkey Vulture Acopian Center USA GPS.csv")
-tv1$population = NA
-tv2 = read.csv("./Original Data/Black Vultures and Turkey Vultures Southeastern USA.csv")
-tv2$population = "southeast"
-tv3 = read.csv("./Original Data/Vulture Movements.csv")
-tv3$population = "southeast"
+#tv1 = read.csv("./Original Data/Turkey Vulture Acopian Center USA GPS.csv")
+#tv1$population = NA
+#tv2 = read.csv("./Original Data/Black Vultures and Turkey Vultures Southeastern USA.csv")
+#tv2$population = "southeast"
+#tv3 = read.csv("./Original Data/Vulture Movements.csv")
+#tv3$population = "southeast"
 
 #check and set timestamp
-summary(tv1$timestamp)
-tv1$timestamp = ymd_hms(tv1$timestamp)
-summary(tv2$timestamp)
-tv2$timestamp = ymd_hms(tv2$timestamp)
-summary(tv3$timestamp)
-tv3$timestamp = ymd_hms(tv3$timestamp)
+#summary(tv1$timestamp)
+#tv1$timestamp = ymd_hms(tv1$timestamp)
+#summary(tv2$timestamp)
+#tv2$timestamp = ymd_hms(tv2$timestamp)
+#summary(tv3$timestamp)
+#tv3$timestamp = ymd_hms(tv3$timestamp)
 
 #merge (vertically) the data, keeping all unique columns
-tv.all = rbind.fill(tv1, tv2, tv3)
-head(tv.all)
-tv.all$timestamp = ymd_hms(tv.all$timestamp)
-summary(tv.all$timestamp)
+#tv.all = rbind.fill(tv1, tv2, tv3)
+#head(tv.all)
+#tv.all$timestamp = ymd_hms(tv.all$timestamp)
+#summary(tv.all$timestamp)
 
 #remove other species
-summary(tv.all$individual.taxon.canonical.name)
-tv.all = tv.all[!(tv.all$individual.taxon.canonical.name == "Coragyps atratus"),] #some black vultures were included in some of the data
-tv.all = tv.all[!(tv.all$individual.taxon.canonical.name == ""),] # the blank species are black vultures in this data
-summary(tv.all$individual.taxon.canonical.name)
-tv.all$individual.taxon.canonical.name = "Cathartes aura" #standardize the species name for all
-unique(tv.all$individual.local.identifier) #note 104 unique id
+#summary(tv.all$individual.taxon.canonical.name)
+#tv.all = tv.all[!(tv.all$individual.taxon.canonical.name == "Coragyps atratus"),] #some black vultures were included in some of the data
+#tv.all = tv.all[!(tv.all$individual.taxon.canonical.name == ""),] # the blank species are black vultures in this data
+#summary(tv.all$individual.taxon.canonical.name)
+#tv.all$individual.taxon.canonical.name = "Cathartes aura" #standardize the species name for all
+#unique(tv.all$individual.local.identifier) #note 104 unique id
 
 ########################################################
 #Merge EV & TV
 ########################################################
 
 #merge (vertically) the data, keeping all unique columns
-summary(ev.all$timestamp)
-summary(tv.all$timestamp)
+#summary(ev.all$timestamp)
+#summary(tv.all$timestamp)
 #ev.tv = rbind.fill(ev.all,tv.all)
-ev.tv = ev.all
+ev.tv = ev.all #JUST ASSIGN EV DATA AS EV.TV HERE SO AS TO NOT CHANGE CODE HEREAFTER
 summary(ev.tv$timestamp)
 head(ev.tv)
 names(ev.tv)
@@ -352,11 +925,12 @@ ev.tv$timestamp = ymd_hms(ev.tv$timestamp)
 #remove data from after Oct 1, 2020 (setting a cutoff point for the study data)
 ev.tv <- subset(ev.tv, timestamp <= as.POSIXct('2020-10-01'))
 summary(ev.tv$timestamp)
-unique(ev.tv$id.tag) #227 individuals
+unique(ev.tv$id.tag) #231 individuals
 
 #remove any rows that don't have date, lat or long
 names(ev.tv)
 ev.tv = ev.tv[complete.cases(ev.tv[,3:5]),] 
+unique(ev.tv$id.tag) #231 individuals
 
 #reorder dataframe to have x,y,date,id.tag as first four columns
 names(ev.tv)
@@ -378,13 +952,14 @@ ev.tv$hour <- hour(ev.tv$timestamp)
 #censor to one point per day 
 #(at least to start, to have a workable dataset, as well as to standardize across transmitter types)
 ev.tv.1ptperday = ev.tv[!duplicated(ev.tv[,c('id', 'year', 'month', 'day')]),]
+unique(ev.tv.1ptperday$id)
+unique(ev.tv.1ptperday$population)
 
 #quick plot of data
 library(ggplot2)
-map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = ev.tv.1ptperday, aes(long,lat, group = id)) + labs(x = "longitude", y = "latitude")
-map.plot = map.plot + theme(legend.title = element_blank()) 
-map.plot #notice bad fixes in dataset
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() + 
+  geom_path(data = ev.tv.1ptperday, aes(long,lat, group = id)) + labs(x = "longitude", y = "latitude") + 
+  theme(legend.title = element_blank())  #notice bad fixes in dataset
 
 #set wd
 setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/")
