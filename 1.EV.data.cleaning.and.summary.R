@@ -34,7 +34,8 @@ setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/
 ################################################################
 #filter data to remove bad fixes
 d = read.csv("./Data/ev.1ptperday.csv")
-unique(d$id.tag) #226
+head(d)
+unique(d$id) #231
 unique(d$study.name) #15
 unique(d$species) #1
 unique(d$population) #5
@@ -48,10 +49,10 @@ summary(d$timestamp)
 d<-d[!(d$long==0 & d$lat==0),]
 d<-d[!(d$long<=-25 & d$species=="Neophron percnopterus"),]
 d<-d[!(d$long>=70 & d$species=="Neophron percnopterus"),]
-d<-d[!(d$long<0 & d$study.name=="Neophron percnopterus Bulgaria/Greece"),]
-d<-d[!(d$long<19 & d$lat>35 & d$study.name=="Neophron percnopterus Bulgaria/Greece"),]
-d<-d[!(d$lat>35 & d$id=="Mille"),]
-d<-d[!(d$long<=-1 & d$study.name=="Released Egyptian Vultures in Italy"),]
+#d<-d[!(d$long<0 & d$study.name=="Neophron percnopterus Bulgaria/Greece"),]
+#d<-d[!(d$long<19 & d$lat>35 & d$study.name=="Neophron percnopterus Bulgaria/Greece"),]
+#d<-d[!(d$lat>35 & d$id=="Mille"),]
+#d<-d[!(d$long<=-1 & d$study.name=="Released Egyptian Vultures in Italy"),]
 #d<-d[!(d$long>=-40 & d$species=="Cathartes aura"),]
 #d<-d[!(d$lat==0 & d$species=="Cathartes aura"),]
 
@@ -64,17 +65,19 @@ d = d[-c(which(d$height.above.ellipsoid > 30000)),]
 summary(d$height.above.ellipsoid)
 
 #remove any rows that don't have date, lat or long
-summary(d[1:4])
-#d = d[complete.cases(d[,1:4]),] 
+summary(d[1:3])
+#d = d[complete.cases(d[,1:3]),] 
 
 #quick plot of data
 library(ggplot2)
-map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id, colour = population)) + labs(x = "longitude", y = "latitude")
-map.plot = map.plot + theme(legend.title = element_blank()) 
-map.plot #notice bad fixes in dataset
+ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
+  geom_path(data = d, aes(long,lat, group = id, colour = population)) + labs(x = "longitude", y = "latitude") + 
+  theme(legend.title = element_blank())  #notice bad fixes in dataset
 
 #speed filter from 'trip' package
+names(d)
+d = d[,c(1,2,3,31,4:30,32:135)] # need to reorder columns to x,y,time,id
+names(d)
 library(trip)
 
 #convert to 'trip'
@@ -88,7 +91,7 @@ tr = trip(d)
 #run a speed filter and add a column to the data, max speed in km/hr
 #?speedfilter
 #?sda
-tr$spd = speedfilter(tr, max.speed = 15)
+tr$spd = speedfilter(tr, max.speed = 25)
 mean(tr$spd) #what % are not filtered out
 summary(tr$spd) # number filtered
 
@@ -105,17 +108,16 @@ b = as(tr, "SpatialPointsDataFrame")
 b2 = subset(b, b$spd == "TRUE")
 plot(b2)
 b1 = subset(b, b$spd == "FALSE")
-plot(b1, color = "red", add = T)
+plot(b1, col = "red", add = T)
 
 #save as df
 d.filtered = as.data.frame(b2)
 head(d.filtered)
 
 #quick plot of data
-map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = d.filtered, aes(long,lat, group = id, colour = population), alpha = .5) + labs(x = "longitude", y = "latitude")
-map.plot = map.plot + theme(legend.title = element_blank()) 
-map.plot
+ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() +
+ geom_path(data = d.filtered, aes(long,lat, group = id, colour = population), alpha = .5) + labs(x = "longitude", y = "latitude") +
+ theme(legend.title = element_blank()) 
 
 #write
 write.csv(d.filtered, "./Data/ev.filtered.csv", row.names=FALSE)
@@ -127,7 +129,7 @@ d = read.csv("./Data/ev.filtered.csv")
 head(d)
 names(d)
 unique(d$population)
-unique(d$id.tag) #note 226 unique id.tag
+unique(d$id) #note 231 unique id
 
 #lubridate
 summary(d$timestamp)
@@ -135,7 +137,8 @@ d$timestamp = ymd_hms(d$timestamp)
 
 #convert to ltraj
 #use UTM so that distance values are calculated in meters
-b = as.ltraj(xy = d[, c("long", "lat")], date = d$timestamp, id = d$id.tag)
+names(d)
+b = as.ltraj(xy = d[, c("long", "lat")], date = d$timestamp, id = d$id)
 b
 
 #index
@@ -188,7 +191,7 @@ names(d.dt)
 ev.tv.summary = d.dt[,.(unique(species), unique(study.name), unique(id),unique(tag), 
                         min(timestamp), max(timestamp), head(lat,1), head(long,1), 
                         tail(lat,1), tail(long,1), mean(tail(dist,10)), mean(tail(dt.days,10)),
-                        mean(tail(battery.charge.percent,10))),by = .(id.tag)]
+                        mean(tail(battery.charge.percent,10))),by = .(id)]
 
 #add headers
 names(ev.tv.summary) = c("id.tag", "species", "study.name", "id", "tag",  "start.date", 
@@ -228,25 +231,27 @@ summary(ev.tv.summary$how.fate.determined)
 ev.tv.summary$comments = NA
 
 #comment from observations above
-ev.tv.summary$comments[which(ev.tv.summary$id == "2HP")]= 'highly intermittent fixes'
-ev.tv.summary$comments[which(ev.tv.summary$id == "9FC")]= 'very few fixes'
-ev.tv.summary$comments[which(ev.tv.summary$id == "18 White")]= 'very few fixes'
-ev.tv.summary$comments[which(ev.tv.summary$id == "93")]= 'possible mortality / dropped tx'
-ev.tv.summary$comments[which(ev.tv.summary$id == "A17 Green")]= 'errant last point?'
-ev.tv.summary$comments[which(ev.tv.summary$id == "A25 Green")]= 'errant last point?'
-ev.tv.summary$comments[which(ev.tv.summary$id == "Cabuk")]= 'errant last point?'
-ev.tv.summary$comments[which(ev.tv.summary$id == "Iliaz")]= 'amazing figure of ontogenic migration development'
-ev.tv.summary$comments[which(ev.tv.summary$id == "Levkipos")]= 'possible mortality or dropped tx in early 2015?'
-ev.tv.summary$comments[which(ev.tv.summary$id == "Mille")]= 'errant last point?'
-ev.tv.summary$comments[which(ev.tv.summary$id == "NeoPer_Poiares")]= 'errant last point? has a straight shot back from Africa to Spain'
-ev.tv.summary$comments[which(ev.tv.summary$id == "Sarygush")]= 'possible mortality or dropped tx?'
-ev.tv.summary$comments[which(ev.tv.summary$id == "Sharka")]= 'only 3 points!'
-ev.tv.summary$comments[which(ev.tv.summary$id == "Carmen")]= 'looks to have died at see and tx floated long after'
-ev.tv.summary$comments[which(ev.tv.summary$id == "Provence_2016_Ad_wild_EO5018_Salomé_8P")]= 'errant last point? has a straight shot from Africa back to France'
-ev.tv.summary$comments[which(ev.tv.summary$id == "White 08")]= 'has a random point in the Med'
-ev.tv.summary$comments[which(ev.tv.summary$id == "Yellow 04")]= 'looks like erroneous points in the Med'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "2HP")]= 'highly intermittent fixes'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "9FC")]= 'very few fixes'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "18 White")]= 'very few fixes'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "93")]= 'possible mortality / dropped tx'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "A17 Green")]= 'errant last point?'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "A25 Green")]= 'errant last point?'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "Cabuk")]= 'errant last point?'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "Iliaz")]= 'amazing figure of ontogenic migration development'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "Levkipos")]= 'possible mortality or dropped tx in early 2015?'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "Mille")]= 'errant last point?'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "NeoPer_Poiares")]= 'errant last point? has a straight shot back from Africa to Spain'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "Sarygush")]= 'possible mortality or dropped tx?'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "Sharka")]= 'only 3 points!'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "Carmen")]= 'looks to have died at see and tx floated long after'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "Provence_2016_Ad_wild_EO5018_Salomé_8P")]= 'errant last point? has a straight shot from Africa back to France'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "White 08")]= 'has a random point in the Med'
+#ev.tv.summary$comments[which(ev.tv.summary$id == "Yellow 04")]= 'looks like erroneous points in the Med'
 
-#add start / end country
+########################################
+#add start / end country #SKIP FOR NOW
+########################################
 require(rgdal)
 world = readOGR(dsn = "./Data/TM_WORLD_BORDERS_SIMPL-0.3/", layer = "TM_WORLD_BORDERS_SIMPL-0.3")
 
@@ -312,16 +317,16 @@ ev.tv.summary = ev.tv.summary[order(ev.tv.summary$study.name),]
 head(ev.tv.summary)
 summary(ev.tv.summary$start.date)
 summary(ev.tv.summary$end.date)
-write.csv(ev.tv.summary, "ev.tv.summary.csv", row.names = FALSE)
+write.csv(ev.tv.summary, "./Summary/ev.summary.quant.csv", row.names = FALSE)
 
 #quick plot of data
-map.plot = ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() 
-map.plot = map.plot + geom_path(data = d, aes(long,lat, group = id.tag), alpha = .5) + labs(x = "longitude", y = "latitude")
-map.plot = map.plot + theme(legend.title = element_blank()) 
-map.plot
+ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() +
+geom_path(data = d, aes(long,lat, group = id), alpha = .5) + labs(x = "longitude", y = "latitude") +
+theme(legend.title = element_blank()) 
 
 #####################################################################
-#fix date times in all files
+#fix date times in all files #SKIP FOR NOW
+#####################################################################
 #set wd
 setwd("~/Documents/GitHub/EV - TV Survival Study/")
 
@@ -377,35 +382,34 @@ write.csv(ev.tv.summary, "ev.tv.summary.csv", row.names = FALSE)
 
 #####################################################################
 #merging data summary with coauthor info input in summary sheet
+#####################################################################
 #set wd
-setwd("~/Documents/GitHub/EV - TV Survival Study/")
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/")
 
 #Clear workspace
 rm(list = ls())
 
 #read final summaries
-ev.gs = read.csv("./Google Sheets/Egyptian Vulture tracking summary - EV summary.csv", colClasses = "character")
-unique(ev.gs$start.date.adjusted)
-unique(ev.gs$end.date.adjusted)
-ev.gs$start.date.adjusted = ymd_hms(ev.gs$start.date.adjusted)
-summary(ev.gs$start.date.adjusted)
-ev.gs$start.date.adjusted = as.character(ev.gs$start.date.adjusted)
-unique(ev.gs$start.date.adjusted)
-tv.gs = read.csv("./Google Sheets/Turkey Vulture tracking summary - TV summary.csv", colClasses = "character")
-unique(tv.gs$start.date.adjusted)
-unique(tv.gs$end.date.adjusted)
-ev.tv.summary = read.csv("ev.tv.summary.csv", colClasses = "character")
-unique(ev.tv.summary$end.date.adjusted)
-unique(ev.tv.summary$start.date.adjusted)
+ev.gs = read.csv("./Summary/ev.summary.rev1.merged.csv")
+#unique(ev.gs$start.date.adjusted)
+#unique(ev.gs$end.date.adjusted)
+#ev.gs$start.date.adjusted = ymd_hms(ev.gs$start.date.adjusted)
+#summary(ev.gs$start.date.adjusted)
+#ev.gs$start.date.adjusted = as.character(ev.gs$start.date.adjusted)
+#unique(ev.gs$start.date.adjusted)
+#tv.gs = read.csv("./Google Sheets/Turkey Vulture tracking summary - TV summary.csv", colClasses = "character")
+#unique(tv.gs$start.date.adjusted)
+#unique(tv.gs$end.date.adjusted)
+ev.tv.summary = read.csv("./Summary/ev.summary.quant.csv")
+#unique(ev.tv.summary$end.date.adjusted)
+#unique(ev.tv.summary$start.date.adjusted)
 
 #check id's match
 unique(ev.gs$id) #Provence_2016_Ad_wild_EO5018_Salome_8P
 unique(ev.tv.summary$id) # Provence_2016_Ad_wild_EO5018_Salomé_8P
-ev.tv.summary$id[ev.tv.summary$id == "Provence_2016_Ad_wild_EO5018_Salomé_8P"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P"
-unique(ev.tv.summary$id)
-
-#
-ev.tv.summary$start
+#ev.tv.summary$id[ev.tv.summary$id == "Provence_2016_Ad_wild_EO5018_Salomé_8P"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P"
+#unique(ev.tv.summary$id)
+#ev.tv.summary$start
 
 #check for duplicates
 unique(ev.gs$id)
@@ -413,47 +417,67 @@ which(duplicated(ev.gs$id))
 
 #remove rows that have NA for study. These are id that Guido put in the Sheet, 
 #but which we don't have any data for
-ev.gs =  ev.gs[!is.na(ev.gs$study.name),]
+#ev.gs =  ev.gs[!is.na(ev.gs$study.name),]
 
 # replace cell values for matching ids
-for (i in unique(ev.gs$id.tag)) { 
+names(ev.gs)
+names(ev.tv.summary)
+ev.tv.summary$migrant = NA #adding blank columns that we want to match to coauthor input sheet
+ev.tv.summary$transmitter.make.model = NA
+ev.tv.summary$transmitter.attachment.method = NA
+ev.tv.summary$transmitter.mass.grams = NA
+ev.tv.summary$mortality.date = NA
+ev.tv.summary$start.country = NA
+ev.tv.summary$end.country = NA
+ev.tv.summary$age.at.deployment.months = NA
+names(ev.tv.summary)
+
+for (i in unique(ev.gs$id)) { 
   
-  ev.tv.summary$start.date.adjusted[which(ev.tv.summary$id.tag == i)] = ev.gs$start.date.adjusted[which(ev.gs$id.tag == i)]
-  ev.tv.summary$end.date.adjusted[which(ev.tv.summary$id.tag == i)] = ev.gs$end.date.adjusted[which(ev.gs$id.tag == i)]
-  ev.tv.summary$sex[which(ev.tv.summary$id.tag == i)] = ev.gs$sex[which(ev.gs$id.tag == i)]
-  ev.tv.summary$age.at.deployment[which(ev.tv.summary$id.tag == i)] = ev.gs$age.at.deployment[which(ev.gs$id.tag == i)]
-  ev.tv.summary$captive.raised[which(ev.tv.summary$id.tag == i)] = ev.gs$captive.raised[which(ev.gs$id.tag == i)]
-  ev.tv.summary$rehabilitated[which(ev.tv.summary$id.tag == i)] = ev.gs$rehabilitated[which(ev.gs$id.tag == i)]
-  ev.tv.summary$fate[which(ev.tv.summary$id.tag == i)] = ev.gs$fate[which(ev.gs$id.tag == i)]
-  ev.tv.summary$how.fate.determined[which(ev.tv.summary$id.tag == i)] = ev.gs$how.fate.determined[which(ev.gs$id.tag == i)]
-  ev.tv.summary$cause.of.death[which(ev.tv.summary$id.tag == i)] = ev.gs$cause.of.death[which(ev.gs$id.tag == i)]
-  ev.tv.summary$comments[which(ev.tv.summary$id.tag == i)] = ev.gs$comments[which(ev.gs$id.tag == i)]
+  #ev.tv.summary$start.date.adjusted[which(ev.tv.summary$id == i)] = ev.gs$start.date.adjusted[which(ev.gs$id == i)]
+  #ev.tv.summary$end.date.adjusted[which(ev.tv.summary$id == i)] = ev.gs$end.date.adjusted[which(ev.gs$id == i)]
+  ev.tv.summary$migrant[which(ev.tv.summary$id == i)] = ev.gs$migrant[which(ev.gs$id == i)]
+  ev.tv.summary$transmitter.make.model[which(ev.tv.summary$id == i)] = ev.gs$transmitter.make.model[which(ev.gs$id == i)]
+  ev.tv.summary$transmitter.attachment.method[which(ev.tv.summary$id == i)] = ev.gs$transmitter.attachment.method[which(ev.gs$id == i)]
+  ev.tv.summary$transmitter.mass.grams[which(ev.tv.summary$id == i)] = ev.gs$transmitter.mass.grams[which(ev.gs$id == i)]
+  ev.tv.summary$fate[which(ev.tv.summary$id == i)] = ev.gs$fate[which(ev.gs$id == i)]
+  ev.tv.summary$how.fate.determined[which(ev.tv.summary$id == i)] = ev.gs$how.fate.determined[which(ev.gs$id == i)]
+  ev.tv.summary$cause.of.death[which(ev.tv.summary$id == i)] = ev.gs$cause.of.death[which(ev.gs$id == i)]
+  ev.tv.summary$mortality.date[which(ev.tv.summary$id == i)] = ev.gs$mortality.date[which(ev.gs$id == i)]
+  ev.tv.summary$start.country[which(ev.tv.summary$id == i)] = ev.gs$start.country[which(ev.gs$id == i)]
+  ev.tv.summary$end.country[which(ev.tv.summary$id == i)] = ev.gs$end.country[which(ev.gs$id == i)]
+  ev.tv.summary$sex[which(ev.tv.summary$id == i)] = ev.gs$sex[which(ev.gs$id == i)]
+  ev.tv.summary$age.at.deployment.months[which(ev.tv.summary$id == i)] = ev.gs$age.at.deployment.months[which(ev.gs$id == i)]
+  ev.tv.summary$captive.raised[which(ev.tv.summary$id == i)] = ev.gs$captive.raised[which(ev.gs$id == i)]
+  ev.tv.summary$rehabilitated[which(ev.tv.summary$id == i)] = ev.gs$rehabilitated[which(ev.gs$id == i)]
+  ev.tv.summary$comments[which(ev.tv.summary$id == i)] = ev.gs$comments[which(ev.gs$id == i)]
   
 }
 
-for (i in unique(tv.gs$id.tag)) { 
+#for (i in unique(tv.gs$id.tag)) { 
   
-  ev.tv.summary$sex[which(ev.tv.summary$id.tag == i)] = tv.gs$sex[which(tv.gs$id.tag == i)]
-  ev.tv.summary$age.at.deployment[which(ev.tv.summary$id.tag == i)] = tv.gs$age.at.deployment[which(tv.gs$id.tag == i)]
-  ev.tv.summary$captive.raised[which(ev.tv.summary$id.tag == i)] = tv.gs$captive.raised[which(tv.gs$id.tag == i)]
-  ev.tv.summary$rehabilitated[which(ev.tv.summary$id.tag == i)] = tv.gs$rehabilitated[which(tv.gs$id.tag == i)]
-  ev.tv.summary$fate[which(ev.tv.summary$id.tag == i)] = tv.gs$fate[which(tv.gs$id.tag == i)]
-  ev.tv.summary$how.fate.determined[which(ev.tv.summary$id.tag == i)] = tv.gs$how.fate.determined[which(tv.gs$id.tag == i)]
-  ev.tv.summary$cause.of.death[which(ev.tv.summary$id.tag == i)] = tv.gs$cause.of.death[which(tv.gs$id.tag == i)]
-  ev.tv.summary$comments[which(ev.tv.summary$id.tag == i)] = tv.gs$comments[which(tv.gs$id.tag == i)]
+#  ev.tv.summary$sex[which(ev.tv.summary$id.tag == i)] = tv.gs$sex[which(tv.gs$id.tag == i)]
+#  ev.tv.summary$age.at.deployment[which(ev.tv.summary$id.tag == i)] = tv.gs$age.at.deployment[which(tv.gs$id.tag == i)]
+#  ev.tv.summary$captive.raised[which(ev.tv.summary$id.tag == i)] = tv.gs$captive.raised[which(tv.gs$id.tag == i)]
+#  ev.tv.summary$rehabilitated[which(ev.tv.summary$id.tag == i)] = tv.gs$rehabilitated[which(tv.gs$id.tag == i)]
+#  ev.tv.summary$fate[which(ev.tv.summary$id.tag == i)] = tv.gs$fate[which(tv.gs$id.tag == i)]
+#  ev.tv.summary$how.fate.determined[which(ev.tv.summary$id.tag == i)] = tv.gs$how.fate.determined[which(tv.gs$id.tag == i)]
+#  ev.tv.summary$cause.of.death[which(ev.tv.summary$id.tag == i)] = tv.gs$cause.of.death[which(tv.gs$id.tag == i)]
+#  ev.tv.summary$comments[which(ev.tv.summary$id.tag == i)] = tv.gs$comments[which(tv.gs$id.tag == i)]
   
-}
+#}
 
 head(ev.tv.summary)
-
-write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
+summary(ev.tv.summary)
+write.csv(ev.tv.summary, "./Summary/ev.summary.quant.coauthor.merged.csv", row.names = FALSE)
 
 #read data
-ev.tv.summary = read.csv("ev.tv.summary.merged.csv")
-summary(ev.tv.summary)
+#ev.tv.summary = read.csv("ev.tv.summary.merged.csv")
+#summary(ev.tv.summary)
 
 ##################################################################
-#merge with Balkans sheet
+#merge with Balkans sheet #SKIP FOR NOW
+##################################################################
 
 #read data
 ev.tv.summary = read.csv("ev.tv.summary.merged.csv", colClasses = "character")
@@ -493,7 +517,8 @@ head(ev.tv.summary)
 write.csv(ev.tv.summary, "ev.tv.summary.merged.csv", row.names = FALSE)
 
 #################################################
-#merge data from McGrady csv
+#merge data from McGrady csv #SKIP FOR NOW
+#################################################
 
 #Clear workspace
 rm(list = ls())
@@ -536,7 +561,8 @@ for (i in unique(mcgrady.summary$id)) {
 write.csv(ev.tv.summary.merged, "ev.tv.summary.merged.csv", row.names = F)
 
 ####################################################################################
-#standardizing column values
+#standardizing column values #SKIP FOR NOW
+####################################################################################
 d = read.csv("ev.tv.summary.merged.csv")
 summary(d)
 names(d)
