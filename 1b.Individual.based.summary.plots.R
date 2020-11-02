@@ -5,24 +5,24 @@
 rm(list = ls())
 
 #set wd
-setwd("~/Documents/GitHub/EV - TV Survival Study/")
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/")
 
 #read data
-d = read.csv("./Final Cleaned Data/ev.tv.filtered.csv")
+d = read.csv("./Data/ev.filtered.csv")
 summary(d)
 names(d)
-summary(d$sensor.type)
+head(d$sensor.type)
 summary(d$tag)
+head(d$timestamp)
 d$timestamp = ymd_hms(d$timestamp)
 summary(d$ND)
-unique(d$id.tag)
+unique(d$id)
 names(d)
 
 #plot net displacement
 #tiff("./overview.plots/ev.tv.tracking.nd.overview.tiff", units="cm", width=70, height=40, res=300)
-#plot = ggplot(d, aes(timestamp, ND)) + geom_line() + facet_wrap(~ id.tag)
-#plot = plot + labs(x = "date", y = "net displacement (degrees)") + theme_bw() 
-#plot 
+#ggplot(d, aes(timestamp, ND)) + geom_line() + facet_wrap(~ id) + 
+#  labs(x = "date", y = "net displacement (degrees)") + theme_bw() 
 #dev.off()
 
 #plots for each id
@@ -31,38 +31,81 @@ library(gridExtra)
 
 names(d)
 unique(d$species)
-d = subset(d, species == "Neophron percnopterus")
-summary(d$species)
-d$id.tag.yr <- c(paste(d$id.tag,d$year,sep="_")) 
-unique(d$id.tag.yr)
+#d = subset(d, species == "Neophron percnopterus")
+#summary(d$species)
+d$id.yr <- c(paste(d$id,d$year,sep="_")) 
+unique(d$id.yr)
 
 d$timestamp = as.Date(d$timestamp)
 summary(d$timestamp)
 
+#updated Mig_stage_matrix doc, i.e. manual summary of whether each individual migration in each month
+mig.stage = read.csv("./Data/Mig_stage_matrix.csv")
+summary(mig.stage)
+unique(mig.stage$id.year)
+head(mig.stage)
+mig.stage$id.year = substr(mig.stage$id.year,1,nchar(mig.stage$id.year)-4)  #drop ".png"
+unique(mig.stage$id.year)
+#need to create id_tag_yr for d
+d$id.tag <- c(paste(d$id,d$tag,sep="_")) 
+d$id.yearr = c(paste(d$id.tag,d$year,sep="_")) 
+head(d)
+mig.stage.new = as.data.frame(unique(d$id.year))
+names(mig.stage.new)[1] <- "id.year"
+unique(mig.stage.new$id.yr)
+mig.stage.new$X1 = NA
+mig.stage.new$X2 = NA
+mig.stage.new$X3 = NA
+mig.stage.new$X4 = NA
+mig.stage.new$X5 = NA
+mig.stage.new$X6 = NA
+mig.stage.new$X7 = NA
+mig.stage.new$X8 = NA
+mig.stage.new$X9 = NA
+mig.stage.new$X10 = NA
+mig.stage.new$X11 = NA
+mig.stage.new$X12 = NA
+head(mig.stage.new)
+summary(mig.stage.new)
+#assign old values to new mig.stage
+head(mig.stage)
+head(mig.stage.new)
+mig.stage.new = merge(mig.stage,mig.stage.new, by.x = "id.year",by.y = "id.year", all = T)
+head(mig.stage.new)
+summary(mig.stage.new)
+#clean up 
+names(mig.stage.new)
 
-for (i in unique(d$id.tag.yr)) { 
+mig.stage.new = mig.stage.new[,c("id.year", "X1.x", "X2.x", "X3.x", "X4.x", "X5.x", "X6.x", 
+                                 "X7.x", "X8.x", "X9.x", "X10.x", "X11.x", "X12.x")]
+names(mig.stage.new) <- c("id.year","X1","X2","X3","X4","X5","X6","X7","X8","X9","X10","X11","X12")
+summary(mig.stage.new)
+write.csv(mig.stage.new,"./Data/Mig_stage_matrix.Rev1.csv", row.names=FALSE)
+
+#export individual id.yr summary plots
+for (i in unique(d$id.yr)) { 
   #net displacement
   plot1 <- 
-    ggplot(aes(timestamp, ND), data = subset(d, id.tag.yr == i))  + 
+    ggplot(aes(timestamp, ND), data = subset(d, id.yr == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "net displacement (degrees)") + 
     scale_x_date(date_breaks = "1 month", date_labels = "%b", date_minor_breaks = "1 month") 
   
   #fix rate
   plot2 <- 
-    ggplot(aes(timestamp, dt.days), data = subset(d, id.tag.yr == i))  + 
+    ggplot(aes(timestamp, dt.days), data = subset(d, id.yr == i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "time between fixes (days)") + 
     scale_x_date(date_breaks = "1 month", date_labels = "%b", date_minor_breaks = "1 month")
   
   #GPS tracks
   plot3 <- 
     ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() +
-    geom_path(data = subset(d, id.tag.yr ==  i), aes(long,lat)) + labs(x = "longitude", y = "latitude") + 
+    geom_path(data = subset(d, id.yr ==  i), aes(long,lat)) + labs(x = "longitude", y = "latitude") + 
     theme(legend.title = element_blank()) +
     ggtitle(paste(i)) + theme(plot.title = element_text(hjust = 0.5)) 
   
   #distance
   plot4 <- 
-    ggplot(aes(timestamp, dist), data = subset(d, id.tag.yr ==  i))  + 
+    ggplot(aes(timestamp, dist), data = subset(d, id.yr ==  i))  + 
     theme_bw() + geom_line() + labs(x = "date", y = "distance (degrees)") + 
     scale_x_date(date_breaks = "1 month", date_labels = "%b", date_minor_breaks = "1 month")
   
