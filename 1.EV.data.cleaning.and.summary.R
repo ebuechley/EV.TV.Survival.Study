@@ -104,11 +104,11 @@ summary(tr$spd) # number filtered
 #axis(2)
 
 #convert to spdf for plotting
-b = as(tr, "SpatialPointsDataFrame")
-b2 = subset(b, b$spd == "TRUE")
-plot(b2)
-b1 = subset(b, b$spd == "FALSE")
-plot(b1, col = "red", add = T)
+#b = as(tr, "SpatialPointsDataFrame")
+#b2 = subset(b, b$spd == "TRUE")
+#plot(b2)
+#b1 = subset(b, b$spd == "FALSE")
+#plot(b1, col = "red", add = T)
 
 #save as df
 d.filtered = as.data.frame(b2)
@@ -188,17 +188,17 @@ summary(d.dt)
 names(d.dt)
 
 #summarize
-ev.tv.summary = d.dt[,.(unique(species), unique(study.name), unique(id),unique(tag), 
+ev.tv.summary = d.dt[,.(unique(species), unique(study.name), unique(tag), 
                         min(timestamp), max(timestamp), head(lat,1), head(long,1), 
                         tail(lat,1), tail(long,1), mean(tail(dist,10)), mean(tail(dt.days,10)),
                         mean(tail(battery.charge.percent,10))),by = .(id)]
 
 #add headers
-names(ev.tv.summary) = c("id.tag", "species", "study.name", "id", "tag",  "start.date", 
+head(ev.tv.summary)
+names(ev.tv.summary) = c("id", "species", "study.name", "tag",  "start.date", 
                          "end.date", "start.lat", "start.long", "end.lat", "end.long", 
                          "mean.GPS.dist.last10fixes", "mean.GPS.fixrate.last10fixes",
                          "mean.battery.charge.percent.last10fixes")
-head(ev.tv.summary)
 summary(ev.tv.summary)
 
 #add deployment duration
@@ -208,7 +208,7 @@ head(ev.tv.summary)
 #add fate = alive if still transmitting Oct 1, 2020
 ev.tv.summary = cbind(ev.tv.summary, ifelse(ev.tv.summary$end.date > ymd(20201001), "alive", 'NA'))
 names(ev.tv.summary)
-names(ev.tv.summary)[16] = 'fate'
+names(ev.tv.summary)[15] = 'fate'
 ev.tv.summary$fate = as.factor(ev.tv.summary$fate)
 head(ev.tv.summary)
 
@@ -248,6 +248,8 @@ ev.tv.summary$comments = NA
 #ev.tv.summary$comments[which(ev.tv.summary$id == "Provence_2016_Ad_wild_EO5018_Salomé_8P")]= 'errant last point? has a straight shot from Africa back to France'
 #ev.tv.summary$comments[which(ev.tv.summary$id == "White 08")]= 'has a random point in the Med'
 #ev.tv.summary$comments[which(ev.tv.summary$id == "Yellow 04")]= 'looks like erroneous points in the Med'
+
+write.csv(ev.tv.summary, "./Summary/ev.summary.quant.csv", row.names = FALSE)
 
 ########################################
 #add start / end country #SKIP FOR NOW
@@ -422,7 +424,9 @@ which(duplicated(ev.gs$id))
 # replace cell values for matching ids
 names(ev.gs)
 names(ev.tv.summary)
+head(ev.tv.summary)
 ev.tv.summary$migrant = NA #adding blank columns that we want to match to coauthor input sheet
+ev.tv.summary$population = NA
 ev.tv.summary$transmitter.make.model = NA
 ev.tv.summary$transmitter.attachment.method = NA
 ev.tv.summary$transmitter.mass.grams = NA
@@ -436,6 +440,7 @@ for (i in unique(ev.gs$id)) {
   
   #ev.tv.summary$start.date.adjusted[which(ev.tv.summary$id == i)] = ev.gs$start.date.adjusted[which(ev.gs$id == i)]
   #ev.tv.summary$end.date.adjusted[which(ev.tv.summary$id == i)] = ev.gs$end.date.adjusted[which(ev.gs$id == i)]
+  ev.tv.summary$population[which(ev.tv.summary$id == i)] = ev.gs$population[which(ev.gs$id == i)]
   ev.tv.summary$migrant[which(ev.tv.summary$id == i)] = ev.gs$migrant[which(ev.gs$id == i)]
   ev.tv.summary$transmitter.make.model[which(ev.tv.summary$id == i)] = ev.gs$transmitter.make.model[which(ev.gs$id == i)]
   ev.tv.summary$transmitter.attachment.method[which(ev.tv.summary$id == i)] = ev.gs$transmitter.attachment.method[which(ev.gs$id == i)]
@@ -454,6 +459,7 @@ for (i in unique(ev.gs$id)) {
   
 }
 
+head(ev.tv.summary)
 #for (i in unique(tv.gs$id.tag)) { 
   
 #  ev.tv.summary$sex[which(ev.tv.summary$id.tag == i)] = tv.gs$sex[which(tv.gs$id.tag == i)]
