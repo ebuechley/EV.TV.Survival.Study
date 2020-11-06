@@ -19,14 +19,11 @@ d$timestamp = ymd_hms(d$timestamp)
 summary(d)
 
 #clean up data to relevent columns
-#index
-#dt.days == duration in time (in days) between the relocations i and i + 1
-#dist == the distance between successive relocations
-#NSD/ND == distance between the first relocation of the trajectory and 
-  #the current relocation (net [squared] displacement)
 names(d)
-d = d[,c("species","study.name","population","id","timestamp","lat",
+d = d[,c("species","study.name","population","id","tag","id.tag","timestamp","lat",
          "long","year","month","day","NSD","ND","dist","dt.days")]
+d$tag = as.factor(d$tag)
+d$id.tag = as.factor((d$id.tag))
 d$species = as.factor(d$species)
 d$study.name = as.factor(d$study.name)
 d$population = as.factor(d$population)
@@ -42,7 +39,7 @@ unique(d$id) #231
 #add data subset categories
 #need: id, yr.mo, age.in.months, mean.monthly.nd
 d$yr.mo = format(as.Date(d$timestamp), "%Y-%m")
-d$id.yr.mo = c(paste(d$id,d$yr.mo,sep=" - ")) 
+d$id.tag.yr.mo = c(paste(d$id.tag,d$yr.mo,sep=" - ")) 
 head(d)
 
 #age in months
@@ -57,9 +54,12 @@ ev.summary = ev.summary[,c("species","study.name", "population", "id","tag", "st
                            "transmitter.make.model", "transmitter.attachment.method", "transmitter.mass.grams",
                            "comments"
                            )]
+#add id.tag variable
+ev.summary$id.tag = c(paste(ev.summary$id,ev.summary$tag,sep="_")) 
 summary(ev.summary)
 head(ev.summary)
 
+#review if summary and full data
 #note there are 26 ids without age.at.deployment.month in the summary sheet -- these are non-migrants 
 #or birds otherwise not to include in our dataset, so ok to now delete them
 ev.summary = ev.summary[complete.cases(ev.summary[ ,"age.at.deployment.months"]),]
