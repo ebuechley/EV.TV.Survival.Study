@@ -253,9 +253,3 @@ ev.tv.summary = ev.tv.summary[,c(2,3,1,4,5:18,20:28,19)]
 head(ev.tv.summary)
 summary(ev.tv.summary)
 write.csv(ev.tv.summary, "./Summary/ev.summary.quant.coauthor.merged.csv", row.names = FALSE)
-
-####################################################################################
-#standardizing column values 
-####################################################################################
-# did some manual editing of final summary here, incorporating coauthor input
-
