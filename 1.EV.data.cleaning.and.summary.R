@@ -247,7 +247,31 @@ ev.tv.summary$death.or.failure.date = NULL
 
 #reorder columns
 names(ev.tv.summary)
-ev.tv.summary = ev.tv.summary[,c(2,3,1,4,5:18,20:28,19)] 
+ev.tv.summary = ev.tv.summary[,c(2,3,1,4,5:17,19:27,18)] 
+
+#remove some individuals that were either tagged in Africa and residents
+#or that had VERY limited data, rendering it useless
+unique(ev.tv.summary$id)
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Alimerah"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Atena"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Djibouti"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Era"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Fentale"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Milli"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Qero"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Segev-Shalom 2019 I00"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Teti"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="BatuecasP"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Alolobad"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Basaka"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Lubo"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Lucy"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Semera"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Mille"),]
+unique(ev.tv.summary$id) #215
+
+#remove these ids from mig_stage_matrix, as well
+#did this manually because it is classified by id.tag.year
 
 #review
 head(ev.tv.summary)
@@ -257,6 +281,7 @@ write.csv(ev.tv.summary, "./Summary/ev.summary.quant.coauthor.merged.csv", row.n
 ###################################################################
 #AT THIS POINT "ev.summary.quant.coauthor.merged.csv" WAS MANUALLY REVIEW BY COAUTHORS AGAIN
 #AND FATES WERE REVIEWED AND INPUT MANUALLY
+#THIS MANUALLY EDITED FILE WAS NAMED "ev.summary.final.Rev1.csv"
 ###################################################################
 
 ###################################################################
@@ -280,6 +305,26 @@ d = read.csv("./Data/ev.filtered.csv")
 #d = subset(d, species == "Neophron percnopterus")
 d$timestamp = ymd_hms(d$timestamp)
 summary(d)
+
+#remove some individuals that were either tagged in Africa and residents
+#or that had VERY limited data, rendering it useless
+d<-d[!(d$id=="Alimerah"),]
+d<-d[!(d$id=="Atena"),]
+d<-d[!(d$id=="Djibouti"),]
+d<-d[!(d$id=="Era"),]
+d<-d[!(d$id=="Fentale"),]
+d<-d[!(d$id=="Milli"),]
+d<-d[!(d$id=="Qero"),]
+d<-d[!(d$id=="Segev-Shalom 2019 I00"),]
+d<-d[!(d$id=="Teti"),]
+d<-d[!(d$id=="BatuecasP"),]
+d<-d[!(d$id=="Alolobad"),]
+d<-d[!(d$id=="Basaka"),]
+d<-d[!(d$id=="Lubo"),]
+d<-d[!(d$id=="Lucy"),]
+d<-d[!(d$id=="Semera"),]
+d<-d[!(d$id=="Mille"),]
+unique(d$id) #217
 
 #clean up data to relevent columns
 names(d)
@@ -392,31 +437,13 @@ unique(ev.summary$id.tag)[225]
 ev.summary<-ev.summary[!(ev.summary$id.tag=="Zaror I30 Red_200659"),]
 unique(ev.summary$id.tag) == unique(d$id.tag)
 
-#remove some individuals that were either tagged in Africa and residents
-#or that had VERY limited data, rendering it useless
-ev.summary<-ev.summary[!(ev.summary$id=="Almireh"),]
-ev.summary<-ev.summary[!(ev.summary$id=="Atena"),]
-ev.summary<-ev.summary[!(ev.summary$id=="Djibouti"),]
-ev.summary<-ev.summary[!(ev.summary$id=="Era"),]
-ev.summary<-ev.summary[!(ev.summary$id=="Fentale"),]
-ev.summary<-ev.summary[!(ev.summary$id=="Milli"),]
-ev.summary<-ev.summary[!(ev.summary$id=="Qero"),]
-ev.summary<-ev.summary[!(ev.summary$id=="Segev-Shalom 2019 I00"),]
-ev.summary<-ev.summary[!(ev.summary$id=="Teti"),]
-unique(ev.summary$id) #222
-d<-d[!(d$id=="Almireh"),]
-d<-d[!(d$id=="Atena"),]
-d<-d[!(d$id=="Djibouti"),]
-d<-d[!(d$id=="Era"),]
-d<-d[!(d$id=="Fentale"),]
-d<-d[!(d$id=="Milli"),]
-d<-d[!(d$id=="Qero"),]
-d<-d[!(d$id=="Segev-Shalom 2019 I00"),]
-d<-d[!(d$id=="Teti"),]
-unique(d$id) #222
 
-#remove from mig_stage_matrix, as well
-#did this manually because it is classified by id.tag.year
+
+#review
+summary(d)
+summary(ev.summary)
+
+#write summary
 
 ###########################################################################
 #after censoring data to mortality date, need to recalculate summary stats!
