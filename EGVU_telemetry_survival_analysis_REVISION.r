@@ -142,7 +142,7 @@ EV %>% filter(OS==2 & TS==3) %>% select(id.tag,population,age.at.deployment.mont
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# REMOVE RESIDENT BIRDS
+# REASSIGN POPULATIONS FOR BIRDS MIGRATING OUT OF ETHIOPIA AND REMOVE RESIDENT BIRDS
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 EV$population[EV$id.tag=="Ardi_182265"]<-"middle east"
 EV$population[EV$id.tag=="Awash_182257"]<-"middle east"
@@ -260,8 +260,6 @@ EV.phi.matrix$id.tag = as.character(EV.phi.matrix$id.tag)
 #EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="93_14"] <- "81_14"
 EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="AF5AF11F_NA"] <- "Bianca_IHB_AF5AF11F"
 EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="B05AF11F_NA"] <- "Clara_IHC_B05AF11F"
-#EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="Provence_2016_Ad_wild_EO5018_Salomé_8P_5018"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P_5018"
-#EV.phi.matrix<-EV.phi.matrix[!(EV.phi.matrix$id.tag=="Djibouti_127589"),]
 
 EV.phi.matrix<-EV.phi.matrix %>% filter(id.tag %in% EV$id.tag) %>%
   arrange(id.tag)
