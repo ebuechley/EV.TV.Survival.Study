@@ -319,7 +319,8 @@ INPUT.telemetry <- list(y = y.telemetry,
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Parameters monitored
-parameters.telemetry <- c("mean.phi","lp.mean","p.seen.alive","p.found.dead","b.phi.age","b.phi.mig","b.phi.capt","b.phi.lat","b.phi.long")
+parameters.telemetry <- c("p.seen.alive","base.obs","base.fail","base.recover","beta1","beta2","beta3","beta4",
+                          "mean.phi","lp.mean","b.phi.age","b.phi.mig","b.phi.capt","b.phi.lat","b.phi.long")
 
 # Initial values for some parameters
 inits.telemetry <- function(){list(z = z.telemetry,
@@ -331,9 +332,9 @@ inits.telemetry <- function(){list(z = z.telemetry,
 						                      beta3 = rnorm(1,0, 0.001))} 
 
 # MCMC settings
-ni <- 50000
-nt <- 10
-nb <- 10000
+ni <- 25000
+nt <- 5
+nb <- 5000
 nc <- 4
 
 # # Call JAGS from R (took 70 min)
@@ -354,7 +355,7 @@ out31$model<-"m31"
 write.table(out31,"EGVU_telemetry_survival_estimates_FINAL.csv", sep=",", row.names=F)
 
 
-save.image("EGVU_survival_output_final.RData")
+save.image("EGVU_survival_output_FINAL.RData")
 
 
 
@@ -432,6 +433,7 @@ cat("
     for (t in f[i]:(n.occasions)){
       logit(p.obs[i,t]) <- base.obs + beta1*(t-l[i]) #### probability of observation GIVEN THAT TAG IS WORKING is reciprocal to time since last good record
       logit(tag.fail[i,t]) <- base.fail + beta2*tag.age[i,t] + beta3*tfail[i] #### probability of TAG FAILURE is influenced by tag type and tag age
+      logit(p.found.dead[i,t]) <- base.recover + beta4*lat[i,t] #### probability of recovery is influenced by latitude
     } #t
   } #i
     
@@ -439,13 +441,15 @@ cat("
   ##### SLOPE PARAMETERS FOR OBSERVATION PROBABILITY
     base.obs ~ dnorm(0, 0.001)                # Prior for intercept of observation probability on logit scale
     base.fail ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
+    base.recover ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
     beta1 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for obs prob with time since
     beta2 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tag age
     beta3 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tage movement during last 10 GPS fixes
+    beta4 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for dead detection with latitude
     sigma ~ dunif(0, 10)                     # Prior on standard deviation for random error term
     tau <- pow(sigma, -2)
     
-    p.found.dead ~ dunif(0, 1)   # Prior for probability that dead bird carcass is found
+    #p.found.dead ~ dunif(0, 1)   # Prior for probability that dead bird carcass is found
     p.seen.alive ~ dunif(0, 1)    # Prior for probability that bird with defunct or lost tag is observed alive
     
     
@@ -474,10 +478,10 @@ cat("
       # Define probabilities of O(t) [last dim] given S(t)  [first dim]
     
     po[1,i,t,1]<-0
-    po[1,i,t,2]<-p.obs[i,t] * (1-tag.fail[i,t]) * (1-p.found.dead)
+    po[1,i,t,2]<-p.obs[i,t] * (1-tag.fail[i,t]) * (1-p.found.dead[i,t])
     po[1,i,t,3]<-0
-    po[1,i,t,4]<-p.found.dead
-    po[1,i,t,5]<-(1-p.obs[i,t]) * tag.fail[i,t] * (1-p.found.dead)
+    po[1,i,t,4]<-p.found.dead[i,t]
+    po[1,i,t,5]<-(1-p.obs[i,t]) * tag.fail[i,t] * (1-p.found.dead[i,t])
     
     po[2,i,t,1]<-p.obs[i,t] * (1-tag.fail[i,t])
     po[2,i,t,2]<-0
