@@ -20,6 +20,9 @@
 ## editor wants a quadratic age effect
 ## potential reduction of survival interval to 1 week
 
+## ADDED REVISED DATA ON 10 NOV 2020
+## many more individuals added, plus 1.5 years worth of data added
+
 library(jagsUI)
 library(tidyverse)
 library(data.table)
@@ -33,24 +36,28 @@ select<-dplyr::select
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T) ## changed after re-cloning remote
-EV<-fread("ev.tv.summary.proofed_RE4_migrantsonly.csv")   ## updated on 9 April 2020
+#EV<-fread("ev.tv.summary.proofed_RE4_migrantsonly.csv")   ## updated on 9 April 2020
+EV<-fread("ev.summary.final.Rev1.survival.prepared.csv")   ## REVISED DATA 10 NOV 2020
+
 #EV<-fread("ev.summary.final.csv")   ## new file provided by Evan on 27 May 2020
 #EV<-fread("FINAL_ANALYSIS_DATA.csv")   ## new file reated by Steffen on 28 May 2020 - just changed from RE4 by switching 'Apollo' from unknown to confirmed dead
-EVcovar<-fread("ev.survival.prepared.csv")
-names(EV)[1]<-'species'
+EVcovar<-fread("ev.final.Rev1.survival.prepared.csv")
+#names(EV)[1]<-'species'
 head(EV)
 dim(EV)
 EV$id.tag = as.character(EV$id.tag)
 EVcovar$id.tag = as.character(EVcovar$id.tag)
 
 #EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
-EV<-EV %>% mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= parse_date_time(end.date, c("mdy", "mdy HM"))) %>%
-  #mutate(captive.raised=ifelse(origin=="wild","N","Y")) %>% ## added on 28 May as column was missing
-  #rename(fate=fate.final) %>%
+EV<-EV %>% #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= parse_date_time(end.date, c("mdy", "mdy HM"))) %>%
+  mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= as.POSIXct(as.Date(as.numeric(end.date), origin="1970-01-01"))) %>% ### revised file has awkward date for end.date
   filter(!is.na(start)) %>%
   filter(species=="Neophron percnopterus") %>%
-  filter(start<ymd_hm("2019-04-01 12:00")) %>%  ## remove birds only alive for a few months in 2019 (removes 1 bird: Baronnies_2019_Imm_wild_OR181635_5T_181635)
-  select(species,population,id.tag,sex,age.at.deployment,age.at.deployment.month,captive.raised,rehabilitated, start, end, fate, how.fate.determined.clean, mean.GPS.dist.last10fixes.degrees)  ##
+  filter(start<ymd_hm("2020-09-01 12:00")) %>%  ## remove birds only alive for a few months in 2020 (removes 1 bird: Baronnies_2019_Imm_wild_OR181635_5T_181635)
+  #filter(rehabilitated=="N") %>%  ## remove rehabilitated adult birds
+  #filter(grepl(how.fate.determined,"recaptured")==FALSE) %>%  ## remove imprinted juveniles that were recaptured
+  mutate(fate=if_else(fate=="returned to captivity","confirmed dead",fate)) %>%  ## set recaptured individuals to 'confirmed dead'
+  select(species,population,id.tag,sex,age.at.deployment.months,captive.raised,rehabilitated, start, end, fate, how.fate.determined)  ## , mean.GPS.dist.last10fixes.degrees
 head(EV)
 dim(EV)
 
@@ -60,17 +67,21 @@ dim(EV)
 ### CHANGE FATE OF APOLLO - inserted after Guido Ceccolini's comments
 EV %>% filter(grepl("Apollo",id.tag))
 EV$fate[EV$id.tag=="Apollo_16093"]<-"confirmed dead"
-EV$how.fate.determined.clean[EV$id.tag=="Apollo_16093"]<-"carcass found"
+EV$how.fate.determined[EV$id.tag=="Apollo_16093"]<-"carcass found"
+
+## CHANGE FATE OF HEDJET
+EV$fate[EV$id.tag=="Hedjet_171349"]<-"alive"
   
 ### SUM TOTAL OF TRACKING EFFORT
-EV %>% mutate(tracklength=difftime(end,start, unit="days")) %>% summarise(TOTAL=sum(tracklength)/30)
+EV %>% mutate(end=if_else(is.na(end), ymd_hms("2020-10-30 00:00:00"), end)) %>%
+  mutate(tracklength=difftime(end,start, unit="days")) %>% summarise(TOTAL=sum(tracklength)/30)
 
 ### REDUCE COVARIATES TO THOSE TAGS IN EV DATA
 EVcovar<-EVcovar %>% filter(id.tag %in% EV$id.tag)
 
 
 ####### ASSIGNMENT OF STATES ########
-unique(EV$how.fate.determined.clean)
+unique(EV$how.fate.determined)
 unique(EV$age.at.deployment)
 unique(EV$fate)
 #quest.fates<-EV %>% filter(fate!=fate.final) %>% select(id.tag,population,age.at.deployment,start,end,fate,fate.final,how.fate.determined.clean)
@@ -83,10 +94,16 @@ unique(EV$fate)
 
 
 ### SHOW INVENTORY OF POSSIBLE COMBINATIONS OF STATES
-as.data.frame(table(EV$how.fate.determined.clean,EV$fate)) %>%
+as.data.frame(table(EV$how.fate.determined,EV$fate)) %>%
 	filter(Freq!=0) %>%
 	rename(fate=Var2, how.fate.det=Var1)
-EV %>% filter(fate=="confirmed dead" & how.fate.determined.clean=="resighted / recaptured")
+EV %>% filter(fate=="confirmed dead" & how.fate.determined=="resighted / recaptured")  ### WHY CAN A CONFIRMED DEAD BIRD BE RECAPTURED?
+EV %>% filter(fate=="returned to captivity")  ### check the two birds returned to captivity - now set to 'confirmed dead'
+EV %>% filter(fate=="unknown" & how.fate.determined=="active")  ### WHY CAN AN ACTIVE BIRD BE UNKNOWN?
+
+
+
+### STATE ASSIGNMENT
 
 EV<-EV %>%
 
@@ -112,7 +129,7 @@ EV<-EV %>%
   mutate(OS= ifelse(fate=="alive",1,
                     ifelse(fate %in% c("unknown","likely transmitter failure"),5,
                            ifelse(fate=="confirmed transmitter failure",3,
-                                  ifelse(how.fate.determined.clean %in% c("carcass found","resighted / recaptured","transmitter recovered"),4,2))))) %>%
+                                  ifelse(how.fate.determined %in% c("carcass found","resighted / recaptured","transmitter recovered"),4,2))))) %>%
   arrange(id.tag)
 
 head(EV)
@@ -120,13 +137,20 @@ head(EV)
 ### CHECK WHETHER STATE ASSIGNMENT IS PLAUSIBLE ###
 table(EV$TS,EV$OS)
 
-EV %>% filter(OS==3 & TS==3) %>% select(id.tag,population,age.at.deployment,start,end,fate,fate,how.fate.determined.clean)
+EV %>% filter(OS==3 & TS==3) %>% select(id.tag,population,age.at.deployment.months,start,end,fate,fate,how.fate.determined) ## the birds observed after having lost transmitter
+EV %>% filter(OS==2 & TS==3) %>% select(id.tag,population,age.at.deployment.months,start,end,fate,fate,how.fate.determined) ## birds with failed tag but not moving
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # REMOVE RESIDENT BIRDS
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 EV$population[EV$id.tag=="Ardi_182265"]<-"middle east"
+EV$population[EV$id.tag=="Awash_182257"]<-"middle east"
+EV$population[EV$id.tag=="Dalol_182250"]<-"middle east"
+EV$population[EV$id.tag=="Chuupa_182258"]<-"caucasus"
+EV$population[EV$id.tag=="Loma_182260"]<-"caucasus"
+EV$population[EV$id.tag=="Wesal_182264"]<-"caucasus"
+
 unique(EV$population)
 EV<-EV %>% filter(!(population %in% c("unknown","oman","horn of africa")))
 dim(EV)
@@ -200,16 +224,18 @@ for(n in EV.obs.matrix$id.tag){
 # 1	Stationary
 # 3	Migratory - set this to 3 so we have states 1 and 2 for stationary, and 3,4,5 for migratory
 
-EV.phi.states<-fread("Mig_stage_matrix_final.csv")
+EV.phi.states<-fread("Mig_stage_matrix.Rev1.csv")
 head(EV.phi.states)
 dim(EV.phi.states)
 
 ### arrange into full matrix ###
 EV.phi.matrix<-EV.phi.states %>%
-  mutate(id.tag=substr(id.year,1,nchar(id.year)-9)) %>%
-  mutate(year=as.numeric(substr(id.year,nchar(id.year)-7,nchar(id.year)-4))) %>%  
-  select(-Seq,-id.year) %>%
+  #mutate(id.tag=substr(id.year,1,nchar(id.year)-9)) %>%
+  mutate(id.tag=substr(id.tag.year,1,nchar(id.tag.year)-5)) %>%
+  mutate(year=as.numeric(substr(id.tag.year,nchar(id.tag.year)-3,nchar(id.tag.year)))) %>%  
+  select(-id.tag.year) %>%
   gather(key="month",value="state",-id.tag,-year) %>%
+  mutate(month=as.numeric(str_replace(month,"X",""))) %>%
   mutate(date=ymd(paste(year,month,"01",sep="-"))) %>%
   mutate(date=format(date, format="%m-%Y")) %>%
   mutate(col=timeseries$col[match(date,timeseries$date)]) %>%
@@ -221,6 +247,8 @@ EV.phi.matrix<-EV.phi.states %>%
   arrange(id.tag)
 dim(EV.phi.matrix)
 
+
+
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # FIX ID TAG VALUES
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -228,12 +256,12 @@ dim(EV.phi.matrix)
 ## fix provided by Evan Buechley on 3 Dec 2019
 
 EV.phi.matrix$id.tag = as.character(EV.phi.matrix$id.tag)
-EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="1_1"] <- "52027_1"
-EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="93_14"] <- "81_14"
+#EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="1_1"] <- "52027_1"
+#EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="93_14"] <- "81_14"
 EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="AF5AF11F_NA"] <- "Bianca_IHB_AF5AF11F"
 EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="B05AF11F_NA"] <- "Clara_IHC_B05AF11F"
-EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="Provence_2016_Ad_wild_EO5018_Salomé_8P_5018"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P_5018"
-EV.phi.matrix<-EV.phi.matrix[!(EV.phi.matrix$id.tag=="Djibouti_127589"),]
+#EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="Provence_2016_Ad_wild_EO5018_Salomé_8P_5018"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P_5018"
+#EV.phi.matrix<-EV.phi.matrix[!(EV.phi.matrix$id.tag=="Djibouti_127589"),]
 
 EV.phi.matrix<-EV.phi.matrix %>% filter(id.tag %in% EV$id.tag) %>%
   arrange(id.tag)
