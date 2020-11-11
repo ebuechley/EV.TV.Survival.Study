@@ -34,8 +34,8 @@ setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/
 #filter data to remove bad fixes
 d = read.csv("./Data/ev.1ptperday.csv")
 head(d)
-unique(d$id) #231
-unique(d$study.name) #15
+unique(d$id.tag) #238
+unique(d$study.name) #16
 unique(d$species) #1
 unique(d$population) #5
 
@@ -43,23 +43,6 @@ unique(d$population) #5
 summary(d$timestamp)
 d$timestamp = ymd_hms(d$timestamp)
 summary(d$timestamp)
-
-#remove fixes with lat & long = 0
-d<-d[!(d$long==0 & d$lat==0),]
-d<-d[!(d$long<=-25 & d$species=="Neophron percnopterus"),]
-d<-d[!(d$long>=70 & d$species=="Neophron percnopterus"),]
-
-#remove height above elipsoid < -100 and > 30,000
-summary(d$height.above.ellipsoid)
-which(d$height.above.ellipsoid < -100)
-which(d$height.above.ellipsoid > 30000)
-d = d[-c(which(d$height.above.ellipsoid < -100)),]
-d = d[-c(which(d$height.above.ellipsoid > 30000)),]
-summary(d$height.above.ellipsoid)
-
-#remove any rows that don't have date, lat or long
-summary(d[1:3])
-#d = d[complete.cases(d[,1:3]),] 
 
 #quick plot of data
 library(ggplot2)
@@ -107,7 +90,8 @@ d = read.csv("./Data/ev.filtered.csv")
 head(d)
 names(d)
 unique(d$population)
-unique(d$id) #note 231 unique id
+unique(d$id.tag) #note 238 unique id
+unique(d$id)
 
 #lubridate
 summary(d$timestamp)
@@ -198,6 +182,8 @@ rm(list = ls())
 #read final summaries
 ev.gs = read.csv("./Summary/ev.summary.rev1.merged.csv")
 ev.tv.summary = read.csv("./Summary/ev.summary.quant.csv")
+unique(ev.gs$id)
+unique(ev.tv.summary$id)
 
 #correct id
 ev.tv.summary$id[ev.tv.summary$id == "Provence_2016_Ad_wild_EO5018_Salomé_8P"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P"
@@ -268,7 +254,7 @@ ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Lubo"),]
 ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Lucy"),]
 ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Semera"),]
 ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Mille"),]
-unique(ev.tv.summary$id) #215
+unique(ev.tv.summary$id) #221
 
 #remove these ids from mig_stage_matrix, as well
 #did this manually because it is classified by id.tag.year
@@ -323,7 +309,7 @@ d<-d[!(d$id=="Lubo"),]
 d<-d[!(d$id=="Lucy"),]
 d<-d[!(d$id=="Semera"),]
 d<-d[!(d$id=="Mille"),]
-unique(d$id) #215
+unique(d$id) #221
 #clean up this id
 d$id[d$id=="Enciña-9FJ"] <- "Encina-9FJ"
 
@@ -338,13 +324,13 @@ d$study.name = as.factor(d$study.name)
 d$population = as.factor(d$population)
 d$id = as.factor(d$id)
 summary(d)
-unique(d$id.tag) #216
+unique(d$id.tag) #222
 
 #age in months
 #append age.at.deployment.month to each id
 ev.summary = read.csv("./Summary/ev.summary.final.Rev1.csv")
 names(ev.summary)
-ev.summary = ev.summary[,c("species","study.name", "population", "id","tag", "start.date", "end.date",
+ev.summary = ev.summary[,c("species","study.name", "population", "id","tag","start.date", "end.date",
                            "mortality.date", "start.lat", "start.long", "end.lat", "end.long", 
                            "start.country", "end.country",
                            "deployment.duration", "fate", "age.at.deployment.months", "sex",
@@ -362,8 +348,8 @@ ev.summary = ev.summary[order(ev.summary$id),]
 
 #check if data and summary have same id
 unique(ev.summary$id)== unique(d$id)
-unique(ev.summary$id)[166] 
-unique(d$id)[166] 
+unique(ev.summary$id)[172] 
+unique(d$id)[172] 
 d$id = as.character(d$id)
 ev.summary$id = as.character(ev.summary$id)
 d$id[d$id=="Provence_2016_Ad_wild_EO5018_Salomé_8P"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P"
@@ -436,17 +422,12 @@ summary(d$mortality.date)
 summary(d$mortality.date)
 d = subset(d, d$timestamp <= d$mortality.date)
 summary(d$mortality.date)
-unique(d$id.tag) #214 -- THIS REMOVED 2 ID
+unique(d$id.tag) #220 -- THIS REMOVED 2 ID
 
 #find and remove id.tags
 unique(ev.summary$id.tag) == unique(d$id.tag)
-unique(d$id.tag)[171]
-unique(ev.summary$id.tag)[171]
 #IDs REMOVED Were "R2_190604", REMOVE ALSO FROM EV.SUMMARY
 ev.summary<-ev.summary[!(ev.summary$id.tag=="R2_190604"),]
-unique(ev.summary$id.tag) == unique(d$id.tag)
-unique(d$id.tag)[209]
-unique(ev.summary$id.tag)[209]
 #IDs REMOVED Were "Zaror I30 Red_200659", REMOVE ALSO FROM EV.SUMMARY
 ev.summary<-ev.summary[!(ev.summary$id.tag=="Zaror I30 Red_200659"),]
 unique(ev.summary$id.tag) == unique(d$id.tag) #all good
