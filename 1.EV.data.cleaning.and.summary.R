@@ -469,6 +469,11 @@ summary(ev.summary)
 #convert to data.table to summarize
 d.dt = setDT(d)
 
+#remove any rows with NA for dist to calculate summary stats
+#THIS REMOVES THE FIRST LOCATION FROM EACH ID
+d.dt = d.dt[complete.cases(d.dt[,"dist"]),] 
+summary(d.dt)
+
 #check data
 head(d.dt)
 summary(d.dt)
@@ -495,6 +500,9 @@ head(ev.summary.mort)
 unique(ev.summary.mort$id.tag) == unique(ev.summary$id.tag)
 names(ev.summary.mort)
 names(ev.summary)
+names(ev.summary.mort)
+ev.summary$mean.GPS.dist.last10fixes = NA
+ev.summary$mean.GPS.fixrate.last10fixes = NA
 
 for (i in unique(ev.summary.mort$id.tag)) { 
   ev.summary$end.date[which(ev.summary$id.tag == i)] = as.Date(ev.summary.mort$end.date[which(ev.summary.mort$id.tag == i)])
@@ -504,6 +512,12 @@ for (i in unique(ev.summary.mort$id.tag)) {
 }
 for (i in unique(ev.summary.mort$id.tag)) { 
   ev.summary$end.long[which(ev.summary$id.tag == i)] = ev.summary.mort$end.long[which(ev.summary.mort$id.tag == i)]
+}
+for (i in unique(ev.summary.mort$id.tag)) { 
+  ev.summary$mean.GPS.dist.last10fixes[which(ev.summary$id.tag == i)] = ev.summary.mort$mean.GPS.dist.last10fixes[which(ev.summary.mort$id.tag == i)]
+}
+for (i in unique(ev.summary.mort$id.tag)) { 
+  ev.summary$mean.GPS.fixrate.last10fixes[which(ev.summary$id.tag == i)] = ev.summary.mort$mean.GPS.fixrate.last10fixes[which(ev.summary.mort$id.tag == i)]
 }
 head(ev.summary)
 
@@ -554,6 +568,8 @@ ev.summary = ev.summary.country
 #add number of locations column
 ev.summary = as.data.frame(ev.summary)
 ev.summary
+#library(plyr)
+#library(dplyr)
 n.locs = count(d.dt$id.tag)
 n.locs$id.tag = n.locs$x
 n.locs$n.locs = n.locs$freq
@@ -578,6 +594,11 @@ d[,c("timestamp","deployment.date", "months.from.tagging")] #checked and looks g
 summary(d)
 head(d)
 
+#remove any rows with NA for dist to calculate summary stats
+#THIS REMOVES THE FIRST LOCATION FROM EACH ID
+d = d[complete.cases(d[,"dist"]),] 
+summary(d)
+
 #add age.at.deployment.month + months.from.tagging to get age.in.months
 d$age.in.months = d$age.at.deployment.month + d$months.from.tagging
 summary(d$age.in.months)
@@ -585,11 +606,6 @@ d[,c("age.in.months","age.at.deployment.month", "months.from.tagging")]
 
 d$age.in.months.capped = d$age.in.months
 d$age.in.months.capped[d$age.in.months.capped>=54] <- 54
-summary(d)
-
-#remove any rows with NA for dist 
-#THIS WOULD REMOVE THE FIRST LOCATION FROM EACH ID
-d = d[complete.cases(d[,"dist"]),] 
 summary(d)
 
 #mean monthly ND
@@ -629,10 +645,13 @@ ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  +
 #check final files
 summary(d)
 summary(ev.summary)
+head(ev.summary)
 ev.summary$start.country == ev.summary$start.country.quant
 ev.summary$end.country == ev.summary$end.country.quant
+unique(ev.summary$id.tag)
 
 #write edited files
-write.csv(d,"./Data/ev.final.Rev1.survival.prepared.csv", row.names=FALSE)
-write.csv(ev.summary,"./Summary/ev.summary.final.Rev1.survival.prepared.csv", row.names=FALSE)
-
+#set GitHub wd to write final files
+setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
+write.csv(d,"./ev.final.Rev1.survival.prepared.csv", row.names=FALSE)
+write.csv(ev.summary,"./ev.summary.final.Rev1.survival.prepared.csv", row.names=FALSE)
