@@ -22,6 +22,7 @@
 
 ## ADDED REVISED DATA ON 10 NOV 2020
 ## many more individuals added, plus 1.5 years worth of data added
+## amended the start and end date conversion on 11 Nov 2020
 
 library(jagsUI)
 library(tidyverse)
@@ -50,14 +51,15 @@ EVcovar$id.tag = as.character(EVcovar$id.tag)
 
 #EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
 EV<-EV %>% #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= parse_date_time(end.date, c("mdy", "mdy HM"))) %>%
-  mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= as.POSIXct(as.Date(as.numeric(end.date), origin="1970-01-01"))) %>% ### revised file has awkward date for end.date
+  #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= as.POSIXct(as.Date(as.numeric(end.date), origin="1970-01-01"))) %>% ### revised file has awkward date for end.date
+  mutate(start=ymd_hms(start.date), end= as.POSIXct(as.Date(as.numeric(end.date), origin="1970-01-01"))) %>% ### revised file has awkward date for end.date
   filter(!is.na(start)) %>%
   filter(species=="Neophron percnopterus") %>%
   filter(start<ymd_hm("2020-09-01 12:00")) %>%  ## remove birds only alive for a few months in 2020 (removes 1 bird: Baronnies_2019_Imm_wild_OR181635_5T_181635)
   #filter(rehabilitated=="N") %>%  ## remove rehabilitated adult birds
   #filter(grepl(how.fate.determined,"recaptured")==FALSE) %>%  ## remove imprinted juveniles that were recaptured
   mutate(fate=if_else(fate=="returned to captivity","confirmed dead",fate)) %>%  ## set recaptured individuals to 'confirmed dead'
-  select(species,population,id.tag,sex,age.at.deployment.months,captive.raised,rehabilitated, start, end, fate, how.fate.determined)  ## , mean.GPS.dist.last10fixes.degrees
+  select(species,population,id.tag,sex,age.at.deployment.months,captive.raised,rehabilitated, start, end, fate, how.fate.determined,mean.GPS.dist.last10fixes)  ## , mean.GPS.dist.last10fixes.degrees
 head(EV)
 dim(EV)
 
@@ -403,7 +405,7 @@ l.telemetry<-apply(y.telemetry,1,get.last.telemetry)
 l.telemetry[3]<-85
 
 #### extract and standardise covariates
-tag.fail.indicator<-EV$mean.GPS.dist.last10fixes.degrees
+tag.fail.indicator<-EV$mean.GPS.dist.last10fixes
 
 #### BUNDLE DATA INTO A LIST
 INPUT.telemetry <- list(y = y.telemetry,
