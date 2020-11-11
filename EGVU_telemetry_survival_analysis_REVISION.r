@@ -262,6 +262,7 @@ EV.phi.matrix$id.tag = as.character(EV.phi.matrix$id.tag)
 #EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="93_14"] <- "81_14"
 EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="AF5AF11F_NA"] <- "Bianca_IHB_AF5AF11F"
 EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="B05AF11F_NA"] <- "Clara_IHC_B05AF11F"
+EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="Enciña-9FJ_5783"] <- "Encina-9FJ_5783"
 
 EV.phi.matrix<-EV.phi.matrix %>% filter(id.tag %in% EV$id.tag) %>%
   arrange(id.tag)
