@@ -508,6 +508,18 @@ ev.tv$month <- month(ev.tv$timestamp)
 ev.tv$day = day(ev.tv$timestamp)
 ev.tv$hour <- hour(ev.tv$timestamp)
 
+#remove height above elipsoid < -100 and > 30,000
+summary(ev.tv$height.above.ellipsoid)
+which(ev.tv$height.above.ellipsoid < -100)
+which(ev.tv$height.above.ellipsoid > 30000)
+ev.tv = ev.tv[-c(which(ev.tv$height.above.ellipsoid < -100)),]
+ev.tv = ev.tv[-c(which(ev.tv$height.above.ellipsoid > 30000)),]
+summary(ev.tv$height.above.ellipsoid)
+
+#remove any rows that don't have date, lat or long
+summary(ev.tv[1:3])
+#d = d[complete.cases(d[,1:3]),]
+
 #censor to one point per day 
 #(at least to start, to have a workable dataset, as well as to standardize across transmitter types)
 ev.tv.1ptperday = ev.tv[!duplicated(ev.tv[,c('id', 'year', 'month', 'day')]),]
