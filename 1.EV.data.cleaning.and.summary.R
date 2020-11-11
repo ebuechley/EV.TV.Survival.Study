@@ -386,6 +386,9 @@ d$deployment.date = d$timestamp
 head(ev.summary$start.date)
 ev.summary$start.date = mdy_hm(ev.summary$start.date)
 summary(ev.summary$start.date)
+head(ev.summary$end.date)
+ev.summary$end.date = mdy_hm(ev.summary$end.date)
+summary(ev.summary$end.date)
 
 for (i in unique(ev.summary$id.tag)) { 
   d$deployment.date[which(d$id.tag == i)] = ev.summary$start.date[which(ev.summary$id.tag == i)]
