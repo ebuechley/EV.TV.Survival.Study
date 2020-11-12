@@ -468,189 +468,26 @@ inits.telemetry <- function(){list(z = z.telemetry,
                                    beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
                                    beta3 = rnorm(1,0, 0.001))} 
 
-# Call JAGS from R (took 92.958 min DIC = 3352.662)
-EGVU_surv_mod_full_additive <- jags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+# Call JAGS from R (took 111.746 min DIC = 6116.883)
+EGVU_surv_mod_full_additive <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive.jags",
-                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T, n.iter = ni)
-## continuous age model with scaled age
-# agescale<-scale(1:54)
-# INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
-# EGVU_surv_mod_full_additive_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_age.jags",
-#                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-
-
+                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
 #### MODELS FOR REVISION
 
-# Call JAGS from R (took 92.958 min DIC = 3352.662)
+# Call JAGS from R (took 115.176 min DIC = 6116.787)
 REV1_EGVU_surv_mod_rand_year <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_random_year.jags",
                                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
 
-## continuous age model with quadratic age effect to satisfy senescence comment by editor
+## continuous age model with quadratic age effect to satisfy senescence comment by editor (took 123.92 min DIC = 6116.444)
 agescale<-scale(1:max(age.mat, na.rm=T))
 INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
 REV1_EGVU_surv_mod_quad_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                             "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_age_2.jags",
                                             n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
-
-# # Call JAGS from R (took 68.06 min DIC = 3360.895)
-# EGVU_surv_mod_no_mig <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_nomig.jags",
-#                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-# 
-# # Call JAGS from R (took 69.078 min DIC = 3363.334)
-# EGVU_surv_mod_no_capt <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_nocapt.jags",
-#                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-
-
-
-############## PREVIOUS MODELS ALSO TRIED ##########################
-
-
-# # Initial values for some parameters
-# inits.telemetry <- function(){list(z = z.telemetry,
-#                                    mean.phi = runif(2, 0.5, 0.999), ### two intercepts for juvenile and adults
-#                                    base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
-#                                    base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
-#                                    beta1 = rnorm(1,0, 0.001),         # Prior for slope parameter for obs prob with time since
-#                                    beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
-#                                    beta3 = rnorm(1,0, 0.001))} 
-# 
-# 
-# # Call JAGS from R (took 70 min DIC = 3350.327)
-# EGVU_surv_mod_5stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                      "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_5migstage.jags",
-#                      n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-# 
-# ##### CHANGE INPUT DATA FOR A SINGLE RESIDENT STAGE AND 3 migratory stages #####
-# INPUT.telemetry$mig<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
-# INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig==2,1,INPUT.telemetry$mig)
-# INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig==5,2,INPUT.telemetry$mig)
-# 
-# 
-# # Call JAGS from R (took 70 min DIC = 3347.666)
-# EGVU_surv_mod_4stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                           "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_4migstage.jags",
-#                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-# 
-# 
-# 
-# ### SIMPLEST POSSIBLE MODEL ############################
-# ##### CHANGE INPUT DATA FOR ADDITIVE POPULATION EFFECT #####
-# INPUT.telemetry$mig<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
-# INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,1,0)
-# 
-# # Call JAGS from R (took 70 min DIC = 3353.559)
-# EGVU_surv_mod_2stage_addpop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                           "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_addpop.jags",
-#                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-# 
-# # Call JAGS from R (took 90 min DIC = 3383.845)
-# EGVU_surv_mod_2stage_addpop_agemig <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_addpop_agemig.jags",
-#                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-# 
-# # Call JAGS from R (took 79 min DIC = 3349.905)
-# EGVU_surv_mod_2stage_intpop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_intpop.jags",
-#                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-# 
-# # Call JAGS from R (took 79 min DIC = 3397.236)
-# EGVU_surv_mod_2stage_intpop_mig <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage_intpop_mig.jags",
-#                                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-# 
-# 
-# # Call JAGS from R (took 79 min DIC = 3349.905)
-# # Initial values for some parameters
-# inits.telemetry <- function(){list(z = z.telemetry,
-#                                    mean.phi = runif(1, 0.5, 0.999), ### two intercepts for juvenile and adults
-#                                    base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
-#                                    base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
-#                                    beta1 = rnorm(1,0, 0.001),         # Prior for slope parameter for obs prob with time since
-#                                    beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
-#                                    beta3 = rnorm(1,0, 0.001))} 
-# EGVU_surv_mod_2stage_intpop_AGE <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_age_2migstage_intpop.jags",
-#                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T)#, n.iter = ni)
-# 
-# 
-# 
-# 
-# ### MIGRATION ONLY MODELS WITH NO GEOGRAPHIC STRUCTURE ############################
-# 
-# # Call JAGS from R (took 70 min DIC = 3364.502)
-# EGVU_surv_mod_2stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage.jags",
-#                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-# 
-# # Call JAGS from R (took 137 min DIC = 3362.817)
-# EGVU_surv_mod_2stage_int <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                  "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_2migstage.jags",
-#                                  n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-# 
-# 
-# ### MODEL WITH 3 stages - breeding, winter, and migration
-# INPUT.telemetry$mig<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
-# INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,3,INPUT.telemetry$mig)
-# 
-# EGVU_surv_mod_3stage <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                  "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_3migstage.jags",
-#                                  n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-# 
-# 
-# ### MODEL WITH 4 stages - breeding, winter, spring, fall migration (DIC= 3373.8)
-# ## this requires creating the mig.stage matrix from scratch to separate spring and fall migration ##
-# 
-# EV.phi.states<-fread("Mig_stage_matrix.csv")
-# EV.phi.matrix<-EV.phi.states %>%
-#   mutate(id.tag=substr(id.year,1,nchar(id.year)-9)) %>%
-#   mutate(year=as.numeric(substr(id.year,nchar(id.year)-7,nchar(id.year)-4))) %>%  
-#   select(-Seq,-id.year) %>%
-#   gather(key="month",value="state",-id.tag,-year) %>%
-#   mutate(date=ymd(paste(year,month,"01",sep="-"))) %>%
-#   mutate(date=format(date, format="%m-%Y")) %>%
-#   mutate(col=timeseries$col[match(date,timeseries$date)]) %>%
-#   filter(!is.na(col)) %>%
-#   mutate(state=ifelse(state==1,1,ifelse(month<7,3,4))) %>%  ## state==3 for spring migration and state==4 for fall migration - updated on 10 April to allow for 2 resident states
-#   select(-year,-month,-date) %>%
-#   spread(key=col,value=state, fill=1) %>%
-#   arrange(id.tag)
-# 
-# EV.phi.matrix$id.tag = as.character(EV.phi.matrix$id.tag)
-# EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="1_1"] <- "52027_1"
-# EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="93_14"] <- "81_14"
-# EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="AF5AF11F_NA"] <- "Bianca_IHB_AF5AF11F"
-# EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="B05AF11F_NA"] <- "Clara_IHC_B05AF11F"
-# EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="Provence_2016_Ad_wild_EO5018_Salomé_8P_5018"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P_5018"
-# EV.phi.matrix<-EV.phi.matrix[!(EV.phi.matrix$id.tag=="Djibouti_127589"),]
-# 
-# EV.phi.matrix<-EV.phi.matrix %>% filter(id.tag %in% EV$id.tag) %>%
-#   arrange(id.tag)
-# 
-# for(row in 1:nrow(EV.phi.matrix)) {
-#   id<-EV.phi.matrix$id.tag[row]
-# 
-#   for(col in 2:ncol(EV.phi.matrix)) {
-#     if(EV.phi.matrix[row,col]==1){
-#       EV.phi.matrix[row,col]<-ifelse(lat.matrix[row,col]>30,1,2)
-#       EV.phi.matrix[row,col]<-ifelse(is.na(lat.matrix[row,col]),1,EV.phi.matrix[row,col])
-#     }
-#   }
-# }
-# 
-# INPUT.telemetry$mig<-as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
-# 
-# EGVU_surv_mod_4stage_fallmig <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVUsurv_simplage_4migstage.jags",
-#                                          n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
-# 
-# 
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -660,6 +497,8 @@ try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent
 save.image("EGVU_survival_output_REV1.RData")
 
 load("EGVU_survival_output_full_additive_v2.RData")
+
+
 
 
 
