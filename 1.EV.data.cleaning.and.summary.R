@@ -566,6 +566,10 @@ summary(ev.summary)
 # Order the data frame by study
 ev.summary = ev.summary[order(ev.summary$study.name),]
 
+#quant and coauthor countries don't match...
+ev.summary$start.country == ev.summary$start.country.quant
+ev.summary$end.country == ev.summary$end.country.quant
+
 ##############################################################
 #calculate # months from tagging (pulled this function from: https://stackoverflow.com/questions/1995933/number-of-months-between-two-dates/1996404)
 # turn a date into a 'monthnumber' relative to an origin
@@ -587,7 +591,6 @@ summary(d)
 d$age.in.months = d$age.at.deployment.month + d$months.from.tagging
 summary(d$age.in.months)
 d[,c("age.in.months","age.at.deployment.month", "months.from.tagging")]
-
 d$age.in.months.capped = d$age.in.months
 d$age.in.months.capped[d$age.in.months.capped>=54] <- 54
 summary(d)
@@ -619,6 +622,59 @@ hist(d$age.at.deployment.month)
 hist(d$age.in.months.capped)
 hist(d$age.in.months)
 
+#add origin column
+ev.summary$origin = ev.summary$captive.raised
+ev.summary$origin[ev.summary$origin == "y"] <-  "Y"
+unique(ev.summary$origin)
+
+#add age.at.fate.months
+summary(ev.summary$start.date)
+summary(ev.summary$end.date)
+summary(ev.summary$mortality.date)
+test = ev.summary
+test$start.date = as.Date(test$start.date)
+test$end.date = as.Date(test$end.date)
+test = interval(ymd(test$start.date),ymd(test$end.date))
+test
+ev.summary$deployment.duration.months= test %/% months(1)
+head(ev.summary$deployment.duration)
+head(ev.summary$deployment.duration.months)
+ev.summary$age.at.fate.months = ev.summary$age.at.deployment.months + ev.summary$deployment.duration.months
+summary(ev.summary$age.at.fate.months)
+
+#add age.at.fate.simple
+ev.summary$age.at.fate.simple = ifelse(ev.summary$age.at.fate.months >=18, "adult", "juvenile")
+ev.summary$age.at.fate.simple = as.factor(ev.summary$age.at.fate.simple)
+summary(ev.summary)
+
+#add population.binned
+summary(ev.summary$population)
+ev.summary$population.binned = NA
+ev.summary$population.binned[ev.summary$population == "middle east"] <-  "Middle East"
+ev.summary$population.binned[ev.summary$population == "caucasus"] <-  "Middle East"
+ev.summary$population.binned[ev.summary$population == "western europe"] <-  "Western Europe"
+ev.summary$population.binned[ev.summary$population == "italy"] <-  "Balkans & Italy"
+ev.summary$population.binned[ev.summary$population == "balkans"] <-  "Balkans & Italy"
+ev.summary$population.binned[ev.summary$population == "unknown"] <-  "Unknown"
+ev.summary$population.binned = as.factor(ev.summary$population.binned)
+summary(ev.summary$population.binned)
+#ev.summary = ev.summary[complete.cases(ev.summary[ , "population.binned"]),] #drop 3 id without known pop
+
+#add fate.binned
+summary(as.factor(ev.summary$fate))
+ev.summary$fate.binned = NA
+ev.summary$fate.binned[ev.summary$fate == "alive"] <-  "alive"
+ev.summary$fate.binned[ev.summary$fate == "confirmed dead"] <-  "dead"
+ev.summary$fate.binned[ev.summary$fate == "Confirmed dead"] <-  "dead"
+ev.summary$fate.binned[ev.summary$fate == "confirmed transmitter failure"] <-  "tx failure"
+ev.summary$fate.binned[ev.summary$fate == "likely dead"] <-  "dead"
+ev.summary$fate.binned[ev.summary$fate == "likely transmitter failure"] <-  "tx failure"
+ev.summary$fate.binned[ev.summary$fate == "returned to captivity"] <-  "dead"
+ev.summary$fate.binned[ev.summary$fate == "unknown"] <-  "unknown"
+ev.summary$fate.binned = as.factor(ev.summary$fate.binned)
+#ev.summary = ev.summary[complete.cases(ev.summary[ , "fate.binned"]),] #drop returned to captivity
+summary(ev.summary$fate.binned)
+
 #quick plot
 ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + 
   coord_quickmap() + theme_bw() + #geom_path(data = d, aes(long,lat, group = id, color = population)) + 
@@ -627,12 +683,14 @@ ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  +
   theme(legend.title = element_blank()) 
 
 #check final files
+ev.summary$origin = as.factor(ev.summary$origin)
 summary(d)
 summary(ev.summary)
-head(ev.summary)
-ev.summary$start.country == ev.summary$start.country.quant
-ev.summary$end.country == ev.summary$end.country.quant
-unique(ev.summary$id.tag)
+
+#reorder columns
+names(ev.summary)
+ev.summary = ev.summary[,c(2:6,1,7:27,29:39,28)]
+names(ev.summary)
 
 #write edited files
 #set GitHub wd to write final files
