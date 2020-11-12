@@ -114,8 +114,8 @@ EV<-EV %>%
 # 2 alive with functioning tag
 # 3 alive with defunct tag OR without tag (when tag was lost)
 
-  mutate(TS= ifelse(fate=="alive",2,
-                    ifelse(fate %in% c("confirmed dead","likely dead","unknown"),1,3))) %>%
+  mutate(TS= ifelse(tolower(fate)=="alive",2,
+                    ifelse(tolower(fate) %in% c("confirmed dead","likely dead","unknown"),1,3))) %>%
   # mutate(OS= ifelse(fate=="alive",1,
   #                   ifelse(fate %in% c("unknown","suspected transmitter failure"),5,
   #                          ifelse(fate=="verified transmitter failure",3,
@@ -393,6 +393,9 @@ age.mat<-as.matrix(age.matrix[,2:max(timeseries$col)])
 lat.mat<-as.matrix(lat.matrix[,2:max(timeseries$col)])
 #mig.mat<- as.matrix(EV.phi.matrix[,2:max(timeseries$col)])
 
+#y.telemetry[74,157:159]<-
+#z.telemetry[74,159]<-1   ###  bird lost at sea, but erroneously classified as transmitter failure because of 'Confirmed dead' misspelling
+
 range(age.mat, na.rm=T)
 range(lat.mat, na.rm=T)
 #range(mig.mat)
@@ -443,7 +446,7 @@ parameters.telemetry <- c("p.seen.alive","base.obs","base.fail","base.recover","
 # MCMC settings
 ni <- 25000
 nt <- 4
-nb <- 5000
+nb <- 1000
 nc <- 3
 
 
@@ -476,9 +479,9 @@ EGVU_surv_mod_full_additive <- jags(INPUT.telemetry, inits.telemetry, parameters
 #### MODELS FOR REVISION
 
 # Call JAGS from R (took 92.958 min DIC = 3352.662)
-REV1_EGVU_surv_mod_rand_year <- jags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+REV1_EGVU_surv_mod_rand_year <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_random_year.jags",
-                                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T, n.iter = ni)
+                                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
 
 ## continuous age model with quadratic age effect to satisfy senescence comment by editor
