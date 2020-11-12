@@ -4,15 +4,16 @@
 #Clear workspace
 rm(list = ls())
 
-#set wd
-setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/")
-
 #read data
-d = read.csv("./Data/ev.filtered.csv")
+setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
+d = read.csv("./ev.final.Rev1.survival.prepared.csv")
 d$timestamp = ymd_hms(d$timestamp)
 summary(d$ND)
-unique(d$id) #231
+unique(d$id) #220
 names(d)
+
+#set wd
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/")
 
 #plots for each id
 # create for loop to produce ggplot2 graphs 
@@ -24,47 +25,47 @@ d$timestamp = as.Date(d$timestamp)
 summary(d$timestamp)
 
 #updated Mig_stage_matrix doc, i.e. manual summary of whether each individual migration in each month
-mig.stage = read.csv("./Data/Mig_stage_matrix.reviewed.csv")
-summary(mig.stage)
-unique(mig.stage$id.year)
-head(mig.stage)
+#mig.stage = read.csv("./Data/Mig_stage_matrix.reviewed.csv")
+#summary(mig.stage)
+#unique(mig.stage$id.year)
+#head(mig.stage)
 #mig.stage$id.year = substr(mig.stage$id.year,1,nchar(mig.stage$id.year)-4)  #drop ".png"
-unique(mig.stage$id.year)
+#unique(mig.stage$id.year)
 #need to create id_tag_yr for d
-d$id.tag <- c(paste(d$id,d$tag,sep="_")) 
-d$id.tag.year = c(paste(d$id.tag,d$year,sep="_")) 
-head(d)
-mig.stage.new = as.data.frame(unique(d$id.tag.year))
-names(mig.stage.new)[1] <- "id.tag.year"
-unique(mig.stage.new$id.tag.year)
-mig.stage.new$X1 = NA
-mig.stage.new$X2 = NA
-mig.stage.new$X3 = NA
-mig.stage.new$X4 = NA
-mig.stage.new$X5 = NA
-mig.stage.new$X6 = NA
-mig.stage.new$X7 = NA
-mig.stage.new$X8 = NA
-mig.stage.new$X9 = NA
-mig.stage.new$X10 = NA
-mig.stage.new$X11 = NA
-mig.stage.new$X12 = NA
-head(mig.stage.new)
+#d$id.tag <- c(paste(d$id,d$tag,sep="_")) 
+#d$id.tag.year = c(paste(d$id.tag,d$year,sep="_")) 
+#head(d)
+#mig.stage.new = as.data.frame(unique(d$id.tag.year))
+#names(mig.stage.new)[1] <- "id.tag.year"
+#unique(mig.stage.new$id.tag.year)
+#mig.stage.new$X1 = NA
+#mig.stage.new$X2 = NA
+#mig.stage.new$X3 = NA
+#mig.stage.new$X4 = NA
+#mig.stage.new$X5 = NA
+#mig.stage.new$X6 = NA
+#mig.stage.new$X7 = NA
+#mig.stage.new$X8 = NA
+#mig.stage.new$X9 = NA
+#mig.stage.new$X10 = NA
+#mig.stage.new$X11 = NA
+#mig.stage.new$X12 = NA
+#head(mig.stage.new)
 
 #assign old values to new mig.stage
-head(mig.stage)
-names(mig.stage)[names(mig.stage) == "id.year"] <- "id.tag.year"
-head(mig.stage.new)
-mig.stage.new = merge(mig.stage,mig.stage.new, by.x = "id.tag.year",by.y = "id.tag.year", all = T)
-head(mig.stage.new)
-summary(mig.stage.new)
+#head(mig.stage)
+#names(mig.stage)[names(mig.stage) == "id.year"] <- "id.tag.year"
+#head(mig.stage.new)
+#mig.stage.new = merge(mig.stage,mig.stage.new, by.x = "id.tag.year",by.y = "id.tag.year", all = T)
+#head(mig.stage.new)
+#summary(mig.stage.new)
 #clean up 
-names(mig.stage.new)
-mig.stage.new = mig.stage.new[,c("id.tag.year", "X1.x", "X2.x", "X3.x", "X4.x", "X5.x", "X6.x", 
-                                 "X7.x", "X8.x", "X9.x", "X10.x", "X11.x", "X12.x","coments.1","coments.2","coments.3")]
-names(mig.stage.new) <- c("id.tag.year","X1","X2","X3","X4","X5","X6","X7","X8","X9","X10","X11","X12","comments.1","comments.2","comments.3")
-summary(mig.stage.new)
-write.csv(mig.stage.new,"./Data/Mig_stage_matrix.Rev1.csv", row.names=FALSE)
+#names(mig.stage.new)
+#mig.stage.new = mig.stage.new[,c("id.tag.year", "X1.x", "X2.x", "X3.x", "X4.x", "X5.x", "X6.x", 
+#                                 "X7.x", "X8.x", "X9.x", "X10.x", "X11.x", "X12.x","coments.1","coments.2","coments.3")]
+#names(mig.stage.new) <- c("id.tag.year","X1","X2","X3","X4","X5","X6","X7","X8","X9","X10","X11","X12","comments.1","comments.2","comments.3")
+#summary(mig.stage.new)
+#write.csv(mig.stage.new,"./Data/Mig_stage_matrix.Rev1.csv", row.names=FALSE)
 
 #export individual id.yr summary plots
 names(d)
