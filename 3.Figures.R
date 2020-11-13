@@ -1,5 +1,6 @@
 #############################################################
-#Figure
+#Figures and summary stats
+#############################################################
 library(ggplot2)
 library("gridExtra")
 library(lubridate)
@@ -24,9 +25,6 @@ summary(d.summ$end.date)
 summary(d.summ$start.date)
 d.summ$mortality.date = ymd_hms(d.summ$mortality.date)
 
-#check summary
-summary(d.summ)
-
 #add population.binned
 unique(d$population)
 d$population.binned = NA
@@ -45,18 +43,38 @@ head(d.summ)
 
 #remove alive for plotting end fates
 d.summ2<-d.summ[!(d.summ$fate == "alive"),] 
+
+#remove birds from unknown pop
 d.summ2<-d.summ2[!(d.summ2$population == "unknown"),] 
+
+#remove rehabbed birds 
+d.summ2<-d.summ2[!(d.summ2$rehabilitated == "Y"),] 
+
+#remove imprinted birds 
+d.summ2<-d.summ2[!(d.summ2$fate == "returned to captivity"),] 
 
 #rename origin variables
 d.summ2$origin = as.character(d.summ2$origin)
 d.summ2$origin[d.summ2$origin == "N"] <-  "wild"
 d.summ2$origin[d.summ2$origin == "Y"] <-  "captive-raised"
 
+#rename fate at annual stage variables
+d.summ2$fate.at.annual.stage = as.character(d.summ2$fate.at.annual.stage)
+unique(d.summ2$fate.at.annual.stage)
+d.summ2$fate.at.annual.stage[d.summ2$fate.at.annual.stage == "non-breeding"] <-  "non-breed."
+d.summ2$fate.at.annual.stage[d.summ2$fate.at.annual.stage == "fall migration"] <-  "fall mig."
+d.summ2$fate.at.annual.stage[d.summ2$fate.at.annual.stage == "breeding"] <-  "breed."
+d.summ2$fate.at.annual.stage[d.summ2$fate.at.annual.stage == "spring migration"] <-  "spring mig."
+unique(d.summ2$fate.at.annual.stage)
+d.summ2$fate.at.annual.stage = as.factor(d.summ2$fate.at.annual.stage)
+summary(d.summ2$fate.at.annual.stage)
+summary(d.summ2)
+
 #plot
 setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Figures/")
 
 pmap = ggplot() + annotation_map(map_data("world"), fill = 'light grey', color = "white") + coord_quickmap() + theme_bw() +
-  geom_point(data = d, aes(long,lat, group = id), color = d$color, alpha = .5) +
+  geom_path(data = d, aes(long,lat, group = id), color = d$color, alpha = .5) +
   scale_color_manual(values= c( "#800000","#F4A460","#8B4513"), name = "subpopulation") + 
   #scale_color_viridis_d(begin = .2, end = .8, direction = 1, name = "subpopulation:") +
   new_scale_color() + 
@@ -78,14 +96,10 @@ p2 = ggplot(d.summ2, aes(age.at.fate.simple, fill = fate.binned)) + theme_bw() +
 p2
 
 # fate by annual stage
-#write a simple file for summarizing the fate.at.annual.stage
-d.summ2$fate.at.annual.stage = NA
-write.csv(d.summ2,"./fate.at.annual.stage.csv", row.names=FALSE)
-
-#p3 = ggplot(d.summ2, aes(fate.annual.stage, fill = fate.final.binned)) + theme_bw() + 
-#  geom_bar(position = position_dodge()) + ylab("# fates") + xlab("annual stage") + 
-#  scale_fill_viridis_d(begin = 0.4, direction = -1,  name = "fate:") + theme(legend.position = "none")
-#p3
+p3 = ggplot(d.summ2, aes(fate.at.annual.stage, fill = fate.binned)) + theme_bw() + 
+  geom_bar(position = position_dodge()) + ylab("# fates") + xlab("annual stage") + 
+  scale_fill_viridis_d(begin = 0.4, direction = -1,  name = "fate:") + theme(legend.position = "none")
+p3
 
 # fate by origin
 p4 = ggplot(d.summ2, aes(origin, fill = fate.binned)) + theme_bw() + 
@@ -95,12 +109,12 @@ p4
 
 #combine plots
 p5 = ggarrange(pmap, 
-               ggarrange(p1, p2, p4,  ncol =1, nrow = 4), #need to input p3 when ready
+               ggarrange(p1, p2, p3, p4,  ncol =1, nrow = 4),
                widths = c(3,1.2), legend = "bottom")
 p5
 
 #print
-tiff("fate.summary.plot.Rev1.tiff", units="cm", width=28, height=15, res=300)
+tiff("fate.summary.plot.Rev1.path.tiff", units="cm", width=28, height=15, res=300)
 p5
 dev.off()
 
