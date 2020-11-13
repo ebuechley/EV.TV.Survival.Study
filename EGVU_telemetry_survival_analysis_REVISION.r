@@ -53,7 +53,8 @@ EVcovar$id.tag = as.character(EVcovar$id.tag)
 EV<-EV %>% #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= parse_date_time(end.date, c("mdy", "mdy HM"))) %>%
   #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= as.POSIXct(as.Date(as.numeric(end.date), origin="1970-01-01"))) %>% ### revised file has awkward date for end.date
   #mutate(start=ymd_hms(start.date), end= as.POSIXct(as.Date(as.numeric(end.date), origin="1970-01-01"))) %>% ### revised file has awkward date for end.date
-  mutate(start=ymd_hms(start.date), end= as.POSIXct(ymd(end.date))) %>% ### revised file has awkward date for end.date
+  #mutate(start=ymd_hms(start.date), end= min(as.POSIXct(ymd(end.date)), ymd_hms(mortality.date))) %>% ### revised file has awkward date for end.date
+  mutate(start=as.POSIXct(ymd(start.date)), end= if_else(as.POSIXct(ymd(end.date))<as.POSIXct(ymd(mortality.date)),as.POSIXct(ymd(end.date)),as.POSIXct(ymd(mortality.date)))) %>% ### USE THE EARLIER OF END / MORTALITY DATE
   filter(!is.na(start)) %>%
   filter(species=="Neophron percnopterus") %>%
   filter(start<ymd_hm("2020-09-01 12:00")) %>%  ## remove birds only alive for a few months in 2020 (removes 1 bird: Baronnies_2019_Imm_wild_OR181635_5T_181635)
@@ -63,6 +64,7 @@ EV<-EV %>% #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= p
   select(species,population,id.tag,sex,age.at.deployment.months,captive.raised,rehabilitated, start, end, fate, how.fate.determined,mean.GPS.dist.last10fixes)  ## , mean.GPS.dist.last10fixes.degrees
 head(EV)
 dim(EV)
+
 
 ### ADD DATA NOT IN 28 MAY 2020 version of final summary
 #EV$mean.GPS.dist.last10fixes.degrees<-EVtagfail$mean.GPS.dist.last10fixes.degrees[match(EV$id.tag,EVtagfail$id.tag)]
@@ -257,13 +259,15 @@ dim(EV.phi.matrix)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## fix provided by Evan Buechley on 3 Dec 2019
+## Mig.matrix csv file amended by Ron Efrat and Steffen Oppel on 13 Nov 2020
+## none of these manual re-labels should be necessary after the correction of input files
 
 EV.phi.matrix$id.tag = as.character(EV.phi.matrix$id.tag)
 #EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="1_1"] <- "52027_1"
 #EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="93_14"] <- "81_14"
-EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="AF5AF11F_NA"] <-"Bianca_IHB_AF5AF11F"
-EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="B05AF11F_NA"] <- "Clara_IHC_NA" ### changed from "Clara_IHC_B05AF11F"
-EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="Enciña-9FJ_5783"] <- "Encina-9FJ_5783"
+#EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="AF5AF11F_NA"] <-"Bianca_IHB_AF5AF11F"
+#EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="B05AF11F_NA"] <- "Clara_IHC_NA" ### changed in input file to "Clara_IHC_B05AF11F"
+#EV.phi.matrix$id.tag[EV.phi.matrix$id.tag=="Enciña-9FJ_5783"] <- "Encina-9FJ_5783"
 
 EV.phi.matrix<-EV.phi.matrix %>% filter(id.tag %in% EV$id.tag) %>%
   arrange(id.tag)
@@ -285,7 +289,8 @@ dim(EVcovar)
 
 ## CREATE AGE MATRIx
 age.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
-  mutate(timestamp=ymd_hms(timestamp)) %>%
+  #mutate(timestamp=ymd_hms(timestamp)) %>%
+  mutate(timestamp=dmy_hm(timestamp)) %>% ## necessary because Excel automatically converted date format on 13 Nov 2020
   mutate(yr.mo=format(timestamp, format="%m-%Y")) %>%
   mutate(col=timeseries$col[match(yr.mo,timeseries$date)]) %>%
   group_by(id.tag,col) %>%
@@ -295,7 +300,8 @@ age.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
 
 ## CREATE LATITUDE MATRIX
 lat.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
-  mutate(timestamp=ymd_hms(timestamp)) %>%
+  #mutate(timestamp=ymd_hms(timestamp)) %>%
+  mutate(timestamp=dmy_hm(timestamp)) %>% ## necessary because Excel automatically converted date format on 13 Nov 2020
   mutate(yr.mo=format(timestamp, format="%m-%Y")) %>%
   mutate(col=timeseries$col[match(yr.mo,timeseries$date)]) %>%
   group_by(id.tag,col) %>%
@@ -305,7 +311,8 @@ lat.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
 
 ## CREATE LONGITUDE MATRIX AT ORIGIN (FIRST LONGITUDE VALUE FOR EACH BIRD)
 long.orig<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
-  mutate(timestamp=ymd_hms(timestamp)) %>%
+  #mutate(timestamp=ymd_hms(timestamp)) %>%
+  mutate(timestamp=dmy_hm(timestamp)) %>% ## necessary because Excel automatically converted date format on 13 Nov 2020
   arrange(id.tag,timestamp) %>%
   group_by(id.tag) %>%
   summarise(long=first(mean.monthly.long)) %>%
