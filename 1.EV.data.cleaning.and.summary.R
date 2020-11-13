@@ -675,6 +675,19 @@ ev.summary$fate.binned = as.factor(ev.summary$fate.binned)
 #ev.summary = ev.summary[complete.cases(ev.summary[ , "fate.binned"]),] #drop returned to captivity
 summary(ev.summary$fate.binned)
 
+#append fate at annual stage to summary 
+fate = read.csv("./Summary/fate.at.annual.stage_RE.csv", stringsAsFactors=TRUE)
+head(fate)
+fate$fate.at.annual.stage = as.character(fate$fate.at.annual.stage)
+head(ev.summary)
+ev.summary$fate.at.annual.stage = NA
+for (i in unique(fate$id.tag)) { 
+  ev.summary$fate.at.annual.stage[which(ev.summary$id.tag == i)] = fate$fate.at.annual.stage[which(fate$id.tag == i)]
+}
+head(ev.summary)
+ev.summary$fate.at.annual.stage = as.factor(ev.summary$fate.at.annual.stage)
+summary(ev.summary$fate.at.annual.stage)
+
 #quick plot
 ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + 
   coord_quickmap() + theme_bw() + #geom_path(data = d, aes(long,lat, group = id, color = population)) + 
@@ -689,7 +702,7 @@ summary(ev.summary)
 
 #reorder columns
 names(ev.summary)
-ev.summary = ev.summary[,c(2:6,1,7:27,29:39,28)]
+ev.summary = ev.summary[,c(2:6,1,7:27,29:40,28)]
 names(ev.summary)
 
 #write edited files
