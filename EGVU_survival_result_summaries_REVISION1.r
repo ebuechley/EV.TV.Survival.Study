@@ -149,7 +149,7 @@ TABLE2<-  MCMCpred %>%
 TABLE2
 
 
-fwrite(TABLE2,"EGVU_AnnSurv_rand_year_norehab_recap.csv")
+fwrite(TABLE2,"EGVU_AnnSurv_rand_year.csv")
 
 
 ##### FIGURE OF MONTHLY SURVIVAL WITH MIGRATORY STAGE
@@ -217,7 +217,7 @@ ggplot()+
         strip.text=element_text(size=18, color="black"), 
         strip.background=element_rect(fill="white", colour="black"))
 
-ggsave("Monthly_Surv_rand_year_no_recap_rehab.jpg", width=11,height=9)
+ggsave("Monthly_Surv_rand_year.jpg", width=11,height=9)
 
 
 
@@ -409,7 +409,7 @@ ggplot(PLOTDAT)+
         strip.text=element_text(size=18, color="black"), 
         strip.background=element_rect(fill="white", colour="black"))
 
-ggsave("Monthly_Surv_quadratic_age_no_rehab_recap.jpg", width=9,height=12)
+ggsave("Monthly_Surv_quadratic_age.jpg", width=9,height=12)
 
 
 

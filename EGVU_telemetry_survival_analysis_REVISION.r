@@ -60,8 +60,8 @@ EV<-EV %>% #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= p
   filter(!is.na(start)) %>%
   filter(species=="Neophron percnopterus") %>%
   filter(start<ymd_hm("2020-09-01 12:00")) %>%  ## remove birds only alive for a few months in 2020 (removes 1 bird: Baronnies_2019_Imm_wild_OR181635_5T_181635)
-  filter(rehabilitated=="N") %>%  ## remove rehabilitated adult birds
-  filter(!(fate %in% c("returned to captivity","confirmed dead") & how.fate.determined %in% c("recaptured","resighted / recaptured"))) %>%  ## remove imprinted juveniles that were recaptured
+  #filter(rehabilitated=="N") %>%  ## remove rehabilitated adult birds
+  #filter(!(fate %in% c("returned to captivity","confirmed dead") & how.fate.determined %in% c("recaptured","resighted / recaptured"))) %>%  ## remove imprinted juveniles that were recaptured
   mutate(fate=if_else(fate=="returned to captivity","confirmed dead",fate)) %>%  ## set recaptured individuals to 'confirmed dead'
   select(species,population,id.tag,sex,age.at.deployment.months,captive.raised,rehabilitated, start, end, fate, how.fate.determined,mean.GPS.dist.last10fixes)  ## , mean.GPS.dist.last10fixes.degrees
 head(EV)
@@ -503,7 +503,7 @@ REV1_EGVU_surv_mod_quad_age <- autojags(INPUT.telemetry, inits.telemetry, parame
 # EXPORT THE OUTPUT
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T)
-save.image("EGVU_survival_output_REV1_no rehab_recap.RData")
+save.image("EGVU_survival_output_REV1.RData")
 
 load("EGVU_survival_output_full_additive_v2.RData")
 
