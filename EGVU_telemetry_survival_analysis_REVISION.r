@@ -78,7 +78,17 @@ EV$how.fate.determined[EV$id.tag=="Apollo_16093"]<-"carcass found"
 
 ## CHANGE FATE OF HEDJET
 EV$fate[EV$id.tag=="Hedjet_171349"]<-"alive"
+
+### CHANGE FATE OF Jenny - inserted after Volen's email on 16 Nov 2020
+EV %>% filter(grepl("Jenny",id.tag))
+EV$fate[EV$id.tag=="Jenny_149507"]<-"confirmed dead"
+EV$how.fate.determined[EV$id.tag=="Jenny_149507"]<-"carcass found"
+EV$end[EV$id.tag=="Jenny_149507"]<-ymd_hms("2020-10-19 12:00:00")
   
+### SHOW END DATES OF BIRDS ALIVE
+update.needed<-EV %>% filter(fate=="alive") %>% filter(end<ymd_hms("2020-09-30 23:59:59"))
+fwrite(update.needed, "EV.end.date_update_needed.csv")
+
 ### SUM TOTAL OF TRACKING EFFORT
 EV %>% mutate(end=if_else(is.na(end), ymd_hms("2020-10-30 00:00:00"), end)) %>%
   mutate(tracklength=difftime(end,start, unit="days")) %>% summarise(TOTAL=sum(tracklength)/30)
