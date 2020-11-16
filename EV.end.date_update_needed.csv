@@ -1,0 +1,18 @@
+species,population,id.tag,sex,age.at.deployment.months,captive.raised,rehabilitated,start,end,fate,how.fate.determined,mean.GPS.dist.last10fixes
+Neophron percnopterus,middle east,A26 Green_171080,unknown,7,Y,N,2017-12-13T00:00:00Z,2019-05-29T00:00:00Z,alive,active,1.500473563
+Neophron percnopterus,middle east,Amud H08 Blue_180318,unknown,54,N,Y,2018-08-20T00:00:00Z,2019-05-29T00:00:00Z,alive,active,0.078998324
+Neophron percnopterus,balkans,Aoos_118154,F,54,N,N,2015-04-17T00:00:00Z,2019-05-26T00:00:00Z,alive,active,1.182820873
+Neophron percnopterus,western europe,Basque_2019_Imm_wild_OR180110_PC2_180110,unknown,1,N,N,2019-07-18T00:00:00Z,2020-07-19T00:00:00Z,alive,active,0.073592457
+Neophron percnopterus,western europe,BatuecasA_17020,M,24,N,N,2017-06-15T00:00:00Z,2019-05-29T00:00:00Z,alive,active,0.004043278
+Neophron percnopterus,western europe,Bibei-2HN_137397,F,2,N,N,2015-07-20T00:00:00Z,2019-05-30T00:00:00Z,alive,active,0.116304971
+Neophron percnopterus,balkans,Boris_149505,M,54,N,N,2015-07-21T00:00:00Z,2019-05-30T00:00:00Z,alive,active,0.015276484
+Neophron percnopterus,balkans,Boyana_171357,F,11,Y,N,2018-05-16T00:00:00Z,2019-05-29T00:00:00Z,alive,active,0.031986049
+Neophron percnopterus,balkans,Ertale_182252,unknown,54,N,N,2019-01-26T00:00:00Z,2019-05-29T00:00:00Z,alive,active,0.327126476
+Neophron percnopterus,middle east,H42 Green_171086,unknown,20,Y,N,2017-12-13T00:00:00Z,2019-05-29T00:00:00Z,alive,active,1.122362588
+Neophron percnopterus,middle east,H70 Green_180326,unknown,19,Y,N,2018-12-22T00:00:00Z,2019-05-29T00:00:00Z,alive,active,0.956699451
+Neophron percnopterus,balkans,Iliaz_118153,unknown,2,N,N,2012-08-30T00:00:00Z,2019-05-30T00:00:00Z,alive,active,0.045374206
+Neophron percnopterus,western europe,Montejo-95N_181641,M,54,N,N,2018-08-02T00:00:00Z,2019-05-29T00:00:00Z,alive,active,0.000877454
+Neophron percnopterus,balkans,Panteley_171360,M,11,Y,N,2018-05-16T00:00:00Z,2019-05-29T00:00:00Z,alive,active,0.849839835
+Neophron percnopterus,western europe,Provence_2016_Ad_wild_EO5018_Salome_8P_5018,F,54,N,Y,2016-10-01T00:00:00Z,2020-09-20T00:00:00Z,alive,active,0.581645249
+Neophron percnopterus,middle east,R2_16015,unknown,11,Y,N,2016-04-05T00:00:00Z,2017-12-06T00:00:00Z,alive,active,0.238855855
+Neophron percnopterus,italy,Sara_23306,F,3,Y,N,2015-08-26T00:00:00Z,2019-05-30T00:00:00Z,alive,active,0.336433504

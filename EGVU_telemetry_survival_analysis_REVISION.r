@@ -49,6 +49,8 @@ dim(EV)
 EV$id.tag = as.character(EV$id.tag)
 EVcovar$id.tag = as.character(EVcovar$id.tag)
 
+unique(EV$fate)
+
 #EV<-EV %>% mutate(start=mdy_hm(start.date), end= mdy_hm(end.date)) %>%
 EV<-EV %>% #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= parse_date_time(end.date, c("mdy", "mdy HM"))) %>%
   #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= as.POSIXct(as.Date(as.numeric(end.date), origin="1970-01-01"))) %>% ### revised file has awkward date for end.date
@@ -59,7 +61,7 @@ EV<-EV %>% #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= p
   filter(species=="Neophron percnopterus") %>%
   filter(start<ymd_hm("2020-09-01 12:00")) %>%  ## remove birds only alive for a few months in 2020 (removes 1 bird: Baronnies_2019_Imm_wild_OR181635_5T_181635)
   #filter(rehabilitated=="N") %>%  ## remove rehabilitated adult birds
-  #filter(grepl(how.fate.determined,"recaptured")==FALSE) %>%  ## remove imprinted juveniles that were recaptured
+  #filter(!(fate %in% c("returned to captivity","confirmed dead") & how.fate.determined %in% c("recaptured","resighted / recaptured"))) %>%  ## remove imprinted juveniles that were recaptured
   mutate(fate=if_else(fate=="returned to captivity","confirmed dead",fate)) %>%  ## set recaptured individuals to 'confirmed dead'
   select(species,population,id.tag,sex,age.at.deployment.months,captive.raised,rehabilitated, start, end, fate, how.fate.determined,mean.GPS.dist.last10fixes)  ## , mean.GPS.dist.last10fixes.degrees
 head(EV)
@@ -76,7 +78,17 @@ EV$how.fate.determined[EV$id.tag=="Apollo_16093"]<-"carcass found"
 
 ## CHANGE FATE OF HEDJET
 EV$fate[EV$id.tag=="Hedjet_171349"]<-"alive"
+
+### CHANGE FATE OF Jenny - inserted after Volen's email on 16 Nov 2020
+EV %>% filter(grepl("Jenny",id.tag))
+EV$fate[EV$id.tag=="Jenny_149507"]<-"confirmed dead"
+EV$how.fate.determined[EV$id.tag=="Jenny_149507"]<-"carcass found"
+EV$end[EV$id.tag=="Jenny_149507"]<-ymd_hms("2020-10-19 12:00:00")
   
+### SHOW END DATES OF BIRDS ALIVE
+update.needed<-EV %>% filter(fate=="alive") %>% filter(end<ymd_hms("2020-09-30 23:59:59"))
+fwrite(update.needed, "EV.end.date_update_needed.csv")
+
 ### SUM TOTAL OF TRACKING EFFORT
 EV %>% mutate(end=if_else(is.na(end), ymd_hms("2020-10-30 00:00:00"), end)) %>%
   mutate(tracklength=difftime(end,start, unit="days")) %>% summarise(TOTAL=sum(tracklength)/30)
