@@ -308,8 +308,8 @@ dim(EVcovar)
 
 ## CREATE AGE MATRIx
 age.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
-  #mutate(timestamp=ymd_hms(timestamp)) %>%
-  mutate(timestamp=dmy_hm(timestamp)) %>% ## necessary because Excel automatically converted date format on 13 Nov 2020
+  mutate(timestamp=ymd_hms(timestamp)) %>%
+  #mutate(timestamp=dmy_hm(timestamp)) %>% ## necessary because Excel automatically converted date format on 13 Nov 2020
   mutate(yr.mo=format(timestamp, format="%m-%Y")) %>%
   mutate(col=timeseries$col[match(yr.mo,timeseries$date)]) %>%
   group_by(id.tag,col) %>%
@@ -319,8 +319,8 @@ age.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
 
 ## CREATE LATITUDE MATRIX
 lat.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
-  #mutate(timestamp=ymd_hms(timestamp)) %>%
-  mutate(timestamp=dmy_hm(timestamp)) %>% ## necessary because Excel automatically converted date format on 13 Nov 2020
+  mutate(timestamp=ymd_hms(timestamp)) %>%
+  #mutate(timestamp=dmy_hm(timestamp)) %>% ## necessary because Excel automatically converted date format on 13 Nov 2020
   mutate(yr.mo=format(timestamp, format="%m-%Y")) %>%
   mutate(col=timeseries$col[match(yr.mo,timeseries$date)]) %>%
   group_by(id.tag,col) %>%
@@ -330,8 +330,8 @@ lat.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
 
 ## CREATE LONGITUDE MATRIX AT ORIGIN (FIRST LONGITUDE VALUE FOR EACH BIRD)
 long.orig<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
-  #mutate(timestamp=ymd_hms(timestamp)) %>%
-  mutate(timestamp=dmy_hm(timestamp)) %>% ## necessary because Excel automatically converted date format on 13 Nov 2020
+  mutate(timestamp=ymd_hms(timestamp)) %>%
+  #mutate(timestamp=dmy_hm(timestamp)) %>% ## necessary because Excel automatically converted date format on 13 Nov 2020
   arrange(id.tag,timestamp) %>%
   group_by(id.tag) %>%
   summarise(long=first(mean.monthly.long)) %>%
@@ -451,6 +451,8 @@ INPUT.telemetry <- list(y = y.telemetry,
                         mig = as.matrix(EV.phi.matrix[,2:max(timeseries$col)]), ### provide a simple binary classification for stationary and migratory periods
                         lat = lat.mat,
                         pop = ifelse(EV$pop %in% c("western europe"),1,0),  ##"italy",
+                        pop1 = ifelse(EV$pop %in% c("western europe"),1,0),  ##pop indicator 1 for 3pop model
+                        pop2 = ifelse(EV$pop %in% c("italy","balkans"),1,0),  ##pop indicator 2 for 3pop model
                         vul = as.matrix(vul.mat[,2:max(timeseries$col)]),
                         #long = long.orig$long, ##long.mat,      ### if we want this as a continuous pop definition we would need to use just one value per bird, not a monthly value
                         capt = ifelse(EV$captive.raised=="N",0,1),
@@ -494,17 +496,26 @@ inits.telemetry <- function(){list(z = z.telemetry,
                                    beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
                                    beta3 = rnorm(1,0, 0.001))} 
 
-# Call JAGS from R (took 111.746 min DIC = 6116.883)
-EGVU_surv_mod_full_additive <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive.jags",
-                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+
 
 #### MODELS FOR REVISION
 
 # Call JAGS from R (took 115.176 min DIC = 6116.787)
-REV1_EGVU_surv_mod_rand_year <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_random_year.jags",
+REV1_EGVU_3pop_no_sea_cross <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_3pop_additive_random_year.jags",
                                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+
+# Call JAGS from R (took 115.176 min DIC = 6116.787)
+REV1_EGVU_surv_mod_rand_year <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_random_year.jags",
+                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+
+
+# ORIGINAL MODEL FROM FIRST SUBMISSION - Call JAGS from R (took 111.746 min DIC = 6116.883)
+EGVU_original_submission <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive.jags",
+                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+
 
 
 ## continuous age model with quadratic age effect to satisfy senescence comment by editor (took 123.92 min DIC = 6116.444)
