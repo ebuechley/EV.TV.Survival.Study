@@ -434,7 +434,7 @@ summary(ev.ISPRA$location.long)
 
 #check unique IDs
 ev.ISPRA <- ev.ISPRA[order(ev.ISPRA$individual.local.identifier),] 
-unique(ev.ISPRA$individual.local.identifier) #5
+unique(ev.ISPRA$individual.local.identifier) #6
 ev.movebank <- ev.movebank[order(ev.movebank$individual.local.identifier),] 
 unique(ev.movebank$individual.local.identifier) #232
 
@@ -508,13 +508,36 @@ ev.tv$month <- month(ev.tv$timestamp)
 ev.tv$day = day(ev.tv$timestamp)
 ev.tv$hour <- hour(ev.tv$timestamp)
 
+#quick plot of subpopulation
+library(ggplot2)
+test = subset(ev.tv, ev.tv$population == "italy")
+tiff("./Figures/italy.raw.data.plot.tiff", units="cm", width=20, height=17, res=300)
+ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() + 
+  geom_path(data = test, aes(long,lat, group = id, color = id)) + labs(x = "longitude", y = "latitude") 
+dev.off()
+
+#plot specific id's
+unique(ev.tv$id)
+test = subset(ev.tv, ev.tv$id == "Bianca_IHB")
+test = subset(ev.tv, ev.tv$id == "Birba")
+test = subset(ev.tv, ev.tv$id =="Clint")
+test = subset(ev.tv, ev.tv$id == "Leonardo")
+test = subset(ev.tv, ev.tv$id == "Jane")
+test = subset(ev.tv, ev.tv$id == "Logiya")
+jpeg("./Figures/Logiya.plot.jpg", units="cm", width=16, height=20, res=100)
+ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() + 
+  geom_path(data = test, aes(long,lat, group = id, color = year)) + labs(x = "longitude", y = "latitude") + 
+  ggtitle("Logiya", subtitle = "Egyptian Vulture (Neophron percnopterus)") + theme(plot.title = element_text(hjust = 0.5)) + 
+  theme(plot.subtitle = element_text(hjust = 0.5)) + labs(caption = "https://www.datarepository.movebank.org/handle/10255/move.1007")
+dev.off()
+  
 #remove height above elipsoid < -100 and > 30,000
-summary(ev.tv$height.above.ellipsoid)
-which(ev.tv$height.above.ellipsoid < -100)
-which(ev.tv$height.above.ellipsoid > 30000)
-ev.tv = ev.tv[-c(which(ev.tv$height.above.ellipsoid < -100)),]
-ev.tv = ev.tv[-c(which(ev.tv$height.above.ellipsoid > 30000)),]
-summary(ev.tv$height.above.ellipsoid)
+#summary(ev.tv$height.above.ellipsoid)
+#which(ev.tv$height.above.ellipsoid < -100)
+#which(ev.tv$height.above.ellipsoid > 30000)
+#ev.tv = ev.tv[-c(which(ev.tv$height.above.ellipsoid < -100)),]
+#ev.tv = ev.tv[-c(which(ev.tv$height.above.ellipsoid > 30000)),]
+#summary(ev.tv$height.above.ellipsoid)
 
 #remove any rows that don't have date, lat or long
 summary(ev.tv[1:3])

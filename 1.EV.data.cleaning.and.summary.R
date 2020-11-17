@@ -166,6 +166,7 @@ ev.tv.summary$how.fate.determined = as.factor(ev.tv.summary$how.fate.determined)
 ev.tv.summary$death.or.failure.date = NA
 summary(ev.tv.summary$how.fate.determined)
 ev.tv.summary$comments = NA
+summary(ev.tv.summary)
 
 #write
 write.csv(ev.tv.summary, "./Summary/ev.summary.quant.csv", row.names = FALSE)
@@ -187,6 +188,46 @@ unique(ev.tv.summary$id)
 
 #correct id
 ev.tv.summary$id[ev.tv.summary$id == "Provence_2016_Ad_wild_EO5018_Salomé_8P"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P"
+
+#remove some individuals that were either tagged in Africa and residents
+#or that had VERY limited data, rendering it useless
+unique(ev.tv.summary$id)
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Alimerah"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Atena"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Djibouti"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Era"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Fentale"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Milli"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Qero"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Segev-Shalom 2019 I00"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Teti"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="BatuecasP"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Alolobad"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Basaka"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Lubo"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Lucy"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Semera"),]
+ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Mille"),]
+unique(ev.tv.summary$id) #221
+ev.gs<-ev.gs[!(ev.gs$id=="Alimerah"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Atena"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Djibouti"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Era"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Fentale"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Milli"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Qero"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Segev-Shalom 2019 I00"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Teti"),]
+ev.gs<-ev.gs[!(ev.gs$id=="BatuecasP"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Alolobad"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Basaka"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Lubo"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Lucy"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Semera"),]
+ev.gs<-ev.gs[!(ev.gs$id=="Mille"),]
+unique(ev.gs$id) #221
+#remove these ids from mig_stage_matrix, as well
+#did this manually because it is classified by id.tag.year
 
 #check for duplicates
 unique(ev.gs$id)
@@ -235,33 +276,11 @@ ev.tv.summary$death.or.failure.date = NULL
 names(ev.tv.summary)
 ev.tv.summary = ev.tv.summary[,c(2,3,1,4,5:17,19:27,18)] 
 
-#remove some individuals that were either tagged in Africa and residents
-#or that had VERY limited data, rendering it useless
-unique(ev.tv.summary$id)
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Alimerah"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Atena"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Djibouti"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Era"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Fentale"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Milli"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Qero"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Segev-Shalom 2019 I00"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Teti"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="BatuecasP"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Alolobad"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Basaka"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Lubo"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Lucy"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Semera"),]
-ev.tv.summary<-ev.tv.summary[!(ev.tv.summary$id=="Mille"),]
-unique(ev.tv.summary$id) #221
-
-#remove these ids from mig_stage_matrix, as well
-#did this manually because it is classified by id.tag.year
-
 #review
 head(ev.tv.summary)
 summary(ev.tv.summary)
+ev.tv.summary$population = as.factor(ev.tv.summary$population)
+summary(ev.tv.summary$population)
 write.csv(ev.tv.summary, "./Summary/ev.summary.quant.coauthor.merged.csv", row.names = FALSE)
 
 ###################################################################
@@ -269,6 +288,84 @@ write.csv(ev.tv.summary, "./Summary/ev.summary.quant.coauthor.merged.csv", row.n
 #AND FATES WERE REVIEWED AND INPUT MANUALLY
 #THIS MANUALLY EDITED FILE WAS NAMED "ev.summary.final.Rev1.csv"
 ###################################################################
+
+#need to merge the manually determined fates with the latest quantitative summary
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/")
+ev.summary.edited = read.csv("./Summary/ev.summary.final.Rev1.csv")
+ev.summary = read.csv("./Summary/ev.summary.quant.coauthor.merged.csv")
+ev.summary$population = as.factor(ev.summary$population)
+summary(ev.summary$population)
+
+#sort data by id
+ev.summary.edited = ev.summary.edited[order(ev.summary.edited$id),] 
+ev.summary = ev.summary[order(ev.summary$id),] 
+
+#same number of ids
+unique(ev.summary$id)
+unique(ev.summary.edited$id)
+
+#match ids
+unique(ev.summary$id)== unique(ev.summary.edited$id)
+unique(ev.summary$id)[74] 
+unique(ev.summary.edited$id)[74] 
+ev.summary.edited$id = as.character(ev.summary.edited$id)
+ev.summary$id = as.character(ev.summary$id)
+ev.summary.edited$id[ev.summary.edited$id=="Enci√±a-9FJ"] <- "Encina-9FJ"
+ev.summary$id[ev.summary$id=="Enciña-9FJ"] <- "Encina-9FJ"
+unique(ev.summary.edited$id) == unique(ev.summary$id)
+
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$fate[which(ev.summary$id == i)] = ev.summary.edited$fate[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$population[which(ev.summary$id == i)] = ev.summary.edited$population[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$start.country[which(ev.summary$id == i)] = ev.summary.edited$start.country[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$end.country[which(ev.summary$id == i)] = ev.summary.edited$end.country[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$sex[which(ev.summary$id == i)] = ev.summary.edited$sex[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$age.at.deployment.months[which(ev.summary$id == i)] = ev.summary.edited$age.at.deployment.months[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$migrant[which(ev.summary$id == i)] = ev.summary.edited$migrant[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$captive.raised[which(ev.summary$id == i)] = ev.summary.edited$captive.raised[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$rehabilitated[which(ev.summary$id == i)] = ev.summary.edited$rehabilitated[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$how.fate.determined[which(ev.summary$id == i)] = ev.summary.edited$how.fate.determined[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$cause.of.death[which(ev.summary$id == i)] = ev.summary.edited$cause.of.death[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$transmitter.make.model[which(ev.summary$id == i)] = ev.summary.edited$transmitter.make.model[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$transmitter.attachment.method[which(ev.summary$id == i)] = ev.summary.edited$transmitter.attachment.method[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$transmitter.mass.grams[which(ev.summary$id == i)] = ev.summary.edited$transmitter.mass.grams[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$comments[which(ev.summary$id == i)] = ev.summary.edited$comments[which(ev.summary.edited$id == i)]
+}
+
+ev.summary$fate = as.factor(ev.summary$fate)
+summary(ev.summary$fate)
+ev.summary$start.date
+ev.summary$population = as.factor(ev.summary$population)
+summary(ev.summary$population)
+summary(ev.summary)
 
 ###################################################################
 #Final structuring of data for survival analyses
@@ -279,7 +376,7 @@ library(ggplot2)
 library(data.table)
 
 #Clear workspace
-rm(list = ls())
+#rm(list = ls())
 
 #set wd
 setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/")
@@ -328,7 +425,7 @@ unique(d$id.tag) #222
 
 #age in months
 #append age.at.deployment.month to each id
-ev.summary = read.csv("./Summary/ev.summary.final.Rev1.csv")
+#ev.summary = read.csv("./Summary/ev.summary.final.Rev1.csv")
 names(ev.summary)
 ev.summary = ev.summary[,c("species","study.name", "population", "id","tag","start.date", "end.date",
                            "mortality.date", "start.lat", "start.long", "end.lat", "end.long", 
@@ -339,7 +436,7 @@ ev.summary = ev.summary[,c("species","study.name", "population", "id","tag","sta
                            "comments")]
 #clean up this id
 unique(ev.summary$id)
-ev.summary$id[ev.summary$id=="Enci√±a-9FJ"] <- "Encina-9FJ"
+ev.summary$id[ev.summary$id=="Enciña-9FJ"] <- "Encina-9FJ"
 unique(ev.summary$id)
 
 #sort data by id
@@ -384,10 +481,10 @@ summary(d)
 #add column with date of tagging for each id.tag
 d$deployment.date = d$timestamp
 head(ev.summary$start.date)
-ev.summary$start.date = mdy_hm(ev.summary$start.date)
+ev.summary$start.date = ymd_hms(ev.summary$start.date)
 summary(ev.summary$start.date)
 head(ev.summary$end.date)
-ev.summary$end.date = mdy_hm(ev.summary$end.date)
+ev.summary$end.date = ymd_hms(ev.summary$end.date)
 summary(ev.summary$end.date)
 
 for (i in unique(ev.summary$id.tag)) { 
@@ -690,8 +787,8 @@ summary(ev.summary$fate.at.annual.stage)
 
 #quick plot
 ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + 
-  coord_quickmap() + theme_bw() + #geom_path(data = d, aes(long,lat, group = id, color = population)) + 
-  geom_point(data = d, aes(long,lat, group = id, color = population)) +
+  coord_quickmap() + theme_bw() + geom_path(data = d, aes(long,lat, group = id, color = population)) + 
+  #geom_point(data = d, aes(long,lat, group = id, color = population)) +
   labs(x = "longitude", y = "latitude") +
   theme(legend.title = element_blank()) 
 
