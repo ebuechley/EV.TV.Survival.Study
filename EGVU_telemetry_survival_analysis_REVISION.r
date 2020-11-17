@@ -94,6 +94,7 @@ EV$end[EV$id.tag=="Jenny_149507"]<-ymd_hms("2020-10-19 12:00:00")
   
 ### SHOW END DATES OF BIRDS ALIVE
 update.needed<-EV %>% filter(fate=="alive") %>% filter(end<ymd_hms("2020-09-30 23:59:59"))
+EV$end[EV$id.tag %in% update.needed$id.tag]<-ymd_hms("2020-10-30 23:59:59")       ## temporary hack until Evan has sorted out final dates
 #fwrite(update.needed, "EV.end.date_update_needed.csv")
 
 ### SUM TOTAL OF TRACKING EFFORT
@@ -474,7 +475,8 @@ INPUT.telemetry <- list(y = y.telemetry,
 
 # Parameters monitored
 parameters.telemetry <- c("p.seen.alive","base.obs","base.fail","base.recover","beta1","beta2","beta3","beta4",
-                          "mean.phi","lp.mean","b.phi.mig","b.phi.capt","b.phi.pop","b.phi.age","b.phi.vul","b2.phi.age")
+                          "mean.phi","lp.mean","b.phi.mig","b.phi.capt","b.phi.pop","b.phi.age","b.phi.vul","b2.phi.age",
+                          "b.phi.pop1","b.phi.pop2")
 
 # MCMC settings
 ni <- 25000
