@@ -24,6 +24,11 @@
 ## many more individuals added, plus 1.5 years worth of data added
 ## amended the start and end date conversion on 11 Nov 2020
 
+## REVISED MODEL FORMULATION ON 17 NOV 2020
+## remove 'sea-crossing' parameter
+## include 3-level population parameter
+## consider interaction between population and migration and age and migration
+
 library(jagsUI)
 library(tidyverse)
 library(data.table)
@@ -56,7 +61,7 @@ EV<-EV %>% #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= p
   #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= as.POSIXct(as.Date(as.numeric(end.date), origin="1970-01-01"))) %>% ### revised file has awkward date for end.date
   #mutate(start=ymd_hms(start.date), end= as.POSIXct(as.Date(as.numeric(end.date), origin="1970-01-01"))) %>% ### revised file has awkward date for end.date
   #mutate(start=ymd_hms(start.date), end= min(as.POSIXct(ymd(end.date)), ymd_hms(mortality.date))) %>% ### revised file has awkward date for end.date
-  mutate(start=as.POSIXct(ymd(start.date)), end= if_else(as.POSIXct(ymd(end.date))<as.POSIXct(ymd(mortality.date)),as.POSIXct(ymd(end.date)),as.POSIXct(ymd(mortality.date)))) %>% ### USE THE EARLIER OF END / MORTALITY DATE
+  mutate(start=ymd_hms(start.date), end= if_else(as.POSIXct(ymd(end.date))<ymd_hms(mortality.date),as.POSIXct(ymd(end.date)),ymd_hms(mortality.date))) %>% ### USE THE EARLIER OF END / MORTALITY DATE
   filter(!is.na(start)) %>%
   filter(species=="Neophron percnopterus") %>%
   filter(start<ymd_hm("2020-09-01 12:00")) %>%  ## remove birds only alive for a few months in 2020 (removes 1 bird: Baronnies_2019_Imm_wild_OR181635_5T_181635)
