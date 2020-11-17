@@ -71,7 +71,7 @@ summary(d.summ2$fate.at.annual.stage)
 summary(d.summ2)
 
 #plot
-setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Figures/")
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/")
 
 pmap = ggplot() + annotation_map(map_data("world"), fill = 'light grey', color = "white") + coord_quickmap() + theme_bw() +
   geom_path(data = d, aes(long,lat, group = id), color = d$color, alpha = .5) +
