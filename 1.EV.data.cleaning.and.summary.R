@@ -270,6 +270,21 @@ write.csv(ev.tv.summary, "./Summary/ev.summary.quant.coauthor.merged.csv", row.n
 #THIS MANUALLY EDITED FILE WAS NAMED "ev.summary.final.Rev1.csv"
 ###################################################################
 
+#need to merge the manually determined fates with the latest quantitative summary
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/")
+ev.summary.edited = read.csv("./Summary/ev.summary.final.Rev1.csv")
+ev.summary = read.csv("./Summary/ev.summary.quant.coauthor.merged.csv")
+unique(ev.summary.edited$id)
+unique(ev.summary$id)
+
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$fate[which(ev.summary$id == i)] = ev.summary.edited$fate[which(ev.summary.edited$id == i)]
+}
+
+ev.summary$fate = as.factor(ev.summary$fate)
+summary(ev.summary$fate)
+ev.summary$start.date
+
 ###################################################################
 #Final structuring of data for survival analyses
 ###################################################################
@@ -279,7 +294,7 @@ library(ggplot2)
 library(data.table)
 
 #Clear workspace
-rm(list = ls())
+#rm(list = ls())
 
 #set wd
 setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Dataset/Final/Rev1/")
@@ -328,7 +343,7 @@ unique(d$id.tag) #222
 
 #age in months
 #append age.at.deployment.month to each id
-ev.summary = read.csv("./Summary/ev.summary.final.Rev1.csv")
+#ev.summary = read.csv("./Summary/ev.summary.final.Rev1.csv")
 names(ev.summary)
 ev.summary = ev.summary[,c("species","study.name", "population", "id","tag","start.date", "end.date",
                            "mortality.date", "start.lat", "start.long", "end.lat", "end.long", 
@@ -339,7 +354,7 @@ ev.summary = ev.summary[,c("species","study.name", "population", "id","tag","sta
                            "comments")]
 #clean up this id
 unique(ev.summary$id)
-ev.summary$id[ev.summary$id=="Enci√±a-9FJ"] <- "Encina-9FJ"
+ev.summary$id[ev.summary$id=="Enciña-9FJ"] <- "Encina-9FJ"
 unique(ev.summary$id)
 
 #sort data by id
@@ -384,10 +399,10 @@ summary(d)
 #add column with date of tagging for each id.tag
 d$deployment.date = d$timestamp
 head(ev.summary$start.date)
-ev.summary$start.date = mdy_hm(ev.summary$start.date)
+ev.summary$start.date = ymd_hms(ev.summary$start.date)
 summary(ev.summary$start.date)
 head(ev.summary$end.date)
-ev.summary$end.date = mdy_hm(ev.summary$end.date)
+ev.summary$end.date = ymd_hms(ev.summary$end.date)
 summary(ev.summary$end.date)
 
 for (i in unique(ev.summary$id.tag)) { 
