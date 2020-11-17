@@ -690,8 +690,8 @@ summary(ev.summary$fate.at.annual.stage)
 
 #quick plot
 ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + 
-  coord_quickmap() + theme_bw() + #geom_path(data = d, aes(long,lat, group = id, color = population)) + 
-  geom_point(data = d, aes(long,lat, group = id, color = population)) +
+  coord_quickmap() + theme_bw() + geom_path(data = d, aes(long,lat, group = id, color = population)) + 
+  #geom_point(data = d, aes(long,lat, group = id, color = population)) +
   labs(x = "longitude", y = "latitude") +
   theme(legend.title = element_blank()) 
 
