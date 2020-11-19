@@ -504,7 +504,7 @@ inits.telemetry <- function(){list(z = z.telemetry,
 #### MODELS FOR REVISION
 
 
-# Call JAGS from R (took 122.962 min DIC = 6069.763)
+# Call JAGS from R (took 122.962 min DIC = 6069.897)
 REV1_EGVU_mig_by_age_pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                  "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_age_pop.jags",
                                  n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
@@ -626,9 +626,9 @@ cat("
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
     
-    b.phi.age ~ dnorm(-1, 0.01)T(-4, 0)            # Prior for age effect on survival probability on logit scale
-    b.phi.pop1 ~ dunif(-2,3)         # Prior for population effect on survival probability on logit scale
-    b.phi.pop2 ~ dunif(-2,2)  ##dnorm(-1, 0.01)        # Prior for vulnerable state on survival probability on logit scale
+    #b.phi.age ~ dnorm(-1, 0.01)T(-4, 0)            # Prior for age effect on survival probability on logit scale
+    #b.phi.pop1 ~ dunif(-2,3)         # Prior for population effect on survival probability on logit scale
+    #b.phi.pop2 ~ dunif(-2,2)  ##dnorm(-1, 0.01)        # Prior for vulnerable state on survival probability on logit scale
     
     #### SLOPE PARAMETERS FOR MIGRATION EFFECT BY AGE
     for(agegroup in 1:2){  ### two age classes, juvenile and adult

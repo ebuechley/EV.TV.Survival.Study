@@ -43,10 +43,10 @@ load("EGVU_survival_output_REV1.RData")
 ## summarise annual survival by using 10*stationary, 1*spring mig and 1*fall 
 
 ### PLOT PARAMETERS ON LOGIT SCALE
-out10<-as.data.frame(REV1_EGVU_mig_by_age$summary)
-out10$parameter<-row.names(REV1_EGVU_mig_by_age$summary)
-out10$model<-"binary_additive"
-#fwrite(out10,"EGVU_binary_additive_parameter_estimates.csv")
+out10<-as.data.frame(REV1_EGVU_3pop_no_sea_cross$summary)
+out10$parameter<-row.names(REV1_EGVU_3pop_no_sea_cross$summary)
+out10$model<-"3_pop_no_seacross"
+fwrite(out10,"EGVU_3_pop_parameter_estimates.csv")
 
 out10 %>% filter(grepl("b.phi",parameter)) %>%
   mutate(parameter=ifelse(parameter=="b.phi.vul","sea crossing",parameter)) %>%
