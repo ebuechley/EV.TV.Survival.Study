@@ -612,9 +612,9 @@ cat("
     logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
     b.phi.mig[adult[i,t]+1, pop[i]+1]*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory) AND AGE CLASS
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
-    b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
-    b.phi.pop1*(pop1[i])  +    ### survival dependent on population1 (western Europe or other)
-    b.phi.pop2*(pop2[i]) +     ### survival dependent on population2 (Italy/Balkans or other)
+    #b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
+    #b.phi.pop1*(pop1[i])  +    ### survival dependent on population1 (western Europe or other)
+    #b.phi.pop2*(pop2[i]) +     ### survival dependent on population2 (Italy/Balkans or other)
     surv.raneff[year[t]]
     } #t
     } #i
