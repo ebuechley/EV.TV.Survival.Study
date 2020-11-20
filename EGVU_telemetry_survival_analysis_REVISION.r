@@ -357,7 +357,7 @@ for(n in EV.obs.matrix$id.tag){
   ### ASSIGN VALUES TO ALL SUBSEQUENT INTERVALS
   for (col in min(max(timeseries$col),(endcol+1)):max(timeseries$col)){
     #age.matrix[age.matrix$id.tag==n,col]<-min((age.matrix[age.matrix$id.tag==n,(col-1)]+1),54)
-    #age.matrix[age.matrix$id.tag==n,col]<-(age.matrix[age.matrix$id.tag==n,(col-1)]+1) ### continuous age for sensecence analysis
+    age.matrix[age.matrix$id.tag==n,col]<-(age.matrix[age.matrix$id.tag==n,(col-1)]+1) ### continuous age for sensecence analysis
     lat.matrix[lat.matrix$id.tag==n,col]<-lat.matrix[lat.matrix$id.tag==n,(col-1)]
 
   } ## end loop over each occasion
@@ -369,7 +369,7 @@ for(n in EV.obs.matrix$id.tag){
   ### INTERPOLATE VALUES IF NA IN COLUMNS THAT SHOULD HAVE VALUES
   for (col in misscol){
     #age.matrix[age.matrix$id.tag==n,col]<-min((age.matrix[age.matrix$id.tag==n,(col-1)]+1),54)
-    #age.matrix[age.matrix$id.tag==n,col]<-(age.matrix[age.matrix$id.tag==n,(col-1)]+1) ### continuous age for sensecence analysis
+    age.matrix[age.matrix$id.tag==n,col]<-(age.matrix[age.matrix$id.tag==n,(col-1)]+1) ### continuous age for sensecence analysis
     lat.matrix[lat.matrix$id.tag==n,col]<-lat.matrix[lat.matrix$id.tag==n,(col-1)]
 
   } ## end loop over each occasion
