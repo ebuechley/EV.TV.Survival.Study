@@ -525,12 +525,6 @@ REV1_EGVU_mig_by_pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.te
 agescale<-scale(1:max(age.mat, na.rm=T))
 INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
 INPUT.telemetry$pop = ifelse(EV$pop %in% c("western europe","italy"),1,0)  ## for full interaction model try to lump italy and iberia
-inits.telemetry <- function(){list(z = z.telemetry,
-                                   mean.phi = runif(1, 0.9, 1), ### two intercepts for juvenile and adults
-                                   base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
-                                   base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
-                                   beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
-                                   beta3 = rnorm(1,0, 0.001))} 
 REV1_EGVU_mig_by_age_pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                      "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_age_pop.jags",
                                      n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
@@ -628,15 +622,6 @@ cat("
     sigma.surv ~ dunif(0, 2)                     # Prior for standard deviation of survival
     tau.surv <- pow(sigma.surv, -2)
     
-
-
-    #### INTERCEPT PARAMETERS FOR SURVIVAL BY POPULATION
-    for(popgroup in 1:3){
-    mean.phi[popgroup] ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
-    lp.mean[popgroup] <- log(mean.phi[popgroup]/(1 - mean.phi[popgroup]))    # logit transformed survival intercept
-    }
-
-
     #### MONTHLY SURVIVAL PROBABILITY
     for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
