@@ -318,7 +318,7 @@ age.matrix<-EVcovar %>% filter(id.tag %in% EV.obs.matrix$id.tag) %>%
   mutate(yr.mo=format(timestamp, format="%m-%Y")) %>%
   mutate(col=timeseries$col[match(yr.mo,timeseries$date)]) %>%
   group_by(id.tag,col) %>%
-  summarise(age=mean(age.in.months.capped)) %>%
+  summarise(age=mean(age.in.months)) %>%   ### changed on 20 Nov 2020 from age.in.months.capped
   spread(key=col,value=age) %>%
   arrange(id.tag)
 
@@ -357,7 +357,7 @@ for(n in EV.obs.matrix$id.tag){
   ### ASSIGN VALUES TO ALL SUBSEQUENT INTERVALS
   for (col in min(max(timeseries$col),(endcol+1)):max(timeseries$col)){
     #age.matrix[age.matrix$id.tag==n,col]<-min((age.matrix[age.matrix$id.tag==n,(col-1)]+1),54)
-    age.matrix[age.matrix$id.tag==n,col]<-(age.matrix[age.matrix$id.tag==n,(col-1)]+1) ### continuous age for sensecence analysis
+    #age.matrix[age.matrix$id.tag==n,col]<-(age.matrix[age.matrix$id.tag==n,(col-1)]+1) ### continuous age for sensecence analysis
     lat.matrix[lat.matrix$id.tag==n,col]<-lat.matrix[lat.matrix$id.tag==n,(col-1)]
 
   } ## end loop over each occasion
@@ -369,7 +369,7 @@ for(n in EV.obs.matrix$id.tag){
   ### INTERPOLATE VALUES IF NA IN COLUMNS THAT SHOULD HAVE VALUES
   for (col in misscol){
     #age.matrix[age.matrix$id.tag==n,col]<-min((age.matrix[age.matrix$id.tag==n,(col-1)]+1),54)
-    age.matrix[age.matrix$id.tag==n,col]<-(age.matrix[age.matrix$id.tag==n,(col-1)]+1) ### continuous age for sensecence analysis
+    #age.matrix[age.matrix$id.tag==n,col]<-(age.matrix[age.matrix$id.tag==n,(col-1)]+1) ### continuous age for sensecence analysis
     lat.matrix[lat.matrix$id.tag==n,col]<-lat.matrix[lat.matrix$id.tag==n,(col-1)]
 
   } ## end loop over each occasion
@@ -433,6 +433,7 @@ lat.mat<-as.matrix(lat.matrix[,2:max(timeseries$col)])
 #z.telemetry[74,159]<-1   ###  bird lost at sea, but erroneously classified as transmitter failure because of 'Confirmed dead' misspelling
 
 range(age.mat, na.rm=T)
+table(age.mat)
 range(lat.mat, na.rm=T)
 #range(mig.mat)
 

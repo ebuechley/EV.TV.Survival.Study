@@ -71,7 +71,7 @@ out10 %>% filter(grepl("b.phi",parameter)) %>%
         strip.text.x=element_text(size=18, color="black"), 
         strip.background=element_rect(fill="white", colour="black"))
 
-ggsave("EGVU_parameter_estimates_mig_by_pop.pdf", height=7, width=10)
+ggsave("EGVU_parameter_estimates_mig_by_age_pop.pdf", height=7, width=10)
 
 
 
