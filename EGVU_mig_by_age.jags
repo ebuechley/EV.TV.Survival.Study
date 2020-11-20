@@ -43,7 +43,7 @@
     logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
     b.phi.mig[adult[i,t]+1]*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory) AND AGE CLASS
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
-    b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
+    #b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
     b.phi.pop1*(pop1[i])  +    ### survival dependent on population1 (western Europe or other)
     b.phi.pop2*(pop2[i]) +     ### survival dependent on population2 (Italy/Balkans or other)
     surv.raneff[year[t]]
@@ -57,7 +57,7 @@
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
 
-    b.phi.age ~ dnorm(-1, 0.01)T(-4, 0)            # Prior for age effect on survival probability on logit scale
+    #b.phi.age ~ dnorm(-1, 0.01)T(-4, 0)            # Prior for age effect on survival probability on logit scale
     b.phi.pop1 ~ dunif(-2,3)         # Prior for population effect on survival probability on logit scale
     b.phi.pop2 ~ dunif(-2,2)  ##dnorm(-1, 0.01)        # Prior for vulnerable state on survival probability on logit scale
 
