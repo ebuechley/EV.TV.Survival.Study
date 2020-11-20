@@ -315,6 +315,12 @@ ev.summary$id[ev.summary$id=="Enciña-9FJ"] <- "Encina-9FJ"
 unique(ev.summary.edited$id) == unique(ev.summary$id)
 
 for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$study.name[which(ev.summary$id == i)] = ev.summary.edited$study.name[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
+  ev.summary$mortality.date[which(ev.summary$id == i)] = ev.summary.edited$mortality.date[which(ev.summary.edited$id == i)]
+}
+for (i in unique(ev.summary.edited$id)) { 
   ev.summary$fate[which(ev.summary$id == i)] = ev.summary.edited$fate[which(ev.summary.edited$id == i)]
 }
 for (i in unique(ev.summary.edited$id)) { 
@@ -603,7 +609,7 @@ for (i in unique(ev.summary.mort$id.tag)) {
 head(ev.summary)
 
 ########################################
-#add start / end country
+#add start / end country quant
 ########################################
 require(rgdal)
 world = readOGR(dsn = "./Data/TM_WORLD_BORDERS_SIMPL-0.3/", layer = "TM_WORLD_BORDERS_SIMPL-0.3")
@@ -801,6 +807,10 @@ summary(ev.summary)
 names(ev.summary)
 ev.summary = ev.summary[,c(2:6,1,7:27,29:40,28)]
 names(ev.summary)
+
+#remove one row with NAs, which is a deployment of a tag on a bird with 2 tag deployments
+ev.summary = ev.summary[!is.na(ev.summary$fate),]
+summary(ev.summary)
 
 #write edited files
 #set GitHub wd to write final files
