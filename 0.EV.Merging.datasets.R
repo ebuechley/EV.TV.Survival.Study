@@ -308,53 +308,9 @@ ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() 
   geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
   theme(legend.title = element_blank()) 
 ev41 = test
-#
-test = ev41
-head(test)
-test = dplyr::arrange(test, timestamp) #order by date
-#remove lat/long with 0
-summary(test)
-#test$location.lat = gsub("[a-zA-Z ]", "", test$location.lat) #remove characters from numeric string
-#test$location.long = gsub("[a-zA-Z ]", "", test$location.long) #remove characters from numeric string
-#test$location.lat = as.numeric(test$location.lat)
-#test$location.long = as.numeric(test$location.long)
-summary(test$location.lat)
-summary(test)
-#test<-test[!(test$location.long==0 & test$location.lat==0),]
-#fix lat
-head(test$location.lat)
-test$location.lat = str_remove(test$location.lat, "[.]") # remove the decimal which is wrongly placed
-test$location.lat = str_remove(test$location.lat, "[.]")
-test$location.lat = substr(test$location.lat, 1,6) #extract the first n characters from the string to standardize the string length
-stri_sub(test$location.lat, 3, 2) ="." # add a . between 2nd and 3rd characters in string
-head(test$location.lat) 
-tail(test$location.lat) #looks good
-test$location.lat = as.numeric(test$location.lat)
-test = test[!is.na(test$location.lat),] #remove NAs
-summary(test$location.lat)
-#fix long
-head(test$location.long)
-test$location.long = str_remove(test$location.long, "[.]") # remove the decimal which is wrongly placed
-test$location.long = substr(test$location.long, 1,6) #extract the first n characters from the string to standardize the string length
-test$location.long = as.numeric(test$location.long)
-summary(test$location.long)
-test$location.long = as.character(test$location.long)
-test$location.long = ifelse(startsWith(test$location.long, "1"), (as.numeric(test$location.long)/10000), (as.numeric(test$location.long)/100000))
-head(test$location.long)
-tail(test$location.long)
-test<-test[!(test$location.long<5),] #removing outliers
-test<-test[!(test$location.lat>42),] #removing outliers
-head(test$timestamp)
-tail(test$timestamp)
-summary(test$location.long)
-#quick plot of data
-ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() + theme_bw() +
-  geom_path(data = test, aes(location.long,location.lat)) + labs(x = "longitude", y = "latitude") +
-  theme(legend.title = element_blank()) 
-ev41 = test
 
 #
-ev42 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/AF5AF11F_2018_EV_Italy.csv", header = TRUE)
+ev42 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/AF5AF11F_Bianca.csv", header = TRUE, sep = ";")
 head(ev42)
 names(ev42)
 ev42$individual.local.identifier = "Bianca_IHB"
@@ -382,7 +338,7 @@ ggplot() + annotation_map(map_data("world"), fill = 'grey')  + coord_quickmap() 
 ev42 = test
 
 #
-ev43 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/B05AF11F_2018_EV_Italy.csv", header = TRUE)
+ev43 = read.csv("./Raw data/ISPRA.Italy.CaptiveRaised/B05AF11F_Clara.csv", header = TRUE)
 head(ev43)
 names(ev43)
 ev43$individual.local.identifier = "Clara_IHC"
@@ -499,7 +455,7 @@ unique(ev.tv$id.tag) #238
 
 #reorder dataframe to have x,y,date,id.tag as first four columns
 names(ev.tv)
-ev.tv = ev.tv[,c(4,5,3,102,1:2,6:101)]
+ev.tv = ev.tv[,c(4,5,3,104,1:2,6:103)]
 names(ev.tv)
 
 #add ymdh
