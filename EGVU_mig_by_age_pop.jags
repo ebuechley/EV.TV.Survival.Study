@@ -41,9 +41,9 @@
     for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
     logit(phi[i,t]) <- lp.mean[pop.num[i]] +      ### intercept for mean survival 
-    b.phi.mig[age[i,t]+1, pop[i]+1]*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory) AND AGE CLASS
+    b.phi.mig[adult[i,t]+1, pop[i]+1]*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory) AND AGE CLASS
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
-    b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
+    b.phi.age*(age[i,t]) +     ### survival dependent on age (juvenile or other)
     surv.raneff[year[t]]
     } #t
     } #i

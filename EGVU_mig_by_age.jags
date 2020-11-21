@@ -57,7 +57,7 @@
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
-    b.phi.age ~ dnorm(, 0.01)            # Prior for age effect on survival probability on logit scale
+    b.phi.age ~ dnorm(0, 0.01)            # Prior for age effect on survival probability on logit scale
 
 
     #### SLOPE PARAMETERS FOR MIGRATION EFFECT BY AGE
