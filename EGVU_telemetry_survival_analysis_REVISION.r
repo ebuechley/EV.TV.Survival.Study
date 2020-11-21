@@ -31,7 +31,8 @@
 
 ## ADDED INTERACTION MODELS ON 19 NOV 2020
 ## interaction between population and migration and age and migration
-## need to remove fixed effect of population, but maybe insert 3-level intercept?
+## need to remove fixed effect of population, but inserted 3-level intercept
+## finalised 4 candidate models on 20 Nov 2020
 
 library(jagsUI)
 library(tidyverse)
@@ -470,6 +471,7 @@ INPUT.telemetry <- list(y = y.telemetry,
                         n.occasions = dim(y.telemetry)[2],
 				                year=years,
 				                nyears=length(unique(years)))
+INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,1,0) 
 
 # EV %>% filter(population %in% c("italy","balkans")) %>% filter(age.at.deployment=="juv") %>%
 #   group_by(population, fate) %>%
@@ -493,9 +495,7 @@ nc <- 3
 
 
 
-#### LATEST SIMPLEST AND MAYBE EASIEST MODEL TO INTERPRET ##########
-INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,1,0) 
-#INPUT.telemetry$pop<-ifelse(INPUT.telemetry$pop>1,0,1)
+#### PREPARE INITS A##########
 
 inits.telemetry <- function(){list(z = z.telemetry,
                                    mean.phi = runif(3, 0.9, 1), ### two intercepts for juvenile and adults
@@ -506,55 +506,44 @@ inits.telemetry <- function(){list(z = z.telemetry,
 
 
 
-#### MODELS FOR REVISION
 
+#### MODELS FOR REVISION - FIRST THREE USE CATEGORICAL AGE AS NUISANCE PARAMETER
 
-
-# Call JAGS from R (took 122.962 min DIC = 6069.763)
-REV1_EGVU_mig_by_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_age.jags",
-                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
-
-# Call JAGS from R (took 125.372 min DIC = 6070.908)
+# REGION INTERACTION MODEL - migration cost and survival in general vary by geographic region 
 REV1_EGVU_mig_by_pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_pop.jags",
                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
+# REGION CONSTANT MODEL - migration cost is similar across ages and geographic regions, but survival in general varies by geographic region and age
+REV1_EGVU_3pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_3pop_additive_random_year.jags",
+                                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
 
-# Call JAGS from R (took 122.962 min DIC = 6069.897)
+
+## NEXT TWO MODELS USE CONTINUOUS AGE AS NUISANCE PARAMETER
+
+# AGE INTERACTION MODEL - migration cost varies by age, and survival in general varies by geographic region
 agescale<-scale(1:max(age.mat, na.rm=T))
 INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
+REV1_EGVU_mig_by_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                 "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_age.jags",
+                                 n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+
+# FULL INTERACTION MODEL - migration cost varies by age and geographic region
+
 INPUT.telemetry$pop = ifelse(EV$pop %in% c("western europe","italy"),1,0)  ## for full interaction model try to lump italy and iberia
 REV1_EGVU_mig_by_age_pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                      "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_age_pop.jags",
                                      n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
 
-# Call JAGS from R (took 115.176 min DIC = 6116.787)
-REV1_EGVU_3pop_no_sea_cross <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_3pop_additive_random_year.jags",
-                                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
-# Call JAGS from R (took 115.176 min DIC = 6116.787)
-REV1_EGVU_surv_mod_rand_year <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_random_year.jags",
-                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+# # THE ORIGINAL MODEL FROM THE FIRST SUBMISSION PLUS RANDOM YEAR EFFECT MANDATED BY REVIEWER
+# REV1_EGVU_surv_mod_rand_year <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_random_year.jags",
+#                                          n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
-
-# ORIGINAL MODEL FROM FIRST SUBMISSION - Call JAGS from R (took 111.746 min DIC = 6116.883)
-EGVU_original_submission <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive.jags",
-                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
-
-
-
-## continuous age model with quadratic age effect to satisfy senescence comment by editor (took 123.92 min DIC = 6116.444)
-agescale<-scale(1:max(age.mat, na.rm=T))
-INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
-REV1_EGVU_surv_mod_quad_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                            "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_age_2.jags",
-                                            n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
 
 
@@ -627,18 +616,13 @@ cat("
     for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
     logit(phi[i,t]) <- lp.mean[pop.num[i]] +      ### intercept for mean survival 
-    b.phi.mig[adult[i,t]+1, pop[i]+1]*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory) AND AGE CLASS
+    b.phi.mig[age[i,t]+1, pop[i]+1]*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory) AND AGE CLASS
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
-    b.phi.age*(age[i,t]) +     ### survival dependent on age (juvenile or other)
-    #b.phi.pop1*(pop1[i])  +    ### survival dependent on population1 (western Europe or other)
-    #b.phi.pop2*(pop2[i]) +     ### survival dependent on population2 (Italy/Balkans or other)
+    b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
     surv.raneff[year[t]]
     } #t
     } #i
     
-    #### BASELINE FOR SURVIVAL PROBABILITY (wild adult stationary from east)
-    #mean.phi ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
-    #lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
 
     #### INTERCEPT PARAMETERS FOR SURVIVAL BY POPULATION
     for(popgroup in 1:3){
@@ -648,10 +632,7 @@ cat("
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
-    
-    b.phi.age ~ dnorm(-1, 0.01)T(-4, 0)            # Prior for age effect on survival probability on logit scale
-    #b.phi.pop1 ~ dunif(-2,3)         # Prior for population effect on survival probability on logit scale
-    #b.phi.pop2 ~ dunif(-2,2)  ##dnorm(-1, 0.01)        # Prior for vulnerable state on survival probability on logit scale
+    b.phi.age ~ dnorm(0, 0.01)          # Prior for age effect on survival probability on logit scale
     
     #### SLOPE PARAMETERS FOR MIGRATION EFFECT BY AGE
     for(agegroup in 1:2){  ### two age classes, juvenile and adult
@@ -795,26 +776,25 @@ cat("
     #### MONTHLY SURVIVAL PROBABILITY
     for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
-    logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
+    logit(phi[i,t]) <- lp.mean[pop.num[i]] +      ### intercept for mean survival 
     b.phi.mig[adult[i,t]+1]*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory) AND AGE CLASS
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
-    #b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
-    b.phi.pop1*(pop1[i])  +    ### survival dependent on population1 (western Europe or other)
-    b.phi.pop2*(pop2[i]) +     ### survival dependent on population2 (Italy/Balkans or other)
+    b.phi.age*(age[i,t]) +     ### survival dependent on age (juvenile or other)
     surv.raneff[year[t]]
     } #t
     } #i
     
-    #### BASELINE FOR SURVIVAL PROBABILITY (wild adult stationary from east)
-    mean.phi ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
-    lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
+
+    #### INTERCEPT PARAMETERS FOR SURVIVAL BY POPULATION
+    for(popgroup in 1:3){
+    mean.phi[popgroup] ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
+    lp.mean[popgroup] <- log(mean.phi[popgroup]/(1 - mean.phi[popgroup]))    # logit transformed survival intercept
+    }
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
+    b.phi.age ~ dnorm(, 0.01)            # Prior for age effect on survival probability on logit scale
 
-    #b.phi.age ~ dnorm(-1, 0.01)T(-4, 0)            # Prior for age effect on survival probability on logit scale
-    b.phi.pop1 ~ dunif(-2,3)         # Prior for population effect on survival probability on logit scale
-    b.phi.pop2 ~ dunif(-2,2)  ##dnorm(-1, 0.01)        # Prior for vulnerable state on survival probability on logit scale
 
     #### SLOPE PARAMETERS FOR MIGRATION EFFECT BY AGE
     for(agegroup in 1:2){
@@ -957,22 +937,14 @@ cat("
     b.phi.mig[pop.num[i]]*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory) AND AGE CLASS
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
     b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
-    #b.phi.pop1*(pop1[i])  +    ### survival dependent on population1 (western Europe or other)
-    #b.phi.pop2*(pop2[i]) +     ### survival dependent on population2 (Italy/Balkans or other)
     surv.raneff[year[t]]
     } #t
     } #i
     
-    #### BASELINE FOR SURVIVAL PROBABILITY (wild adult stationary from east)
-    #mean.phi ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
-    #lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
-    
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
     b.phi.age ~ dnorm(-1, 0.01)T(-4, 0)            # Prior for age effect on survival probability on logit scale
-    #b.phi.pop1 ~ dunif(-2,3)         # Prior for population effect on survival probability on logit scale
-    #b.phi.pop2 ~ dunif(-2,2)  ##dnorm(-1, 0.01)        # Prior for vulnerable state on survival probability on logit scale
-    
+
     #### SLOPE PARAMETERS FOR MIGRATION EFFECT BY POPULATION
     for(popgroup in 1:3){
     b.phi.mig[popgroup] ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
@@ -1113,26 +1085,24 @@ cat("
     #### MONTHLY SURVIVAL PROBABILITY
     for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
-    logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
+    logit(phi[i,t]) <- lp.mean[pop.num[i]] +      ### intercept for mean survival 
     b.phi.mig*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
     b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
-    b.phi.pop1*(pop1[i])  +    ### survival dependent on population1 (western Europe or other)
-    b.phi.pop2*(pop2[i]) +     ### survival dependent on population2 (Italy/Balkans or other)
     surv.raneff[year[t]]
     } #t
     } #i
     
     #### BASELINE FOR SURVIVAL PROBABILITY (wild adult stationary from east)
-    mean.phi ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
-    lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
+    for(popgroup in 1:3){
+    mean.phi[popgroup] ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
+    lp.mean[popgroup] <- log(mean.phi[popgroup]/(1 - mean.phi[popgroup]))    # logit transformed survival intercept
+    }
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
     b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
     b.phi.age ~ dnorm(-1, 0.01)T(-4, 0)            # Prior for age effect on survival probability on logit scale
-    b.phi.pop1 ~ dunif(-2,3)         # Prior for population effect on survival probability on logit scale
-    b.phi.pop2 ~ dunif(-2,2)  ##dnorm(-1, 0.01)        # Prior for vulnerable state on survival probability on logit scale
     
     
     #### TAG FAILURE AND LOSS PROBABILITY

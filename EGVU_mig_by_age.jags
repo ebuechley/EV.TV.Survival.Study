@@ -40,26 +40,25 @@
     #### MONTHLY SURVIVAL PROBABILITY
     for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
-    logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
+    logit(phi[i,t]) <- lp.mean[pop.num[i]] +      ### intercept for mean survival 
     b.phi.mig[adult[i,t]+1]*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory) AND AGE CLASS
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
-    #b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
-    b.phi.pop1*(pop1[i])  +    ### survival dependent on population1 (western Europe or other)
-    b.phi.pop2*(pop2[i]) +     ### survival dependent on population2 (Italy/Balkans or other)
+    b.phi.age*(age[i,t]) +     ### survival dependent on age (juvenile or other)
     surv.raneff[year[t]]
     } #t
     } #i
     
-    #### BASELINE FOR SURVIVAL PROBABILITY (wild adult stationary from east)
-    mean.phi ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
-    lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
+
+    #### INTERCEPT PARAMETERS FOR SURVIVAL BY POPULATION
+    for(popgroup in 1:3){
+    mean.phi[popgroup] ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
+    lp.mean[popgroup] <- log(mean.phi[popgroup]/(1 - mean.phi[popgroup]))    # logit transformed survival intercept
+    }
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
+    b.phi.age ~ dnorm(, 0.01)            # Prior for age effect on survival probability on logit scale
 
-    #b.phi.age ~ dnorm(-1, 0.01)T(-4, 0)            # Prior for age effect on survival probability on logit scale
-    b.phi.pop1 ~ dunif(-2,3)         # Prior for population effect on survival probability on logit scale
-    b.phi.pop2 ~ dunif(-2,2)  ##dnorm(-1, 0.01)        # Prior for vulnerable state on survival probability on logit scale
 
     #### SLOPE PARAMETERS FOR MIGRATION EFFECT BY AGE
     for(agegroup in 1:2){
