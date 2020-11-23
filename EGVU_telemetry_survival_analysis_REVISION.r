@@ -539,10 +539,17 @@ REV1_EGVU_mig_by_age_pop <- autojags(INPUT.telemetry, inits.telemetry, parameter
 
 
 
-# # THE ORIGINAL MODEL FROM THE FIRST SUBMISSION PLUS RANDOM YEAR EFFECT MANDATED BY REVIEWER
-# REV1_EGVU_surv_mod_rand_year <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-#                                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_random_year.jags",
-#                                          n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+## THE ORIGINAL MODEL FROM THE FIRST SUBMISSION PLUS RANDOM YEAR EFFECT MANDATED BY REVIEWER
+inits.telemetry <- function(){list(z = z.telemetry,
+                                   mean.phi = runif(1, 0.9, 1), ### two intercepts for juvenile and adults
+                                   base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
+                                   base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
+                                   beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
+                                   beta3 = rnorm(1,0, 0.001))} 
+INPUT.telemetry$pop = ifelse(EV$pop %in% c("western europe"),1,0)  ## for full interaction model try to lump italy and iberia
+REV1_EGVU_surv_mod_rand_year <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_random_year.jags",
+                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
 
 
@@ -616,9 +623,9 @@ cat("
     for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
     logit(phi[i,t]) <- lp.mean[pop.num[i]] +      ### intercept for mean survival 
-    b.phi.mig[age[i,t]+1, pop[i]+1]*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory) AND AGE CLASS
+    b.phi.mig[adult[i,t]+1, pop[i]+1]*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory) AND AGE CLASS
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
-    b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
+    b.phi.age*(age[i,t]) +     ### survival dependent on age (juvenile or other)
     surv.raneff[year[t]]
     } #t
     } #i
@@ -793,7 +800,7 @@ cat("
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
-    b.phi.age ~ dnorm(, 0.01)            # Prior for age effect on survival probability on logit scale
+    b.phi.age ~ dnorm(0, 0.01)            # Prior for age effect on survival probability on logit scale
 
 
     #### SLOPE PARAMETERS FOR MIGRATION EFFECT BY AGE
