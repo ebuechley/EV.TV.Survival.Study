@@ -36,6 +36,8 @@
 
 ## AFTER SUMMARISING RESULTS THE 3-pop INTERCEPT MAKES NO SENSE AS THE SURVIVAL ESTIMATES ARE TOO LOW
 ## MODIFIED ORIGINAL MODEL TO INCLUDE 2-3 MIG PARAMETERS
+## incorporated revised data on 24 NOV 2020 and re-ran two simple models: mig const and 3 pop
+
 
 library(jagsUI)
 library(tidyverse)
@@ -498,10 +500,10 @@ nc <- 3
 
 
 
-#### PREPARE INITS A##########
+#### PREPARE INITS ##########
 
 inits.telemetry <- function(){list(z = z.telemetry,
-                                   mean.phi = runif(3, 0.9, 1), ### two intercepts for juvenile and adults
+                                   mean.phi = runif(1, 0.9, 1), ### two intercepts for juvenile and adults
                                    base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
                                    base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
                                    beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
@@ -512,64 +514,65 @@ inits.telemetry <- function(){list(z = z.telemetry,
 
 #### MODELS FOR REVISION - FIRST THREE USE CATEGORICAL AGE AS NUISANCE PARAMETER
 
-# REGION INTERACTION MODEL - migration cost and survival in general vary by geographic region 
-REV1_EGVU_mig_by_pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                        "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_pop.jags",
-                                        n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
-
 # REGION CONSTANT MODEL - migration cost is similar across ages and geographic regions, but survival in general varies by geographic region and age
-REV1_EGVU_3pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_3pop_additive_random_year.jags",
-                                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+REV1_3pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                           "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_3pop_additive_random_year.jags",
+                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
-
-
-## NEXT TWO MODELS USE CONTINUOUS AGE AS NUISANCE PARAMETER
-
-# AGE INTERACTION MODEL - migration cost varies by age, and survival in general varies by geographic region
-agescale<-scale(1:max(age.mat, na.rm=T))
-INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
-REV1_EGVU_mig_by_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                 "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_age.jags",
-                                 n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
-
-# FULL INTERACTION MODEL - migration cost varies by age and geographic region
-
-INPUT.telemetry$pop = ifelse(EV$pop %in% c("western europe","italy"),1,0)  ## for full interaction model try to lump italy and iberia
-REV1_EGVU_mig_by_age_pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_age_pop.jags",
-                                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
-
+REV1_2pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                   "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_const_mig.jags",
+                                   n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
 
 ## THE ORIGINAL MODEL FROM THE FIRST SUBMISSION PLUS RANDOM YEAR EFFECT MANDATED BY REVIEWER
-inits.telemetry <- function(){list(z = z.telemetry,
-                                   mean.phi = runif(1, 0.9, 1), ### two intercepts for juvenile and adults
-                                   base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
-                                   base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
-                                   beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
-                                   beta3 = rnorm(1,0, 0.001))} 
-INPUT.telemetry$pop = ifelse(EV$pop %in% c("western europe"),1,0)  ## for full interaction model try to lump italy and iberia
-REV1_EGVU_surv_mod_rand_year <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+REV1_sea_cross <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_random_year.jags",
                                          n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
-## MODIFICATIONS OF THE ORIGINAL MODEL
-# 2 migration cost parameters - one for juveniles crossing the sea, 1 for everything else
-REV1_EGVU_mig2 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_mig2.jags",
-                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+# #### THE FOLLOWING MODELS WERE DISCARDED ON 24 NOV
+# ## MODIFICATIONS OF THE ORIGINAL MODEL
+# # 2 migration cost parameters - one for juveniles crossing the sea, 1 for everything else
+# REV1_EGVU_mig2 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                            "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_mig2.jags",
+#                            n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+# 
+# # 3 migration cost parameters - one for west, one for adults east, 1 for juveniles east
+# INPUT.telemetry$mig.group = ifelse(age.mat>18,3,2)
+# INPUT.telemetry$mig.group = ifelse(EV$pop=="western europe" & INPUT.telemetry$mig.group>0,1,INPUT.telemetry$mig.group)  ## for three levels of migration cost
+# REV1_EGVU_mig3 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                            "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_mig3.jags",
+#                            n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+# 
+# REV1_EGVU_mig_constant <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_const_mig.jags",
+#                                    n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+# 
+# # REGION INTERACTION MODEL - migration cost and survival in general vary by geographic region
+# inits.telemetry <- function(){list(z = z.telemetry,
+#                                    mean.phi = runif(3, 0.9, 1), ### two intercepts for juvenile and adults
+#                                    base.obs = rnorm(1,0, 0.001),                # Prior for intercept of observation probability on logit scale
+#                                    base.fail = rnorm(1,0, 0.001),               # Prior for intercept of tag failure probability on logit scale
+#                                    beta2 = rnorm(1,0, 0.001),         # Prior for slope parameter for 
+#                                    beta3 = rnorm(1,0, 0.001))} 
+# REV1_EGVU_mig_by_pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                                         "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_pop.jags",
+#                                         n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+# 
+# # AGE INTERACTION MODEL - migration cost varies by age, and survival in general varies by geographic region
+# agescale<-scale(1:max(age.mat, na.rm=T))
+# INPUT.telemetry$age <- matrix(agescale[age.mat], ncol=ncol(age.mat), nrow=nrow(age.mat))
+# REV1_EGVU_mig_by_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                                  "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_age.jags",
+#                                  n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+# 
+# # FULL INTERACTION MODEL - migration cost varies by age and geographic region
+# INPUT.telemetry$pop = ifelse(EV$pop %in% c("western europe","italy"),1,0)  ## for full interaction model try to lump italy and iberia
+# REV1_EGVU_mig_by_age_pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                                      "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_mig_by_age_pop.jags",
+#                                      n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
-# 3 migration cost parameters - one for west, one for adults east, 1 for juveniles east
-INPUT.telemetry$mig.group = ifelse(age.mat>18,3,2)
-INPUT.telemetry$mig.group = ifelse(EV$pop=="western europe" & INPUT.telemetry$mig.group>0,1,INPUT.telemetry$mig.group)  ## for three levels of migration cost
-REV1_EGVU_mig3 <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                           "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_mig3.jags",
-                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
-REV1_EGVU_mig_constant <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                           "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_const_mig.jags",
-                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+
 
 
 
@@ -1419,24 +1422,27 @@ cat("
     #### MONTHLY SURVIVAL PROBABILITY
     for (i in 1:nind){
     for (t in f[i]:(n.occasions)){
-    logit(phi[i,t]) <- lp.mean[pop.num[i]] +      ### intercept for mean survival 
+    logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
     b.phi.mig*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
     b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
+    b.phi.pop*(pop[i]) +     ### survival dependent on age (juvenile or other)
+    b.phi.pop2*(pop2[i]) +     ### survival dependent on age (juvenile or other)
     surv.raneff[year[t]]
     } #t
     } #i
     
     #### BASELINE FOR SURVIVAL PROBABILITY (wild adult stationary from east)
-    for(popgroup in 1:3){
-    mean.phi[popgroup] ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
-    lp.mean[popgroup] <- log(mean.phi[popgroup]/(1 - mean.phi[popgroup]))    # logit transformed survival intercept
-    }
+    mean.phi ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
+    lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
+
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
     b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
-    b.phi.age ~ dnorm(-1, 0.01)T(-4, 0)            # Prior for age effect on survival probability on logit scale
+    b.phi.age ~ dnorm(-1, 0.01)            # Prior for age effect on survival probability on logit scale
+    b.phi.pop ~ dunif(0, 4)            # Prior for population effect of western population
+    b.phi.pop2 ~ dnorm(0, 0.01)            # Prior for population effect of Italy/Balkans population
     
     
     #### TAG FAILURE AND LOSS PROBABILITY
@@ -1741,7 +1747,7 @@ cat("
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
     b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
-    b.phi.age ~ dnorm(-1, 0.01)T(-4, 0)            # Prior for age effect on survival probability on logit scale
+    b.phi.age ~ dnorm(-1, 0.01)         # Prior for age effect on survival probability on logit scale
     b.phi.pop ~ dunif(0,4)         # Prior for population effect on survival probability on logit scale
     b.phi.vul ~ dnorm(-1, 0.01)  ##dnorm(-1, 0.01)        # Prior for vulnerable state on survival probability on logit scale
     
