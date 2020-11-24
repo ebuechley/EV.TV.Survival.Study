@@ -70,6 +70,22 @@ d.summ2$fate.at.annual.stage = as.factor(d.summ2$fate.at.annual.stage)
 summary(d.summ2$fate.at.annual.stage)
 summary(d.summ2)
 
+#plot specific id's
+unique(d$id)
+unique(d$year)
+test = subset(d, d$study.name == "Egyptian vulture Kobierzycki Vaucluse ID_PROG 457")
+test = subset(d, d$id == "Provence_2016_Ad_wild_EO5018_Salome_8P")
+d = d[!(d$id =="Provence_2016_Ad_wild_EO5018_Salome_8P" & d$year == "2019"),] #remove data from long data gaps that produce straight lines over Med
+test = subset(d, d$study.name == "Neophron percnopterus Bulgaria/Greece")
+test = subset(d, d$id == "Aoos")
+d = d[!(d$id =="Aoos" & d$year == "2020"),] #remove data from long data gaps that produce straight lines over Med
+test = subset(d, d$study.name == "LIFE_Rupis_EgyptianVultures")
+test = subset(d, d$id == "Rupis")
+d = d[!(d$id =="Rupis" & d$year == "2020"),] #remove data from long data gaps that produce straight lines over Med
+
+ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white")  + coord_quickmap() + theme_bw() + 
+  geom_path(data = d, aes(long,lat, group = id, color = year)) + labs(x = "longitude", y = "latitude") 
+
 #plot
 setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/")
 
