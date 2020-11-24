@@ -54,10 +54,12 @@ select<-dplyr::select
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T) ## changed after re-cloning remote
 #EV<-fread("ev.tv.summary.proofed_RE4_migrantsonly.csv")   ## updated on 9 April 2020
 EV<-fread("ev.summary.final.Rev1.survival.prepared.csv")   ## REVISED DATA 10 NOV 2020
-
+EV<-EV %>% filter(id.tag!="R2_190604")
 #EV<-fread("ev.summary.final.csv")   ## new file provided by Evan on 27 May 2020
 #EV<-fread("FINAL_ANALYSIS_DATA.csv")   ## new file reated by Steffen on 28 May 2020 - just changed from RE4 by switching 'Apollo' from unknown to confirmed dead
 EVcovar<-fread("ev.final.Rev1.survival.prepared.csv")
+EVcovar %>% filter(id.tag=="R2_190604")
+EV<-EV %>% filter(id.tag!="R2_190604")   ## remove one individual without data
 #names(EV)[1]<-'species'
 head(EV)
 dim(EV)
@@ -73,7 +75,7 @@ EV<-EV %>% #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= p
   #mutate(start=parse_date_time(start.date, c("mdy", "mdy HM")), end= as.POSIXct(as.Date(as.numeric(end.date), origin="1970-01-01"))) %>% ### revised file has awkward date for end.date
   #mutate(start=ymd_hms(start.date), end= as.POSIXct(as.Date(as.numeric(end.date), origin="1970-01-01"))) %>% ### revised file has awkward date for end.date
   #mutate(start=ymd_hms(start.date), end= min(as.POSIXct(ymd(end.date)), ymd_hms(mortality.date))) %>% ### revised file has awkward date for end.date
-  mutate(start=ymd_hms(start.date), end= if_else(as.POSIXct(ymd(end.date))<ymd_hms(mortality.date),as.POSIXct(ymd(end.date)),ymd_hms(mortality.date))) %>% ### USE THE EARLIER OF END / MORTALITY DATE
+  mutate(start=ymd_hms(start.date), end= if_else(ymd_hms(end.date)<ymd_hms(mortality.date),ymd_hms(end.date),ymd_hms(mortality.date))) %>% ### USE THE EARLIER OF END / MORTALITY DATE
   filter(!is.na(start)) %>%
   filter(species=="Neophron percnopterus") %>%
   filter(start<ymd_hm("2020-09-01 12:00")) %>%  ## remove birds only alive for a few months in 2020 (removes 1 bird: Baronnies_2019_Imm_wild_OR181635_5T_181635)
@@ -93,18 +95,17 @@ EV %>% filter(grepl("Apollo",id.tag))
 EV$fate[EV$id.tag=="Apollo_16093"]<-"confirmed dead"
 EV$how.fate.determined[EV$id.tag=="Apollo_16093"]<-"carcass found"
 
-## CHANGE FATE OF HEDJET
-EV$fate[EV$id.tag=="Hedjet_171349"]<-"alive"
-
-### CHANGE FATE OF Jenny - inserted after Volen's email on 16 Nov 2020
-EV %>% filter(grepl("Jenny",id.tag))
-EV$fate[EV$id.tag=="Jenny_149507"]<-"confirmed dead"
-EV$how.fate.determined[EV$id.tag=="Jenny_149507"]<-"carcass found"
-EV$end[EV$id.tag=="Jenny_149507"]<-ymd_hms("2020-10-19 12:00:00")
+### CHANGE END DATE OF ANDI
+EV$end[EV$id.tag=="Andi_182261"]<-ymd_hms("2020-10-30 12:00:00")
   
 ### SHOW END DATES OF BIRDS ALIVE
-update.needed<-EV %>% filter(fate=="alive") %>% filter(end<ymd_hms("2020-09-30 23:59:59"))
-EV$end[EV$id.tag %in% update.needed$id.tag]<-ymd_hms("2020-10-30 23:59:59")       ## temporary hack until Evan has sorted out final dates
+set.to.unknown<-EV %>% filter(fate=="alive") %>% filter(end<ymd_hms("2020-08-10 23:59:59"))
+update.end.date<-EV %>% filter(fate=="alive") %>% filter(end<ymd_hms("2020-10-20 23:59:59"))
+
+### FIX END DATES AND FATE
+#EV$end[EV$id.tag %in% update.needed$id.tag]<-ymd_hms("2020-10-30 23:59:59")       ## temporary hack until Evan has sorted out final dates
+EV$fate[EV$id.tag %in% set.to.unknown$id.tag]<-"unknown"      ## set old birds to unknown
+EV$how.fate.determined[EV$id.tag %in% set.to.unknown$id.tag]<-"unknown"      ## set old birds to unknown
 #fwrite(update.needed, "EV.end.date_update_needed.csv")
 
 ### SUM TOTAL OF TRACKING EFFORT
@@ -422,7 +423,10 @@ for(row in 1:nrow(EV.phi.matrix)) {
 
 dim(EV.phi.matrix)
 dim(EV.obs.matrix)
+dim(lat.mat)
+dim(age.mat)
 
+EV$id.tag[which((EV$id.tag %in% age.matrix$id.tag)==FALSE)]
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CREATE INPUT DATA FOR JAGS
@@ -517,7 +521,7 @@ inits.telemetry <- function(){list(z = z.telemetry,
 # REGION CONSTANT MODEL - migration cost is similar across ages and geographic regions, but survival in general varies by geographic region and age
 REV1_3pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                            "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_3pop_additive_random_year.jags",
-                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni)
 
 REV1_2pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                    "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_const_mig.jags",
@@ -528,6 +532,8 @@ REV1_2pop <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
 REV1_sea_cross <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                                          "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_binary_additive_random_year.jags",
                                          n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+
+
 
 # #### THE FOLLOWING MODELS WERE DISCARDED ON 24 NOV
 # ## MODIFICATIONS OF THE ORIGINAL MODEL
