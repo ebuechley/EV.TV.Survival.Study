@@ -529,11 +529,14 @@ summary(d$mortality.date)
 d = subset(d, d$timestamp <= d$mortality.date)
 summary(d$mortality.date)
 unique(d$id.tag) #220 -- THIS REMOVED 2 ID
+unique(ev.summary$id.tag)
 
 #find and remove id.tags
 unique(ev.summary$id.tag) == unique(d$id.tag)
+unique(ev.summary$id.tag)[216] 
+unique(d$id.tag)[216] 
 #IDs REMOVED Were "R2_190604", REMOVE ALSO FROM EV.SUMMARY
-ev.summary<-ev.summary[!(ev.summary$id.tag=="R2_190604"),]
+#ev.summary<-ev.summary[!(ev.summary$id.tag=="R2_190604"),]
 #IDs REMOVED Were "Zaror I30 Red_200659", REMOVE ALSO FROM EV.SUMMARY
 ev.summary<-ev.summary[!(ev.summary$id.tag=="Zaror I30 Red_200659"),]
 unique(ev.summary$id.tag) == unique(d$id.tag) #all good
@@ -608,6 +611,8 @@ for (i in unique(ev.summary.mort$id.tag)) {
 }
 head(ev.summary)
 
+write.csv(ev.summary, "test.csv", row.names = F)
+
 ########################################
 #add start / end country quant
 ########################################
@@ -638,7 +643,7 @@ xy.end = ev.summary.country[,c("end.long","end.lat")]
 spdf.end <- SpatialPointsDataFrame(coords = xy.end, data = ev.summary.country,
                                    proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 
-#check that the prjections match
+#check that the projections match
 proj4string(spdf.end) == proj4string(world)
 plot(spdf.end)
 plot(world, add = T)
@@ -809,7 +814,8 @@ ev.summary = ev.summary[,c(2:6,1,7:27,29:40,28)]
 names(ev.summary)
 
 #remove one row with NAs, which is a deployment of a tag on a bird with 2 tag deployments
-ev.summary = ev.summary[!is.na(ev.summary$fate),]
+summary(ev.summary$fate)
+#ev.summary = ev.summary[!is.na(ev.summary$fate),]
 summary(ev.summary)
 
 #write edited files
