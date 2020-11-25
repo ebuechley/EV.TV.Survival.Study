@@ -59,7 +59,7 @@ EV<-EV %>% filter(id.tag!="R2_190604")
 #EV<-fread("FINAL_ANALYSIS_DATA.csv")   ## new file reated by Steffen on 28 May 2020 - just changed from RE4 by switching 'Apollo' from unknown to confirmed dead
 EVcovar<-fread("ev.final.Rev1.survival.prepared.csv")
 EVcovar %>% filter(id.tag=="R2_190604")
-EV<-EV %>% filter(id.tag!="R2_190604")   ## remove one individual without data
+EV<-EV %>% filter(id.tag!="R2_190604")   ## remove one individual that is the same of a failed tag
 #names(EV)[1]<-'species'
 head(EV)
 dim(EV)
@@ -95,18 +95,22 @@ EV %>% filter(grepl("Apollo",id.tag))
 EV$fate[EV$id.tag=="Apollo_16093"]<-"confirmed dead"
 EV$how.fate.determined[EV$id.tag=="Apollo_16093"]<-"carcass found"
 
-### CHANGE END DATE OF ANDI
+### CHANGE END DATE OF ANDI, HEDHJET, AND R2
 EV$end[EV$id.tag=="Andi_182261"]<-ymd_hms("2020-10-30 12:00:00")
+EV$end[EV$id.tag=="R2_16015"]<-ymd_hms("2020-10-30 12:00:00")
+EV$end[EV$id.tag=="Hedjet_171349"]<-ymd_hms("2020-10-30 12:00:00")
+
+### CHANGE FATE OF GURMAN (Resighted by Igor)
+EV$how.fate.determined[EV$id.tag =="Gurman_114"]<-"resighted / recaptured"
+EV$fate[EV$id.tag =="Gurman_114"]<-"confirmed transmitter failure"
   
 ### SHOW END DATES OF BIRDS ALIVE
 set.to.unknown<-EV %>% filter(fate=="alive") %>% filter(end<ymd_hms("2020-08-10 23:59:59"))
-update.end.date<-EV %>% filter(fate=="alive") %>% filter(end<ymd_hms("2020-10-20 23:59:59"))
+update.end.date<-EV %>% filter(fate=="alive") %>% filter(end<ymd_hms("2020-09-30 23:59:59"))
 
 ### FIX END DATES AND FATE
-#EV$end[EV$id.tag %in% update.needed$id.tag]<-ymd_hms("2020-10-30 23:59:59")       ## temporary hack until Evan has sorted out final dates
-EV$fate[EV$id.tag %in% set.to.unknown$id.tag]<-"unknown"      ## set old birds to unknown
-EV$how.fate.determined[EV$id.tag %in% set.to.unknown$id.tag]<-"unknown"      ## set old birds to unknown
-#fwrite(update.needed, "EV.end.date_update_needed.csv")
+#EV$end[EV$id.tag %in% update.end.date$id.tag]<-ymd_hms("2020-10-30 23:59:59")       ## temporary hack until Evan has sorted out final dates
+#fwrite(update.end.date, "EV.end.date_update_needed.csv")
 
 ### SUM TOTAL OF TRACKING EFFORT
 EV %>% mutate(end=if_else(is.na(end), ymd_hms("2020-10-30 00:00:00"), end)) %>%
@@ -587,7 +591,7 @@ REV1_sea_cross <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetr
 # EXPORT THE OUTPUT
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T)
-save.image("EGVU_survival_output_REV1.RData")
+save.image("EGVU_survival_output_REV1b.RData")
 
 load("EGVU_survival_output_REV1.RData")
 
