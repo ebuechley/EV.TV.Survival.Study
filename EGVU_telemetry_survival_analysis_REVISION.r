@@ -38,6 +38,8 @@
 ## MODIFIED ORIGINAL MODEL TO INCLUDE 2-3 MIG PARAMETERS
 ## incorporated revised data on 24 NOV 2020 and re-ran two simple models: mig const and 3 pop
 
+## 25 Nov 2020: explored effect of re-classifying drowning in Med as 'likely dead' (rather than 'confirmed dead')
+
 
 library(jagsUI)
 library(tidyverse)
@@ -124,6 +126,8 @@ EVcovar<-EVcovar %>% filter(id.tag %in% EV$id.tag)
 unique(EV$how.fate.determined)
 unique(EV$age.at.deployment)
 unique(EV$fate)
+unique(EV$cause.of.death)
+
 #quest.fates<-EV %>% filter(fate!=fate.final) %>% select(id.tag,population,age.at.deployment,start,end,fate,fate.final,how.fate.determined.clean)
 
 #### revert 3 fates to 'unknown'
@@ -131,6 +135,12 @@ unique(EV$fate)
  # mutate(fate=ifelse(id.tag %in% quest.fates$id.tag[c(1,2,12)],"unknown",fate))
 
 
+#### SELECT THE BIRDS THAT TERMINATED OVER WATER AND ARE 'CONFIRMED' DEAD
+change.fate<-EV %>% filter(cause.of.death %in% c("drowned","drop in the sea","Natural barrier","Drop in the sea")) %>%
+  filter(how.fate.determined  %in% c("terminated over water","inferred from transmissions")) %>%
+  filter(fate=="confirmed dead") %>%
+  select(population,id.tag,fate, how.fate.determined,cause.of.death)
+EV$fate[EV$id.tag %in% change.fate$id.tag]<-"likely dead"
 
 
 ### SHOW INVENTORY OF POSSIBLE COMBINATIONS OF STATES
