@@ -17,6 +17,8 @@
 ## FINALISED MODEL OUTPUT FOR 5 MAJOR MODELS on 23 NOV 2020
 ## incorporated revised data on 24 NOV 2020 and re-ran two simple models: mig const 2 and 3 pop
 
+## added adult captive bird to output on Ron's request on 25 Nov
+
 library(jagsUI)
 library(tidyverse)
 library(data.table)
@@ -140,7 +142,7 @@ TABLE2<-  MCMCpred %>%
   group_by(Population,Ageclass,Origin) %>%
   summarise(med.surv=quantile(ann.surv,0.5),lcl.surv=quantile(ann.surv,0.025),ucl.surv=quantile(ann.surv,0.975)) %>%
   arrange(Population,Ageclass,Origin) %>%
-  filter(!(Ageclass=="adult" & Origin=="captive")) %>%
+  #filter(!(Ageclass=="adult" & Origin=="captive")) %>%  ## removed to show adult captive
   filter(!(Population=="western Europe" & Origin=="captive")) %>%
   filter(!(Population=="Caucasus/Middle East")) %>%
   ungroup() %>%

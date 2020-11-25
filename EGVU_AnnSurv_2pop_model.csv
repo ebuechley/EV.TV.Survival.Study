@@ -1,4 +1,5 @@
 Population,Ageclass,Origin,med.surv,lcl.surv,ucl.surv
+central and eastern Med,adult,captive,0.823883377464487,0.722911879255889,0.885907053748434
 central and eastern Med,adult,wild,0.894750196403483,0.838058142795709,0.933771015223988
 central and eastern Med,juvenile,captive,0.372410205212718,0.216315671910007,0.50536259499629
 central and eastern Med,juvenile,wild,0.565459413062125,0.420593705703184,0.687367119495571
