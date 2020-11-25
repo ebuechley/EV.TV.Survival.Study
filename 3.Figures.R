@@ -136,39 +136,131 @@ dev.off()
 
 #############################################################################
 # summary stats on data summary
+#year, location, age and origin
+#############################################################################
 library(data.table)
-setwd("~/Documents/GitHub/EV - TV Survival Study/")
-ev.summ= read.csv("Final Cleaned Data/ev.summary.final.csv")
+setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
+ev.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv")
+d = read.csv("ev.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
+summary(d)
 
-summary(ev.summ$species)
-
-#subpopulation
-summary(ev.summ$population.binned)
-it.ba = subset(ev.summ, ev.summ$population.binned == "Italy / Balkans")
-we.eu = subset(ev.summ, ev.summ$population.binned == "W. Europe")
-me = subset(ev.summ, ev.summ$population.binned == "Middle East")
-summary(it.ba$origin)
-summary(we.eu$origin)
-summary(me$origin)
-
-#how many studies
+#lubridate
 head(ev.summ)
-names(ev.summ)
-unique(ev.summ$id)
+ev.summ$start.date = ymd_hms(ev.summ$start.date)
 
-#study
-unique(ev.summ$study.name)
+#create population.origin.age.year
+#reclassify origin
+summary(ev.summ$origin)
+ev.summ$origin = as.character(ev.summ$origin)
+ev.summ$origin[ev.summ$origin=="N"] <- "wild" 
+ev.summ$origin[ev.summ$origin=="Y"] <- "captive"
+ev.summ$population.origin = c(paste(ev.summ$population.binned,ev.summ$origin,sep=" - "))
+head(ev.summ$population.origin)
+
+#create age simple 
+summary(ev.summ$age.at.deployment.months)
+ev.summ$age.at.deployment.simple  = ifelse(ev.summ$age.at.deployment.months >=18, "adult", "juvenile")
+ev.summ$age.at.deployment.simple = as.factor(ev.summ$age.at.deployment.simple)
+summary(ev.summ$age.at.deployment.simple)
+ev.summ$population.origin.age = c(paste(ev.summ$population.origin,ev.summ$age.at.deployment.simple,sep=" - "))
+ev.summ$population.origin.age = as.factor(ev.summ$population.origin.age)
+summary(ev.summ$population.origin.age)
+
+#create "year.tagged"
+ev.summ$year.tagged = year(ev.summ$start.date)
+ev.summ$population.origin.age.year = c(paste(ev.summ$population.origin.age,ev.summ$year.tagged,sep=" - "))
+ev.summ$population.origin.age.year = as.factor(ev.summ$population.origin.age.year)
+summary(ev.summ$population.origin.age.year)
+
+#process full data to get bird months
+#extract unique bird months by id
+d = d[!duplicated(d[,c('id.tag.yr.mo')]),]
+
+#sort data by id and check if match
+ev.summ = ev.summ[order(ev.summ$id.tag),] 
+d = d[order(d$id.tag),] 
+ev.summ$id.tag = as.character(ev.summ$id.tag)
+d$id.tag = as.character(d$id.tag)
+unique(ev.summ$id.tag) == unique(d$id.tag) #don't match
+unique(ev.summ$id.tag)[177] 
+unique(d$id.tag)[177] 
+ev.summ<-ev.summ[!(ev.summ$id.tag=="R2_190604"),]
+unique(ev.summ$id.tag) == unique(d$id.tag) #don't match
+
+#add columns from summary to full data that we want to summarize
+d$population.binned = NA
+d$origin = NA
+d$age.at.deployment.simple = NA
+d$year.tagged = NA
+d$transmitter.make.model = NA
+d$transmitter.mass.grams = NA
+d$transmitter.attachment.method = NA
+summary(d)
+summary(ev.summ)
+for (i in unique(ev.summ$id.tag)) { 
+  d$population.binned[which(d$id.tag == i)] = ev.summ$population.binned[which(ev.summ$id.tag == i)]
+}
+for (i in unique(ev.summ$id.tag)) { 
+  d$origin[which(d$id.tag == i)] = ev.summ$origin[which(ev.summ$id.tag == i)]
+}
+for (i in unique(ev.summ$id.tag)) { 
+  d$age.at.deployment.simple[which(d$id.tag == i)] = ev.summ$age.at.deployment.simple[which(ev.summ$id.tag == i)]
+}
+for (i in unique(ev.summ$id.tag)) { 
+  d$year.tagged[which(d$id.tag == i)] = ev.summ$year.tagged[which(ev.summ$id.tag == i)]
+}
+for (i in unique(ev.summ$id.tag)) { 
+  d$transmitter.make.model[which(d$id.tag == i)] = ev.summ$transmitter.make.model[which(ev.summ$id.tag == i)]
+}
+for (i in unique(ev.summ$id.tag)) { 
+  d$transmitter.mass.grams[which(d$id.tag == i)] = ev.summ$transmitter.mass.grams[which(ev.summ$id.tag == i)]
+}
+for (i in unique(ev.summ$id.tag)) { 
+  d$transmitter.attachment.method[which(d$id.tag == i)] = ev.summ$transmitter.attachment.method[which(ev.summ$id.tag == i)]
+}
+head(d)
+d$age.in.months.capped.simple = ifelse(d$age.in.months.capped >=18, "adult", "juvenile")
+d = data.table(d)
+d$population.binned = as.factor(d$population.binned)
+head(d)
+table2 <- d[, .(.N), by = .(population.binned,origin,age.in.months.capped.simple,year)]
+table2
+table3 <- d[, .(.N), by = .(population.binned,origin,age.in.months.capped.simple,year,transmitter.make.model,transmitter.mass.grams,transmitter.attachment.method)]
+table3
+
+#rename columns
+names(table2)
+table2$population = table2$population.binned
+table2$population.binned = NULL
+table2$age = table2$age.in.months.capped.simple
+table2$age.in.months.capped.simple = NULL
+table2$sample.size = table2$N
+table2$N = NULL
+names(table2)
+
+#sort
+table2 = table2[,c("population","origin","age","year","sample.size")]
+table2 = table2[order(population,origin,age,year,sample.size),]  
+head(table2)
+
+#write
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/")
+write.csv(table2, "Supplemental.Table.csv", row.names = F)
+#write.csv(table3, "Supplemental.Table.with.tx.details.csv", row.names = F)
+
+#location
 d <- data.table(ev.summ)
 names(d)
-projs <- d[, .(.N), by = .(study.name)]
-projs
+location <- d[, .(.N), by = .(population.binned)]
+location
 
 #age
-age = d[, .(.N), by = .(age.at.deployment.clean)]
+names(d)
+age = d[, .(.N), by = .(age.at.deployment.)]
 age
 
 #origin
-orig = d[, .(.N), by = .(origin)]
+orig = d[, .(.N), by = .(captive.raised)]
 orig
 
 #deployment duration
@@ -309,3 +401,11 @@ tiff("subpopulation.path.plot.tiff", units="cm", width=20, height=15, res=300)
 grid_plot
 dev.off()
 
+#subpopulation
+summary(ev.summ$population.binned)
+#it.ba = subset(ev.summ, ev.summ$population.binned == "Italy / Balkans")
+#we.eu = subset(ev.summ, ev.summ$population.binned == "W. Europe")
+#me = subset(ev.summ, ev.summ$population.binned == "Middle East")
+#summary(it.ba$origin)
+#summary(we.eu$origin)
+#summary(me$origin)
