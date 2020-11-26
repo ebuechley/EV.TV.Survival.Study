@@ -507,7 +507,7 @@ INPUT.telemetry$mig<-ifelse(INPUT.telemetry$mig>2,1,0)
 
 # Parameters monitored
 parameters.telemetry <- c("p.seen.alive","base.obs","base.fail","base.recover","beta1","beta2","beta3","beta4",
-                          "mean.phi","lp.mean","b.phi.mig","b.phi.capt","b.phi.pop","b.phi.age","b.phi.vul","b.phi.age2",
+                          "mean.phi","lp.mean","b.phi.mig","b.phi.capt","b.phi.pop","b.phi.age","b.phi.vul","b.phi.age2","b.phi.lat",
                           "b.phi.pop1","b.phi.pop2")
 
 # MCMC settings
@@ -619,9 +619,9 @@ REV1_2pop_quad_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.tele
 # EXPORT THE OUTPUT
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T)
-save.image("EGVU_survival_output_REV1b.RData")
+save.image("EGVU_survival_output_REV1_reduced_sample_size.RData")
 
-load("EGVU_survival_output_REV1.RData")
+load("EGVU_survival_output_REV1_FINAL.RData")
 
 
 
@@ -685,6 +685,7 @@ cat("
     for (t in f[i]:(n.occasions)){
     logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
     b.phi.mig*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
+    #b.phi.lat*(lat[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
     b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
     b.phi.pop*(pop[i])  +    ### survival dependent on population (western Europe or other)
@@ -699,6 +700,7 @@ cat("
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
     b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
+    #b.phi.lat ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
     b.phi.age ~ dnorm(-1, 0.01)            # Prior for age effect on survival probability on logit scale
     b.phi.pop ~ dunif(0,4)         # Prior for population effect on survival probability on logit scale
     
