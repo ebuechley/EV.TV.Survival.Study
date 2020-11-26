@@ -42,6 +42,7 @@
     for (t in f[i]:(n.occasions)){
     logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
     b.phi.mig*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
+    b.phi.lat*(lat[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
     b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
     b.phi.pop*(pop[i])  +    ### survival dependent on population (western Europe or other)
@@ -56,6 +57,7 @@
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
     b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
+    b.phi.lat ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
     b.phi.age ~ dnorm(-1, 0.01)            # Prior for age effect on survival probability on logit scale
     b.phi.pop ~ dunif(0,4)         # Prior for population effect on survival probability on logit scale
     
