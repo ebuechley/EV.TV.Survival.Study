@@ -5,6 +5,7 @@
 library(tidyverse)
 library(data.table)
 library(lubridate)
+library(rjags)
 filter<-dplyr::filter
 select<-dplyr::select
 
@@ -12,10 +13,9 @@ select<-dplyr::select
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # LOAD DATA FROM MATRICES FOR MODEL INPUT
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T) 
-load("EGVU_survival_output_full_additive.RData")
-
+try(setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/"), silent=T)
+#try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T) 
+load("EGVU_survival_output_REV1b.RData")
 
 dim(EV.phi.matrix) ### this is the matrix that specifies the migration stage per animal per month
 dim(lat.matrix)    ### this is the matrix that specifies the mean latitude per animal per month
@@ -93,6 +93,7 @@ ggplot(SUMMARY, aes(x=LatBand,y=rate, fill = Fate)) +
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
 
-ggsave("Fig1_lat_barplot.jpg", width=8, height=7)
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/")
+ggsave("Fig2_lat_barplot.jpg", width=8, height=7)
 
 

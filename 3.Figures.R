@@ -48,10 +48,10 @@ d.summ2<-d.summ[!(d.summ$fate == "alive"),]
 d.summ2<-d.summ2[!(d.summ2$population == "unknown"),] 
 
 #remove rehabbed birds 
-d.summ2<-d.summ2[!(d.summ2$rehabilitated == "Y"),] 
+#d.summ2<-d.summ2[!(d.summ2$rehabilitated == "Y"),] 
 
 #remove imprinted birds 
-d.summ2<-d.summ2[!(d.summ2$fate == "returned to captivity"),] 
+#d.summ2<-d.summ2[!(d.summ2$fate == "returned to captivity"),] 
 
 #rename origin variables
 d.summ2$origin = as.character(d.summ2$origin)
@@ -68,6 +68,21 @@ d.summ2$fate.at.annual.stage[d.summ2$fate.at.annual.stage == "spring migration"]
 unique(d.summ2$fate.at.annual.stage)
 d.summ2$fate.at.annual.stage = as.factor(d.summ2$fate.at.annual.stage)
 summary(d.summ2$fate.at.annual.stage)
+summary(d.summ2)
+
+#rename fate variables
+d.summ2$fate = as.character(d.summ2$fate)
+unique(d.summ2$fate)
+d.summ2$fate.binned[d.summ2$fate == "confirmed dead"] <-  "dead"
+d.summ2$fate.binned[d.summ2$fate == "likely transmitter failure"] <-  "unknown"
+d.summ2$fate.binned[d.summ2$fate == "unknown"] <-  "unknown"
+d.summ2$fate.binned[d.summ2$fate == "confirmed transmitter failure"] <-  "tx failure"
+d.summ2$fate.binned[d.summ2$fate == "likely dead"] <-  "dead"
+d.summ2$fate.binned[d.summ2$fate == "Confirmed dead"] <-  "dead"
+d.summ2$fate.binned[d.summ2$fate == "returned to captivity"] <-  "dead"
+unique(d.summ2$fate.binned)
+d.summ2$fate.binned = as.factor(d.summ2$fate.binned)
+summary(d.summ2$fate.binned)
 summary(d.summ2)
 
 #plot specific id's
@@ -130,7 +145,7 @@ p5 = ggarrange(pmap,
 p5
 
 #print
-tiff("fate.summary.plot.Rev1.path.tiff", units="cm", width=28, height=15, res=300)
+jpeg("fate.summary.plot.Rev1.path.jpg", units="cm", width=28, height=15, res=300)
 p5
 dev.off()
 
@@ -188,6 +203,7 @@ ev.summ<-ev.summ[!(ev.summ$id.tag=="R2_190604"),]
 unique(ev.summ$id.tag) == unique(d$id.tag) #don't match
 
 #add columns from summary to full data that we want to summarize
+ev.summ$age.at.deployment.simple = as.character(ev.summ$age.at.deployment.simple)
 d$population.binned = NA
 d$origin = NA
 d$age.at.deployment.simple = NA
@@ -223,33 +239,74 @@ d$age.in.months.capped.simple = ifelse(d$age.in.months.capped >=18, "adult", "ju
 d = data.table(d)
 d$population.binned = as.factor(d$population.binned)
 head(d)
-table2 <- d[, .(.N), by = .(population.binned,origin,age.in.months.capped.simple,year)]
+
+#
+table1 <- d[, .(.N), by = .(population.binned,origin,age.in.months.capped.simple,year)]
+names(table1) = c("population","origin","age","year","sample.size")
+table1 = table1[order(table1$population, table1$origin, table1$age,table1$year,),] 
+table1
+
+#year
+table2 <- d[, .(.N), by = .(year)]
+names(table2) = c("year","sample.size")
+table2 = table2[order(table2$year),] 
 table2
-table3 <- d[, .(.N), by = .(population.binned,origin,age.in.months.capped.simple,year,transmitter.make.model,transmitter.mass.grams,transmitter.attachment.method)]
+
+#tags
+table3 <- d[, .(.N), by = .(transmitter.attachment.method,transmitter.mass.grams,age.in.months.capped.simple,population.binned,year)]
+table3 = table3[order(transmitter.attachment.method,transmitter.mass.grams,N),] 
 table3
 
-#rename columns
-names(table2)
-table2$population = table2$population.binned
-table2$population.binned = NULL
-table2$age = table2$age.in.months.capped.simple
-table2$age.in.months.capped.simple = NULL
-table2$sample.size = table2$N
-table2$N = NULL
-names(table2)
+#age 
+head(d)
+table4 <- d[, .(.N), by = .(age.at.deployment.simple)]
+table4
+table5 <- d[, .(.N), by = .(age.in.months.capped.simple)]
+table5
 
 #sort
-table2 = table2[,c("population","origin","age","year","sample.size")]
-table2 = table2[order(population,origin,age,year,sample.size),]  
-head(table2)
+#table2 = table2[,c("population","origin","age","sample.size")]
+#table2 = table2[order(population,origin,age,sample.size),] 
+table2 = table2[,c("year","sample.size")]
+table2 = table2[order(year,sample.size),] 
+table2
 
 #write
 setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/")
-write.csv(table2, "Supplemental.Table.csv", row.names = F)
+write.csv(table2, "Supplemental.Table.Simple.csv", row.names = F)
 #write.csv(table3, "Supplemental.Table.with.tx.details.csv", row.names = F)
+####################################################################################################
+setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
+ev.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
+d <- data.table(ev.summ)
+head(d)
+
+#year
+d$start.date = ymd_hms(d$start.date)
+summary(d$start.date)
+
+#n individuals
+unique(d$id)
+
+#tags
+summary(d$transmitter.mass.grams)
+summary(d$transmitter.attachment.method)
+
+#age at deployment
+names(d)
+summary(d$age.at.deployment.months)
+d$age.at.deployment.simple = ifelse(d$age.at.deployment.months >=18, "adult", "juvenile")
+d$age.at.deployment.simple = as.factor(d$age.at.deployment.simple)
+summary(d$age.at.deployment.simple)
+
+#population
+summary(d$population.binned)
+
+#origin
+summary(d$origin)
+summary(d$rehabilitated)
 
 #location
-d <- data.table(ev.summ)
 names(d)
 location <- d[, .(.N), by = .(population.binned)]
 location
@@ -263,12 +320,16 @@ age
 orig = d[, .(.N), by = .(captive.raised)]
 orig
 
+#population x origin
+orig = d[, .(.N), by = .(captive.raised,population.binned)]
+orig
+
 #deployment duration
-summary(d$deployment.duration)
+summary(d$deployment.duration.months)
 
 #final fate
 nrow(d)
-summary(d$fate.final)
+summary(d$fate)
 
 unique(ev.summ$start.country)
 summary(ev.summ$fate)
