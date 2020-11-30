@@ -155,8 +155,10 @@ dev.off()
 #############################################################################
 library(data.table)
 setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
-ev.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv")
+ev.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
 d = read.csv("ev.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
+summary(ev.summ)
+unique(ev.summ$id)
 summary(d)
 
 #lubridate

@@ -313,6 +313,10 @@ ev.summary$id = as.character(ev.summary$id)
 ev.summary.edited$id[ev.summary.edited$id=="Enci√±a-9FJ"] <- "Encina-9FJ"
 ev.summary$id[ev.summary$id=="Enciña-9FJ"] <- "Encina-9FJ"
 unique(ev.summary.edited$id) == unique(ev.summary$id)
+unique(ev.summary$id)[215] 
+unique(ev.summary.edited$id)[215] 
+ev.summary<-ev.summary[!(ev.summary$id=="Zaror I30 Red"),]
+unique(ev.summary.edited$id) == unique(ev.summary$id)
 
 for (i in unique(ev.summary.edited$id)) { 
   ev.summary$study.name[which(ev.summary$id == i)] = ev.summary.edited$study.name[which(ev.summary.edited$id == i)]
@@ -456,6 +460,10 @@ unique(d$id)[172]
 d$id = as.character(d$id)
 ev.summary$id = as.character(ev.summary$id)
 d$id[d$id=="Provence_2016_Ad_wild_EO5018_Salomé_8P"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P"
+unique(ev.summary$id) == unique(d$id) 
+unique(ev.summary$id)[215] 
+unique(d$id)[215] 
+d<-d[!(d$id=="Zaror I30 Red"),]
 unique(ev.summary$id) == unique(d$id) #all good
 
 #add id.tag variable
