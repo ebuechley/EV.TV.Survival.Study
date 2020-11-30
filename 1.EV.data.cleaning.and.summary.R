@@ -536,7 +536,7 @@ unique(ev.summary$id.tag) == unique(d$id.tag)
 unique(ev.summary$id.tag)[216] 
 unique(d$id.tag)[216] 
 #IDs REMOVED Were "R2_190604", REMOVE ALSO FROM EV.SUMMARY
-#ev.summary<-ev.summary[!(ev.summary$id.tag=="R2_190604"),]
+ev.summary<-ev.summary[!(ev.summary$id.tag=="R2_190604"),]
 #IDs REMOVED Were "Zaror I30 Red_200659", REMOVE ALSO FROM EV.SUMMARY
 ev.summary<-ev.summary[!(ev.summary$id.tag=="Zaror I30 Red_200659"),]
 unique(ev.summary$id.tag) == unique(d$id.tag) #all good
