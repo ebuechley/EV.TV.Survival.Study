@@ -28,16 +28,16 @@ d.summ$mortality.date = ymd_hms(d.summ$mortality.date)
 #add population.binned
 unique(d$population)
 d$population.binned = NA
-d$population.binned[d$population == "middle east"] <-  "Middle East"
-d$population.binned[d$population == "caucasus"] <-  "Middle East"
-d$population.binned[d$population == "western europe"] <-  "Western Europe"
-d$population.binned[d$population == "italy"] <-  "Balkans & Italy"
-d$population.binned[d$population == "balkans"] <-  "Balkans & Italy"
+d$population.binned[d$population == "middle east"] <-  "central & eastern"
+d$population.binned[d$population == "caucasus"] <-  "central & eastern"
+d$population.binned[d$population == "western europe"] <-  "western"
+d$population.binned[d$population == "italy"] <-  "central & eastern"
+d$population.binned[d$population == "balkans"] <-  "central & eastern"
 unique(d$population.binned)
 d$color = d$population.binned
-d$color[d$color == "Balkans & Italy"] <-  "#800000"
-d$color[d$color == "Western Europe"] <-  "#8B4513"
-d$color[d$color == "Middle East"] <-  "#F4A460"
+d$color[d$color == "central & eastern"] <-  "#800000"
+#d$color[d$color == "central & eastern"] <-  "#8B4513"
+d$color[d$color == "western"] <-  "#F4A460"
 head(d)
 head(d.summ)
 
@@ -73,6 +73,7 @@ summary(d.summ2)
 #rename fate variables
 d.summ2$fate = as.character(d.summ2$fate)
 unique(d.summ2$fate)
+d.summ2$fate.binned = NA
 d.summ2$fate.binned[d.summ2$fate == "confirmed dead"] <-  "dead"
 d.summ2$fate.binned[d.summ2$fate == "likely transmitter failure"] <-  "unknown"
 d.summ2$fate.binned[d.summ2$fate == "unknown"] <-  "unknown"
@@ -106,7 +107,7 @@ setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/R
 
 pmap = ggplot() + annotation_map(map_data("world"), fill = 'light grey', color = "white") + coord_quickmap() + theme_bw() +
   geom_path(data = d, aes(long,lat, group = id), color = d$color, alpha = .5) +
-  scale_color_manual(values= c( "#800000","#F4A460","#8B4513"), name = "subpopulation") + 
+  scale_color_manual(values= c( "#F4A460","#8B4513"), name = "subpopulation") + #"#800000"
   #scale_color_viridis_d(begin = .2, end = .8, direction = 1, name = "subpopulation:") +
   new_scale_color() + 
   geom_point(data = d.summ2, aes(end.long, end.lat, color = fate.binned),  size = 3) +
@@ -145,7 +146,7 @@ p5 = ggarrange(pmap,
 p5
 
 #print
-jpeg("fate.summary.plot.Rev1.path.jpg", units="cm", width=28, height=15, res=300)
+jpeg("fate.summary.plot.Rev1.path2.jpg", units="cm", width=28, height=15, res=300)
 p5
 dev.off()
 

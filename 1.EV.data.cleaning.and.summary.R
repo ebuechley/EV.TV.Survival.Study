@@ -764,12 +764,12 @@ summary(ev.summary)
 #add population.binned
 summary(ev.summary$population)
 ev.summary$population.binned = NA
-ev.summary$population.binned[ev.summary$population == "middle east"] <-  "Middle East"
-ev.summary$population.binned[ev.summary$population == "caucasus"] <-  "Middle East"
-ev.summary$population.binned[ev.summary$population == "western europe"] <-  "Western Europe"
-ev.summary$population.binned[ev.summary$population == "italy"] <-  "Balkans & Italy"
-ev.summary$population.binned[ev.summary$population == "balkans"] <-  "Balkans & Italy"
-ev.summary$population.binned[ev.summary$population == "unknown"] <-  "Unknown"
+ev.summary$population.binned[ev.summary$population == "middle east"] <-  "central & eastern"
+ev.summary$population.binned[ev.summary$population == "caucasus"] <-  "central & eastern"
+ev.summary$population.binned[ev.summary$population == "western europe"] <-  "western"
+ev.summary$population.binned[ev.summary$population == "italy"] <-  "central & eastern"
+ev.summary$population.binned[ev.summary$population == "balkans"] <-  "central & eastern"
+ev.summary$population.binned[ev.summary$population == "unknown"] <-  "central & eastern"
 ev.summary$population.binned = as.factor(ev.summary$population.binned)
 summary(ev.summary$population.binned)
 #ev.summary = ev.summary[complete.cases(ev.summary[ , "population.binned"]),] #drop 3 id without known pop
