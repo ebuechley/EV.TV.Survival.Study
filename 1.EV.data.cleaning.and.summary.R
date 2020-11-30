@@ -619,8 +619,6 @@ for (i in unique(ev.summary.mort$id.tag)) {
 }
 head(ev.summary)
 
-write.csv(ev.summary, "test.csv", row.names = F)
-
 ########################################
 #add start / end country quant
 ########################################
