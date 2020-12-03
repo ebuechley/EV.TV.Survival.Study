@@ -279,6 +279,7 @@ summary(dead$cause.of.death)
 nrow(dead)
 setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/")
 #write.csv(dead, "dead.Rev1.2.csv", row.names = F)
+
 ##edited this sheet to simplify cause of death
 dead = read.csv("dead.Rev1.2.csv", stringsAsFactors=TRUE)
 head(dead)
@@ -311,54 +312,38 @@ dead
 setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/Tables/")
 write.csv(dead, "confirmed.mortalities.csv", row.names = F)
 
-d <- data.table(ev.summ)
-head(d)
-
-#year
-d$start.date = ymd_hms(d$start.date)
-summary(d$start.date)
-
-#n individuals
-unique(d$id)
-
-#tags
-summary(d$transmitter.mass.grams)
-summary(d$transmitter.attachment.method)
-
-#age at deployment
+############################################################
+#data summary table
+############################################################
+setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
+d = read.csv("ev.summary.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
+d = data.table(d)
 names(d)
-summary(d$age.at.deployment.months)
-d$age.at.deployment.simple = ifelse(d$age.at.deployment.months >=18, "adult", "juvenile")
-d$age.at.deployment.simple = as.factor(d$age.at.deployment.simple)
-summary(d$age.at.deployment.simple)
+d1 <- d[, .(.N), by = .(study.name,start.country)]
+d1
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/Tables/")
+#write.csv(d1, "data.origin.csv", row.names = F)
 
-#population
-summary(d$population.binned)
+############################################################
+#summary stats for Mss
+############################################################
+setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
+d = read.csv("ev.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
+d.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
+d1 = data.table(d.summ)
 
-#origin
-summary(d$origin)
-summary(d$rehabilitated)
+#n birds
+unique(d1$id)
 
-#location
-names(d)
-location <- d[, .(.N), by = .(population.binned)]
-location
+#n birds by pop and origin
+d1[, .(.N), by = .(population.binned)]
+d1[, .(.N), by = .(population.binned,origin)]
 
-#age
-names(d)
-age = d[, .(.N), by = .(age.at.deployment.)]
-age
+#duration tracked
+summary(d1$deployment.duration.months)
 
-#origin
-orig = d[, .(.N), by = .(captive.raised)]
-orig
-
-#population x origin
-orig = d[, .(.N), by = .(captive.raised,population.binned)]
-orig
-
-#deployment duration
-summary(d$deployment.duration.months)
+#fate
+summary(d1$fate)
 
 ############################################################
 #Plots by EV populations
