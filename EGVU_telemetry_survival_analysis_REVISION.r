@@ -701,8 +701,8 @@ cat("
     b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
     b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
     #b.phi.lat ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
-    b.phi.age ~ dnorm(-1, 0.01)            # Prior for age effect on survival probability on logit scale
-    b.phi.pop ~ dunif(0,4)         # Prior for population effect on survival probability on logit scale
+    b.phi.age ~ dnorm(0, 0.01)            # Prior for age effect on survival probability on logit scale
+    b.phi.pop ~ dnorm(0, 0.01)         # Prior for population effect on survival probability on logit scale
     
     
     #### TAG FAILURE AND LOSS PROBABILITY
