@@ -313,6 +313,10 @@ ev.summary$id = as.character(ev.summary$id)
 ev.summary.edited$id[ev.summary.edited$id=="Enci√±a-9FJ"] <- "Encina-9FJ"
 ev.summary$id[ev.summary$id=="Enciña-9FJ"] <- "Encina-9FJ"
 unique(ev.summary.edited$id) == unique(ev.summary$id)
+unique(ev.summary$id)[215] 
+unique(ev.summary.edited$id)[215] 
+ev.summary<-ev.summary[!(ev.summary$id=="Zaror I30 Red"),]
+unique(ev.summary.edited$id) == unique(ev.summary$id)
 
 for (i in unique(ev.summary.edited$id)) { 
   ev.summary$study.name[which(ev.summary$id == i)] = ev.summary.edited$study.name[which(ev.summary.edited$id == i)]
@@ -456,6 +460,10 @@ unique(d$id)[172]
 d$id = as.character(d$id)
 ev.summary$id = as.character(ev.summary$id)
 d$id[d$id=="Provence_2016_Ad_wild_EO5018_Salomé_8P"] <- "Provence_2016_Ad_wild_EO5018_Salome_8P"
+unique(ev.summary$id) == unique(d$id) 
+unique(ev.summary$id)[215] 
+unique(d$id)[215] 
+d<-d[!(d$id=="Zaror I30 Red"),]
 unique(ev.summary$id) == unique(d$id) #all good
 
 #add id.tag variable
@@ -536,7 +544,7 @@ unique(ev.summary$id.tag) == unique(d$id.tag)
 unique(ev.summary$id.tag)[216] 
 unique(d$id.tag)[216] 
 #IDs REMOVED Were "R2_190604", REMOVE ALSO FROM EV.SUMMARY
-#ev.summary<-ev.summary[!(ev.summary$id.tag=="R2_190604"),]
+ev.summary<-ev.summary[!(ev.summary$id.tag=="R2_190604"),]
 #IDs REMOVED Were "Zaror I30 Red_200659", REMOVE ALSO FROM EV.SUMMARY
 ev.summary<-ev.summary[!(ev.summary$id.tag=="Zaror I30 Red_200659"),]
 unique(ev.summary$id.tag) == unique(d$id.tag) #all good
@@ -610,8 +618,6 @@ for (i in unique(ev.summary.mort$id.tag)) {
   ev.summary$mean.GPS.fixrate.last10fixes[which(ev.summary$id.tag == i)] = ev.summary.mort$mean.GPS.fixrate.last10fixes[which(ev.summary.mort$id.tag == i)]
 }
 head(ev.summary)
-
-write.csv(ev.summary, "test.csv", row.names = F)
 
 ########################################
 #add start / end country quant
@@ -758,12 +764,12 @@ summary(ev.summary)
 #add population.binned
 summary(ev.summary$population)
 ev.summary$population.binned = NA
-ev.summary$population.binned[ev.summary$population == "middle east"] <-  "Middle East"
-ev.summary$population.binned[ev.summary$population == "caucasus"] <-  "Middle East"
-ev.summary$population.binned[ev.summary$population == "western europe"] <-  "Western Europe"
-ev.summary$population.binned[ev.summary$population == "italy"] <-  "Balkans & Italy"
-ev.summary$population.binned[ev.summary$population == "balkans"] <-  "Balkans & Italy"
-ev.summary$population.binned[ev.summary$population == "unknown"] <-  "Unknown"
+ev.summary$population.binned[ev.summary$population == "middle east"] <-  "central & eastern"
+ev.summary$population.binned[ev.summary$population == "caucasus"] <-  "central & eastern"
+ev.summary$population.binned[ev.summary$population == "western europe"] <-  "western"
+ev.summary$population.binned[ev.summary$population == "italy"] <-  "central & eastern"
+ev.summary$population.binned[ev.summary$population == "balkans"] <-  "central & eastern"
+ev.summary$population.binned[ev.summary$population == "unknown"] <-  "central & eastern"
 ev.summary$population.binned = as.factor(ev.summary$population.binned)
 summary(ev.summary$population.binned)
 #ev.summary = ev.summary[complete.cases(ev.summary[ , "population.binned"]),] #drop 3 id without known pop

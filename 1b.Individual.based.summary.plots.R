@@ -10,6 +10,7 @@ d = read.csv("./ev.final.Rev1.survival.prepared.csv")
 d$timestamp = ymd_hms(d$timestamp)
 summary(d$ND)
 unique(d$id) #220
+unique(d$id.tag)
 names(d)
 
 #set wd

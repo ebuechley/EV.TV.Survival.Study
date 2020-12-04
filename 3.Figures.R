@@ -28,16 +28,16 @@ d.summ$mortality.date = ymd_hms(d.summ$mortality.date)
 #add population.binned
 unique(d$population)
 d$population.binned = NA
-d$population.binned[d$population == "middle east"] <-  "Middle East"
-d$population.binned[d$population == "caucasus"] <-  "Middle East"
-d$population.binned[d$population == "western europe"] <-  "Western Europe"
-d$population.binned[d$population == "italy"] <-  "Balkans & Italy"
-d$population.binned[d$population == "balkans"] <-  "Balkans & Italy"
+d$population.binned[d$population == "middle east"] <-  "central & eastern"
+d$population.binned[d$population == "caucasus"] <-  "central & eastern"
+d$population.binned[d$population == "western europe"] <-  "western"
+d$population.binned[d$population == "italy"] <-  "central & eastern"
+d$population.binned[d$population == "balkans"] <-  "central & eastern"
 unique(d$population.binned)
 d$color = d$population.binned
-d$color[d$color == "Balkans & Italy"] <-  "#800000"
-d$color[d$color == "Western Europe"] <-  "#8B4513"
-d$color[d$color == "Middle East"] <-  "#F4A460"
+d$color[d$color == "central & eastern"] <-  "#800000"
+#d$color[d$color == "central & eastern"] <-  "#8B4513"
+d$color[d$color == "western"] <-  "#F4A460"
 head(d)
 head(d.summ)
 
@@ -73,6 +73,7 @@ summary(d.summ2)
 #rename fate variables
 d.summ2$fate = as.character(d.summ2$fate)
 unique(d.summ2$fate)
+d.summ2$fate.binned = NA
 d.summ2$fate.binned[d.summ2$fate == "confirmed dead"] <-  "dead"
 d.summ2$fate.binned[d.summ2$fate == "likely transmitter failure"] <-  "unknown"
 d.summ2$fate.binned[d.summ2$fate == "unknown"] <-  "unknown"
@@ -106,7 +107,7 @@ setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/R
 
 pmap = ggplot() + annotation_map(map_data("world"), fill = 'light grey', color = "white") + coord_quickmap() + theme_bw() +
   geom_path(data = d, aes(long,lat, group = id), color = d$color, alpha = .5) +
-  scale_color_manual(values= c( "#800000","#F4A460","#8B4513"), name = "subpopulation") + 
+  scale_color_manual(values= c( "#F4A460","#8B4513"), name = "subpopulation") + #"#800000"
   #scale_color_viridis_d(begin = .2, end = .8, direction = 1, name = "subpopulation:") +
   new_scale_color() + 
   geom_point(data = d.summ2, aes(end.long, end.lat, color = fate.binned),  size = 3) +
@@ -145,18 +146,20 @@ p5 = ggarrange(pmap,
 p5
 
 #print
-jpeg("fate.summary.plot.Rev1.path.jpg", units="cm", width=28, height=15, res=300)
+jpeg("fate.summary.plot.Rev1.path2.jpg", units="cm", width=28, height=15, res=300)
 p5
 dev.off()
 
 #############################################################################
 # summary stats on data summary
-#year, location, age and origin
+#year, location, age and origin by bird months
 #############################################################################
 library(data.table)
 setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
-ev.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv")
+ev.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
 d = read.csv("ev.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
+summary(ev.summ)
+unique(ev.summ$id)
 summary(d)
 
 #lubridate
@@ -209,10 +212,13 @@ d$origin = NA
 d$age.at.deployment.simple = NA
 d$year.tagged = NA
 d$transmitter.make.model = NA
-d$transmitter.mass.grams = NA
+d$transmitter.mass.grams.binned = NA
 d$transmitter.attachment.method = NA
 summary(d)
 summary(ev.summ)
+ev.summ$population.binned = as.character(ev.summ$population.binned)
+ev.summ$transmitter.attachment.method = as.character(ev.summ$transmitter.attachment.method)
+ev.summ$transmitter.mass.grams.binned = as.character(ev.summ$transmitter.mass.grams.binned)
 for (i in unique(ev.summ$id.tag)) { 
   d$population.binned[which(d$id.tag == i)] = ev.summ$population.binned[which(ev.summ$id.tag == i)]
 }
@@ -229,7 +235,7 @@ for (i in unique(ev.summ$id.tag)) {
   d$transmitter.make.model[which(d$id.tag == i)] = ev.summ$transmitter.make.model[which(ev.summ$id.tag == i)]
 }
 for (i in unique(ev.summ$id.tag)) { 
-  d$transmitter.mass.grams[which(d$id.tag == i)] = ev.summ$transmitter.mass.grams[which(ev.summ$id.tag == i)]
+  d$transmitter.mass.grams.binned[which(d$id.tag == i)] = ev.summ$transmitter.mass.grams.binned[which(ev.summ$id.tag == i)]
 }
 for (i in unique(ev.summ$id.tag)) { 
   d$transmitter.attachment.method[which(d$id.tag == i)] = ev.summ$transmitter.attachment.method[which(ev.summ$id.tag == i)]
@@ -240,155 +246,108 @@ d = data.table(d)
 d$population.binned = as.factor(d$population.binned)
 head(d)
 
-#
-table1 <- d[, .(.N), by = .(population.binned,origin,age.in.months.capped.simple,year)]
-names(table1) = c("population","origin","age","year","sample.size")
-table1 = table1[order(table1$population, table1$origin, table1$age,table1$year,),] 
+# create and write supplemental tables
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/Tables/")
+table1 <- d[, .(.N), by = .(population.binned,origin,age.in.months.capped.simple)]
+names(table1) = c("population","origin", "age","bird months")
+table1 = table1[order(table1$population, table1$origin, table1$age),] 
 table1
+write.csv(table1, "pop.origin.age.csv", row.names = F)
 
 #year
 table2 <- d[, .(.N), by = .(year)]
-names(table2) = c("year","sample.size")
+names(table2) = c("year","bird months")
 table2 = table2[order(table2$year),] 
 table2
+write.csv(table2, "year.csv", row.names = F)
 
 #tags
-table3 <- d[, .(.N), by = .(transmitter.attachment.method,transmitter.mass.grams,age.in.months.capped.simple,population.binned,year)]
-table3 = table3[order(transmitter.attachment.method,transmitter.mass.grams,N),] 
+table3 <- d[, .(.N), by = .(population.binned,age.in.months.capped.simple,transmitter.attachment.method,transmitter.mass.grams.binned)]
+table3 = table3[order(population.binned,age.in.months.capped.simple,transmitter.attachment.method,transmitter.mass.grams.binned,N),] 
+names(table3) = c("population", "age","tx attachment method", "tx mass (grams)",   "bird months")
 table3
+write.csv(table3, "transmitter.method.mass.age.pop.csv", row.names = F)
 
-#age 
-head(d)
-table4 <- d[, .(.N), by = .(age.at.deployment.simple)]
-table4
-table5 <- d[, .(.N), by = .(age.in.months.capped.simple)]
-table5
-
-#sort
-#table2 = table2[,c("population","origin","age","sample.size")]
-#table2 = table2[order(population,origin,age,sample.size),] 
-table2 = table2[,c("year","sample.size")]
-table2 = table2[order(year,sample.size),] 
-table2
-
-#write
-setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/")
-write.csv(table2, "Supplemental.Table.Simple.csv", row.names = F)
-#write.csv(table3, "Supplemental.Table.with.tx.details.csv", row.names = F)
-####################################################################################################
+########################################################
+# summarize deaths
+#########################################################
 setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
 ev.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
-d <- data.table(ev.summ)
-head(d)
-
-#year
-d$start.date = ymd_hms(d$start.date)
-summary(d$start.date)
-
-#n individuals
-unique(d$id)
-
-#tags
-summary(d$transmitter.mass.grams)
-summary(d$transmitter.attachment.method)
-
-#age at deployment
-names(d)
-summary(d$age.at.deployment.months)
-d$age.at.deployment.simple = ifelse(d$age.at.deployment.months >=18, "adult", "juvenile")
-d$age.at.deployment.simple = as.factor(d$age.at.deployment.simple)
-summary(d$age.at.deployment.simple)
-
-#population
-summary(d$population.binned)
-
-#origin
-summary(d$origin)
-summary(d$rehabilitated)
-
-#location
-names(d)
-location <- d[, .(.N), by = .(population.binned)]
-location
-
-#age
-names(d)
-age = d[, .(.N), by = .(age.at.deployment.)]
-age
-
-#origin
-orig = d[, .(.N), by = .(captive.raised)]
-orig
-
-#population x origin
-orig = d[, .(.N), by = .(captive.raised,population.binned)]
-orig
-
-#deployment duration
-summary(d$deployment.duration.months)
-
-#final fate
-nrow(d)
-summary(d$fate)
-
-unique(ev.summ$start.country)
 summary(ev.summ$fate)
-summary(ev.summ$migrant)
-summary(ev.summ$age.at.deployment.clean)
-summary(ev.summ$captive.raised)
-summary(ev.summ$rehabilitated)
-summary(ev.summ$sex)
-summary(ev.summ$deployment.duration)
+dead = subset(ev.summ, ev.summ$fate == "confirmed dead")
+summary(dead$cause.of.death)
+nrow(dead)
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/")
+#write.csv(dead, "dead.Rev1.2.csv", row.names = F)
 
-#fates
-summary(ev.summ$how.fate.determined.clean)
-summary(ev.summ$cause.of.death)
+##edited this sheet to simplify cause of death
+dead = read.csv("dead.Rev1.2.csv", stringsAsFactors=TRUE)
+head(dead)
 
-#mortality summary
-death = subset(ev.summ, ev.summ$fate.final == "confirmed dead")
-death <- droplevels(death)
-names(death)
-names(death)
-summary(death$cause.of.death.simple)
-summary(death$death.anthro)
-summary(death$end.country)
+#reclassify origin
+dead$origin = as.character(dead$origin)
+dead$origin[dead$origin=="N"] <- "wild" 
+dead$origin[dead$origin=="Y"] <- "captive"
 
-names(death)
-head(death)
-death = death[,c("start.country", "end.country", "origin", "age.at.deployment.month", "age.at.fate.month", 
-                 "deployment.duration", "cause.of.death.simple", "death.anthro")]
-head(death)
+#rename macedonia
+dead$start.country = as.character(dead$start.country)
+dead$end.country = as.character(dead$end.country)
+dead$start.country[dead$start.country=="The former Yugoslav Republic of Macedonia"] <- "North Macedonia" 
+dead$end.country[dead$end.country=="The former Yugoslav Republic of Macedonia"] <- "North Macedonia"
 
-#write.csv(death, "Final Cleaned Data/ev.mortality.summary.csv", row.names = F)
+#age simple
+dead$age.at.deployment.simple  = ifelse(dead$age.at.deployment.months >=18, "adult", "juvenile")
+dead$age.at.fate.simple  = ifelse(dead$age.at.fate.months >=18, "adult", "juvenile")
+head(dead$age.at.deployment.simple)
+head(dead$age.at.fate.simple)
 
-#plot anthropogenic mortalities
-d1 = read.csv("Final Cleaned Data/ev.survival.prepared.csv")
-death.anthro = subset(death, death$death.anthro == "y")
-summary(death.anthro$end.country)
-summary(death.anthro$population.binned)
-nrow(death.anthro)
+#convert to data table to summarize
+d = data.table(dead)
+names(d)
+dead <- d[, .(.N), by = .(start.country,end.country,origin,age.at.deployment.simple, age.at.fate.simple,cause.of.death.binned,death.anthro)]
+dead = dead[order(start.country,end.country,origin,age.at.deployment.simple, age.at.fate.simple,cause.of.death.binned, death.anthro),] 
+dead$N = NULL
+names(dead) = c("country tagged","location died","origin","age at tagging", "age at fate", "cause of death", "anthropogenic death?")
+dead
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/Tables/")
+write.csv(dead, "confirmed.mortalities.csv", row.names = F)
 
-ggplot() + annotation_map(map_data("world"), fill = 'grey', color = "white") + coord_quickmap() + theme_bw() +
-  geom_path(data = d1, aes(long,lat, group = id.tag), alpha = .5, show.legend = FALSE) + 
-  geom_point(data = death.anthro, aes(long.mort, lat.mort, color = death.anthro),  size = 3) +
-  scale_color_viridis_d(begin = .4, direction = -1, name = "fate") + 
-  theme(plot.title = element_text(hjust = 0.5)) + labs(x = "longitude", y = "latitude")
+############################################################
+#data summary table
+############################################################
+setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
+d = read.csv("ev.summary.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
+d = data.table(d)
+names(d)
+d1 <- d[, .(.N), by = .(study.name,start.country)]
+d1
+setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/Tables/")
+#write.csv(d1, "data.origin.csv", row.names = F)
 
-#write.csv(death, "death.csv", row.names = F)
+############################################################
+#summary stats for Mss
+############################################################
+setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
+d = read.csv("ev.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
+d.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
+d1 = data.table(d.summ)
 
-summary(death$how.fate.determined.clean)
-nrow(death)
+#n birds
+unique(d1$id)
 
-#tiff("all.overview.tiff", units="cm", width=35, height=20, res=300)
-#combined <- grid.arrange(tv.plot, ev.plot, nrow = 1, ncol=2)
-#dev.off()
+#n birds by pop and origin
+d1[, .(.N), by = .(population.binned)]
+d1[, .(.N), by = .(population.binned,origin)]
 
-#map.plot = map.plot + geom_point(data = d.summ, aes(start.long, start.lat, color = "tag deployment"))  
-#map.plot = map.plot + theme(legend.title = element_blank()) 
-#map.plot = map.plot + geom_segment(data = ev.tv.summary.merged.alive.removed, aes(x = start.long, y = start.lat, xend = end.long, yend = end.lat)) 
+#duration tracked
+summary(d1$deployment.duration.months)
 
+#fate
+summary(d1$fate)
 
-#by EV populations
+############################################################
+#Plots by EV populations
+############################################################
 d1 = subset(d, d$species == "Neophron percnopterus")
 names(d1)
 unique(d1$population)
