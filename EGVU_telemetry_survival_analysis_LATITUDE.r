@@ -6,37 +6,7 @@
 # written by Steffen Oppel, July 2019
 # data preparation by Evan Buechley, Ron Efrat, Louis Phipps, and Evan Buechley
 # branched from "EGVU_telemetry_survival_analysis.r' on 9 Jan 2020
-# removed all exploratory analyses, retained streamlined code for final model for inference (previously called m31)
-
-## MAJOR CHANGES ON 7 APRIL 2020
-## removed all residents
-## removed age effect and simply retained 2 age groups (<18 months and >18 months)
-## test 3 models with breed,mig, and winter stage and west, Balkan and Caucasus populations, either additive or interactive
-
-## INCLUDED NEW DATA on 14 APRIL 2020 and re-ran models
-
-## REVISION RECEIVED ON 08 OCT 2020:
-## requires incorporation of random year effect
-## editor wants a quadratic age effect
-## potential reduction of survival interval to 1 week
-
-## ADDED REVISED DATA ON 10 NOV 2020
-## many more individuals added, plus 1.5 years worth of data added
-## amended the start and end date conversion on 11 Nov 2020
-
-## REVISED MODEL FORMULATION ON 17 NOV 2020
-## remove 'sea-crossing' parameter
-## include 3-level population parameter
-## consider interaction between population and migration and age and migration
-
-## ADDED INTERACTION MODELS ON 19 NOV 2020
-## interaction between population and migration and age and migration
-## need to remove fixed effect of population, but inserted 3-level intercept
-## finalised 4 candidate models on 20 Nov 2020
-
-## AFTER SUMMARISING RESULTS THE 3-pop INTERCEPT MAKES NO SENSE AS THE SURVIVAL ESTIMATES ARE TOO LOW
-## MODIFIED ORIGINAL MODEL TO INCLUDE 2-3 MIG PARAMETERS
-## incorporated revised data on 24 NOV 2020 and re-ran two simple models: mig const and 3 pop
+# removed all exploratory analyses
 
 ## 25 Nov 2020: explored effect of re-classifying drowning in Med as 'likely dead' (rather than 'confirmed dead') - no problem at all!
 ## FINAL DISCUSSION WITH RON AND EVAN - decided to use 2pop model and examine continuous age, quadratic age, and effect of removing the rehab/recap birds
@@ -529,19 +499,41 @@ inits.telemetry <- function(){list(z = z.telemetry,
                                    beta3 = rnorm(1,0, 0.001))} 
 
 
-#### BASIC MODELS FOR EXPLORATION
+#### TOP MODEL WITH SIMPLE 2 LATITUDINAL BAND
 
 REV1_2lat_cat_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                       "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_2lat_const_mig.jags",
                       n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
+#### TOP MODEL WITH SIMPLE 2 LATITUDINAL BAND AND CONTINUOUS AGE
 
-REV1_3lat_cat_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
-                              "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_3lat_const_mig.jags",
+REV1_2lat_cont_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                              "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_2lat_cont_age.jags",
                               n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
 
 
+### this produces 2 insignificant effects and is crap:
+# REV1_3lat_cat_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                               "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_3lat_const_mig.jags",
+#                               n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+
+
+### this makes the migration parameter insignificant
+# REV1_lifestage <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+#                               "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_lifestage_mig.jags",
+#                               n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+
+
+### ALLOW LAT TO ONLY AFFECT ADULTS
+REV1_2lat_adult <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                           "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_agelat_mig.jags",
+                           n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+
+
+REV1_2lat_adult_cont_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                            "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_2lat_ad_cont_age.jags",
+                            n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -549,6 +541,10 @@ REV1_3lat_cat_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telem
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 try(setwd("C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study"), silent=T)
 save.image("EGVU_survival_output_REV1_lat_explore.RData")
+load("EGVU_survival_output_REV1_lat_explore.RData")
+
+
+
 
 
 
@@ -615,10 +611,10 @@ cat("
     lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
-    b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
-    b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
-    b.phi.lat1 ~ dnorm(0, 0.01)          # Prior for AFRICA effect on survival probability on logit scale
-    b.phi.age ~ dnorm(0, 0.01)            # Prior for age effect on survival probability on logit scale
+    b.phi.capt ~ dnorm(0, 0.5)         # Prior for captive effect on survival probability on logit scale
+    b.phi.mig ~ dnorm(0, 0.5)          # Prior for migration effect on survival probability on logit scale
+    b.phi.lat1 ~ dnorm(0, 0.5)          # Prior for AFRICA effect on survival probability on logit scale
+    b.phi.age ~ dnorm(0, 0.5)            # Prior for age effect on survival probability on logit scale
     b.phi.pop ~ dunif(0, 4)         # Prior for population effect on survival probability on logit scale
     
     
@@ -708,11 +704,12 @@ sink()
 
 
 
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SIMPLE 3 CATEGORY LAT MODEL
+# SIMPLE 2 CATEGORY LAT MODEL FOR ADULTS
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Specify model for categorical age effect
-sink("EGVU_3lat_const_mig.jags")
+sink("EGVU_agelat_mig.jags")
 cat("
     model {
     
@@ -757,8 +754,7 @@ cat("
     for (t in f[i]:(n.occasions)){
     logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
     b.phi.mig*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
-    b.phi.lat1*(lat1[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
-    b.phi.lat2*(lat2[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
+    b.phi.lat1*(lat1[i,t])*(1-(adult[i,t])) +       ### survival dependent on latitude if adult
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
     b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
     b.phi.pop*(pop[i])  +    ### survival dependent on population (western Europe or other)
@@ -771,11 +767,10 @@ cat("
     lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
-    b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
-    b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
-    b.phi.lat1 ~ dnorm(0, 0.01)          # Prior for AFRICA effect on survival probability on logit scale
-    b.phi.lat2 ~ dnorm(0, 0.01)          # Prior for AFRICA effect on survival probability on logit scale
-    b.phi.age ~ dnorm(0, 0.01)            # Prior for age effect on survival probability on logit scale
+    b.phi.capt ~ dnorm(0, 0.5)         # Prior for captive effect on survival probability on logit scale
+    b.phi.mig ~ dnorm(0, 0.5)          # Prior for migration effect on survival probability on logit scale
+    b.phi.lat1 ~ dnorm(0, 0.5)          # Prior for AFRICA effect on survival probability on logit scale
+    b.phi.age ~ dnorm(0, 0.5)            # Prior for age effect on survival probability on logit scale
     b.phi.pop ~ dunif(0, 4)         # Prior for population effect on survival probability on logit scale
     
     
@@ -865,26 +860,11 @@ sink()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SIMPLE 2 CATEGORY LAT MODEL WITH CONTINUOUS AGE EFFECT
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Specify model for continuous age effect
-sink("EGVU_cont_age_const_mig.jags")
+sink("EGVU_2lat_ad_cont_age.jags")
 cat("
     model {
     
@@ -930,6 +910,7 @@ cat("
     logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
     b.phi.mig*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
+    b.phi.lat1*(lat1[i,t])*(1-(adult[i,t])) +       ### survival dependent on migratory stage of the month (stationary or migratory)
     b.phi.age*(age[i,t]) +     ### survival dependent on age (juvenile or other)
     b.phi.pop*(pop[i])  +    ### survival dependent on population (western Europe or other)
     surv.raneff[year[t]]
@@ -941,9 +922,10 @@ cat("
     lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
     
     #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
-    b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
-    b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
-    b.phi.age ~ dnorm(0, 0.01)            # Prior for age effect on survival probability on logit scale
+    b.phi.capt ~ dnorm(0, 0.5)         # Prior for captive effect on survival probability on logit scale
+    b.phi.mig ~ dnorm(0, 0.5)          # Prior for migration effect on survival probability on logit scale
+    b.phi.lat1 ~ dnorm(0, 0.5)          # Prior for effect of AFRICA on survival probability on logit scale
+    b.phi.age ~ dnorm(0, 0.5)            # Prior for age effect on survival probability on logit scale
     b.phi.pop ~ dunif(0,4)         # Prior for population effect on survival probability on logit scale
     
     
@@ -1030,153 +1012,3 @@ cat("
     ",fill = TRUE)
 sink()
 
-
-
-
-# Specify model for quadratic age effect
-sink("EGVU_quad_age_const_mig.jags")
-cat("
-    model {
-    
-    # -------------------------------------------------
-    # Parameters:
-    # phi: monthly survival probability intercept
-    # tag.fail: probability that tag will fail
-    # tag.loss: probability that tag will fall off - not identifiable, so not included
-    
-    # p.obs: probability to be tracked with functioning tag (=1)
-    # p.found.dead: probability for carcass to be recovered
-    # p.seen.alive: probability to be observed alive despite the tag being defunct
-    
-    # -------------------------------------------------
-    # States (S):
-    # 1 dead
-    # 2 alive with functioning tag
-    # 3 alive with defunct tag or tag lost
-    
-    # Observations (O):
-    # 1 Tag ok, bird moving
-    # 2 Tag ok, bird not moving (dead, or tag lost and no longer on bird)
-    # 3 Tag failed, bird observed alive
-    # 4 Dead bird recovered
-    # 5 No signal (=not seen)
-    
-    # -------------------------------------------------
-    
-    # Priors and constraints
-    
-    ## RANDOM ANNUAL TIME EFFECT ON SURVIVAL
-    for (ny in 1:(nyears)){
-    surv.raneff[ny] ~ dnorm(0, tau.surv)
-    }
-    
-    ### PRIORS FOR RANDOM EFFECTS
-    sigma.surv ~ dunif(0, 2)                     # Prior for standard deviation of survival
-    tau.surv <- pow(sigma.surv, -2)
-    
-    #### MONTHLY SURVIVAL PROBABILITY
-    for (i in 1:nind){
-    for (t in f[i]:(n.occasions)){
-    logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
-    b.phi.mig*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
-    b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
-    b.phi.age*(age[i,t]) +  b.phi.age2*(pow(age[i,t],2)) +    ### survival dependent on age (juvenile or other)
-    b.phi.pop*(pop[i])  +    ### survival dependent on population (western Europe or other)
-    surv.raneff[year[t]]
-    } #t
-    } #i
-    
-    #### BASELINE FOR SURVIVAL PROBABILITY (wild adult stationary from east)
-    mean.phi ~ dunif(0.9, 1)   # uninformative prior for all MONTHLY survival probabilities
-    lp.mean <- log(mean.phi/(1 - mean.phi))    # logit transformed survival intercept
-    
-    #### SLOPE PARAMETERS FOR SURVIVAL PROBABILITY
-    b.phi.capt ~ dnorm(0, 0.01)         # Prior for captive effect on survival probability on logit scale
-    b.phi.mig ~ dnorm(0, 0.01)          # Prior for migration effect on survival probability on logit scale
-    b.phi.age ~ dnorm(0, 0.01)            # Prior for age effect on survival probability on logit scale
-    b.phi.age2 ~ dnorm(0, 0.01)            # Prior for quadratic age effect on survival probability on logit scale
-    b.phi.pop ~ dunif(0,4)         # Prior for population effect on survival probability on logit scale
-    
-    
-    #### TAG FAILURE AND LOSS PROBABILITY
-    for (i in 1:nind){
-    for (t in f[i]:(n.occasions)){
-    logit(p.obs[i,t]) <- base.obs ##+ beta1*(t-l[i]) #### probability of observation GIVEN THAT TAG IS WORKING is reciprocal to time since last good record
-    logit(tag.fail[i,t]) <- base.fail + beta2*tag.age[i,t] + beta3*tfail[i] #### probability of TAG FAILURE is influenced by tag type and tag age
-    logit(p.found.dead[i,t]) <- base.recover + beta4*lat[i,t] #### probability of recovery is influenced by latitude
-    } #t
-    } #i
-    
-    
-    ##### SLOPE PARAMETERS FOR OBSERVATION PROBABILITY
-    base.obs ~ dnorm(0, 0.001)                # Prior for intercept of observation probability on logit scale
-    base.fail ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
-    base.recover ~ dnorm(0, 0.001)               # Prior for intercept of tag failure probability on logit scale
-    beta2 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tag age
-    beta3 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for fail probability with tage movement during last 10 GPS fixes
-    beta4 ~ dnorm(0, 0.001)T(-10, 10)         # Prior for slope parameter for dead detection with latitude
-    sigma ~ dunif(0, 10)                     # Prior on standard deviation for random error term
-    tau <- pow(sigma, -2)
-    
-    p.seen.alive ~ dunif(0, 1)    # Prior for probability that bird with defunct or lost tag is observed alive
-    
-    
-    # -------------------------------------------------
-    # Define state-transition and observation matrices 
-    # -------------------------------------------------
-    
-    for (i in 1:nind){
-    
-    for (t in f[i]:(n.occasions-1)){
-    
-    # Define probabilities of state S(t+1) [last dim] given S(t) [first dim]
-    
-    ps[1,i,t,1]<-1    ## dead birds stay dead
-    ps[1,i,t,2]<-0
-    ps[1,i,t,3]<-0
-    
-    ps[2,i,t,1]<-(1-phi[i,t])
-    ps[2,i,t,2]<-phi[i,t] * (1-tag.fail[i,t])
-    ps[2,i,t,3]<-phi[i,t] * tag.fail[i,t]
-    
-    ps[3,i,t,1]<-(1-phi[i,t])
-    ps[3,i,t,2]<-0
-    ps[3,i,t,3]<-phi[i,t]
-    
-    # Define probabilities of O(t) [last dim] given S(t)  [first dim]
-    
-    po[1,i,t,1]<-0
-    po[1,i,t,2]<-p.obs[i,t] * (1-tag.fail[i,t]) * (1-p.found.dead[i,t])
-    po[1,i,t,3]<-0
-    po[1,i,t,4]<-p.found.dead[i,t]
-    po[1,i,t,5]<-(1-p.obs[i,t]) * tag.fail[i,t] * (1-p.found.dead[i,t])
-    
-    po[2,i,t,1]<-p.obs[i,t] * (1-tag.fail[i,t])
-    po[2,i,t,2]<-0
-    po[2,i,t,3]<-0
-    po[2,i,t,4]<-0
-    po[2,i,t,5]<-(1-p.obs[i,t]) * tag.fail[i,t]
-    
-    po[3,i,t,1]<-0
-    po[3,i,t,2]<-0
-    po[3,i,t,3]<-p.seen.alive
-    po[3,i,t,4]<-0
-    po[3,i,t,5]<-(1-p.seen.alive)
-    
-    } #t
-    } #i
-    
-    # Likelihood 
-    for (i in 1:nind){
-    # Define latent state at first capture
-    z[i,f[i]] <- 2 ## alive when first marked
-    for (t in (f[i]+1):n.occasions){
-    # State process: draw S(t) given S(t-1)
-    z[i,t] ~ dcat(ps[z[i,t-1], i, t-1,])
-    # Observation process: draw O(t) given S(t)
-    y[i,t] ~ dcat(po[z[i,t], i, t-1,])
-    } #t
-    } #i
-    }
-    ",fill = TRUE)
-sink()

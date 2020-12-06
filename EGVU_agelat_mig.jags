@@ -42,7 +42,7 @@
     for (t in f[i]:(n.occasions)){
     logit(phi[i,t]) <- lp.mean +      ### intercept for mean survival 
     b.phi.mig*(mig[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
-    b.phi.lat1*(lat1[i,t]) +       ### survival dependent on migratory stage of the month (stationary or migratory)
+    b.phi.lat1*(lat1[i,t])*(1-(adult[i,t])) +       ### survival dependent on latitude if adult
     b.phi.capt*(capt[i]) +     ### survival dependent on captive-release (captive-raised or other)
     b.phi.age*(adult[i,t]) +     ### survival dependent on age (juvenile or other)
     b.phi.pop*(pop[i])  +    ### survival dependent on population (western Europe or other)
