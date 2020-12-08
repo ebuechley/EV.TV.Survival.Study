@@ -453,7 +453,7 @@ INPUT.telemetry <- list(y = y.telemetry,
                         adult = ifelse(age.mat>18,0,1), ### provide a simple classification for adults and non-adults
                         mig = as.matrix(EV.phi.matrix[,2:max(timeseries$col)]), ### provide a simple binary classification for stationary and migratory periods
                         lat = lat.mat,
-                        lat1 = ifelse(lat.mat<20,1,0), ### provide a simple classification for AFRICA
+                        lat1 = ifelse(lat.mat<25,1,0), ### provide a simple classification for AFRICA
                         lat2 = ifelse(lat.mat>30,1,0), ### provide a simple classification for EUROPE
                         pop = ifelse(EV$pop %in% c("western europe"),1,0),  ##"italy",
                         pop.num = ifelse(EV$pop %in% c("western europe"),1,ifelse(EV$pop %in% c("italy","balkans"),2,3)),  ##numeric three level pop index
@@ -534,6 +534,11 @@ REV1_2lat_adult <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemet
 REV1_2lat_adult_cont_age <- autojags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
                             "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_2lat_ad_cont_age.jags",
                             n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T) #, n.iter = ni
+
+FINAL_MODEL <- jags(INPUT.telemetry, inits.telemetry, parameters.telemetry,
+                                     "C:\\STEFFEN\\RSPB\\Bulgaria\\Analysis\\EV.TV.Survival.Study\\EGVU_2lat_ad_cont_age.jags",
+                                     n.chains = nc, n.thin = nt, n.burnin = nb, n.cores=nc, parallel=T, n.iter = ni)
+
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
