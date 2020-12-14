@@ -19,33 +19,44 @@ setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
 #read data
 d = read.csv("ev.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
 d.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
-d.summ$start.date = ymd_hms(d.summ$start.date)
-d.summ$end.date = ymd(d.summ$end.date)
+d.summ$start.date
+d.summ$start.date = mdy_hm(d.summ$start.date)
+d.summ$end.date
+d.summ$end.date = mdy(d.summ$end.date)
 summary(d.summ$end.date)
 summary(d.summ$start.date)
-d.summ$mortality.date = ymd_hms(d.summ$mortality.date)
+d.summ$mortality.date
+d.summ$mortality.date = mdy_hm(d.summ$mortality.date)
 
 #add population.binned
+unique(d.summ$population.binned)
+d.summ$population.binned = as.character(d.summ$population.binned)
+d.summ$population.binned[d.summ$population.binned == "central & eastern"] <-  "eastern"
 unique(d$population)
 d$population.binned = NA
-d$population.binned[d$population == "middle east"] <-  "central & eastern"
-d$population.binned[d$population == "caucasus"] <-  "central & eastern"
+d$population.binned[d$population == "middle east"] <-  "eastern"
+d$population.binned[d$population == "caucasus"] <-  "eastern"
 d$population.binned[d$population == "western europe"] <-  "western"
-d$population.binned[d$population == "italy"] <-  "central & eastern"
-d$population.binned[d$population == "balkans"] <-  "central & eastern"
+d$population.binned[d$population == "italy"] <-  "eastern"
+d$population.binned[d$population == "balkans"] <-  "eastern"
 unique(d$population.binned)
 d$color = d$population.binned
-d$color[d$color == "central & eastern"] <-  "#800000"
+d$color[d$color == "eastern"] <-  "#800000"
 #d$color[d$color == "central & eastern"] <-  "#8B4513"
 d$color[d$color == "western"] <-  "#F4A460"
 head(d)
 head(d.summ)
 
+#reclassify age
+unique(d.summ$age.at.fate.simple)
+d.summ$age.at.fate.simple = as.character(d.summ$age.at.fate.simple)
+d.summ$age.at.fate.simple[d.summ$age.at.fate.simple == "adult"] <-  "immature/adult"
+
 #remove alive for plotting end fates
 d.summ2<-d.summ[!(d.summ$fate == "alive"),] 
 
 #remove birds from unknown pop
-d.summ2<-d.summ2[!(d.summ2$population == "unknown"),] 
+#d.summ2<-d.summ2[!(d.summ2$population == "unknown"),] 
 
 #remove rehabbed birds 
 #d.summ2<-d.summ2[!(d.summ2$rehabilitated == "Y"),] 
@@ -116,6 +127,7 @@ pmap = ggplot() + annotation_map(map_data("world"), fill = 'light grey', color =
 pmap
 
 #geom_bar(aes(y = (..count..)/sum(..count..)), position = position_dodge()) + scale_y_continuous(labels=scales::percent_format(accuracy=1)) + 
+d.summ2$population.binned
 p1 = ggplot(d.summ2, aes(population.binned, fill = fate.binned)) + theme_bw() + 
   geom_bar(position = position_dodge()) + ylab("# fates") + xlab("subpopulation") + 
   scale_fill_viridis_d(begin = .4,  direction = -1,  name = "fate:") + theme(legend.position = "none")
@@ -146,7 +158,7 @@ p5 = ggarrange(pmap,
 p5
 
 #print
-jpeg("fate.summary.plot.Rev1.path2.jpg", units="cm", width=28, height=15, res=300)
+jpeg("./Figures/fate.summary.plot.Rev1.jpg", units="cm", width=28, height=15, res=300)
 p5
 dev.off()
 
