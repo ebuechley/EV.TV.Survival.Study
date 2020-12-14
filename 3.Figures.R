@@ -288,19 +288,22 @@ setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
 ev.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
 summary(ev.summ$fate)
 dead = subset(ev.summ, ev.summ$fate == "confirmed dead")
+likely.dead = subset(ev.summ, ev.summ$fate == "likely dead")
+dead = rbind(dead, likely.dead)
 summary(dead$cause.of.death)
 nrow(dead)
 setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/")
-#write.csv(dead, "dead.Rev1.2.csv", row.names = F)
+#write.csv(dead, "dead.Rev1.3.csv", row.names = F)
 
 ##edited this sheet to simplify cause of death
-dead = read.csv("dead.Rev1.2.csv", stringsAsFactors=TRUE)
+dead = read.csv("dead.Rev1.3.csv")
 head(dead)
 
 #reclassify origin
 dead$origin = as.character(dead$origin)
 dead$origin[dead$origin=="N"] <- "wild" 
 dead$origin[dead$origin=="Y"] <- "captive"
+dead$origin
 
 #rename macedonia
 dead$start.country = as.character(dead$start.country)
@@ -309,10 +312,23 @@ dead$start.country[dead$start.country=="The former Yugoslav Republic of Macedoni
 dead$end.country[dead$end.country=="The former Yugoslav Republic of Macedonia"] <- "North Macedonia"
 
 #age simple
-dead$age.at.deployment.simple  = ifelse(dead$age.at.deployment.months >=18, "adult", "juvenile")
-dead$age.at.fate.simple  = ifelse(dead$age.at.fate.months >=18, "adult", "juvenile")
+dead$age.at.deployment.simple  = ifelse(dead$age.at.deployment.months >=18, "immature/adult", "juvenile")
+dead$age.at.fate.simple  = ifelse(dead$age.at.fate.months >=18, "immature/adult", "juvenile")
 head(dead$age.at.deployment.simple)
 head(dead$age.at.fate.simple)
+head(dead$cause.of.death.binned)
+head(dead$death.anthro)
+head(dead$origin)
+
+#convert to factor
+dead$start.country = as.factor(dead$start.country)
+dead$end.country = as.factor(dead$end.country)
+dead$origin = as.factor(dead$origin)
+dead$age.at.deployment.simple = as.factor(dead$age.at.deployment.simple)
+dead$age.at.fate.simple = as.factor(dead$age.at.fate.simple)
+dead$cause.of.death.binned = as.factor(dead$cause.of.death.binned)
+dead$death.anthro = as.factor(dead$death.anthro)
+summary(dead)
 
 #convert to data table to summarize
 d = data.table(dead)
@@ -322,8 +338,9 @@ dead = dead[order(start.country,end.country,origin,age.at.deployment.simple, age
 dead$N = NULL
 names(dead) = c("country tagged","location died","origin","age at tagging", "age at fate", "cause of death", "anthropogenic death?")
 dead
+summary(dead)
 setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/Tables/")
-write.csv(dead, "confirmed.mortalities.csv", row.names = F)
+write.csv(dead, "mortalities.csv", row.names = F)
 
 ############################################################
 #data summary table
