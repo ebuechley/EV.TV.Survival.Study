@@ -176,7 +176,8 @@ summary(d)
 
 #lubridate
 head(ev.summ)
-ev.summ$start.date = ymd_hms(ev.summ$start.date)
+ev.summ$start.date
+ev.summ$start.date = mdy_hm(ev.summ$start.date)
 
 #create population.origin.age.year
 #reclassify origin
