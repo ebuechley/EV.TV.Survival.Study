@@ -18,7 +18,7 @@ setwd("~/Google Drive/GitHub/EV.TV.Survival.Study/")
 
 #read data
 d = read.csv("ev.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
-d.summ= read.csv("ev.summary.final.Rev1.survival.prepared.csv", stringsAsFactors=TRUE)
+d.summ= read.csv("ev.summary.final.Rev1.survival.prepared.AA.csv", stringsAsFactors=TRUE)
 d.summ$start.date
 d.summ$start.date = mdy_hm(d.summ$start.date)
 d.summ$end.date
@@ -158,7 +158,7 @@ p5 = ggarrange(pmap,
 p5
 
 #print
-jpeg("./Figures/fate.summary.plot.Rev1.jpg", units="cm", width=28, height=15, res=300)
+jpeg("./Figures/fate.summary.plot.Rev1.AA.jpg", units="cm", width=28, height=15, res=300)
 p5
 dev.off()
 
