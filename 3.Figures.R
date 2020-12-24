@@ -132,7 +132,7 @@ p1 = ggplot(d.summ2, aes(population.binned, fill = fate.binned)) + theme_bw() +
   geom_bar(position = position_dodge()) + ylab("# fates") + xlab("subpopulation") + 
   scale_fill_viridis_d(begin = .4,  direction = -1,  name = "fate:") + theme(legend.position = "none")
   p1 
-
+  
 # fate by age
 p2 = ggplot(d.summ2, aes(age.at.fate.simple, fill = fate.binned)) + theme_bw() + 
   geom_bar(position = position_dodge()) + ylab("# fates") + xlab("age") + 
@@ -161,6 +161,36 @@ p5
 jpeg("./Figures/fate.summary.plot.Rev1.AA.jpg", units="cm", width=28, height=15, res=300)
 p5
 dev.off()
+
+#summarize proportion of fates
+d = data.table(d.summ2)
+
+#by pop
+names(d)
+d[, .(.N), by = .(population.binned,fate.binned)]
+76+33+4 #all eastern fates
+14+17+4 #all western fates
+76/113 #proportion of eastern fates = dead
+14/35 #proportion western fates = dead
+
+#by age
+names(d)
+d[, .(.N), by = .(age.at.fate.simple,fate.binned)]
+54+24+2 #all juvenile fates
+26+36+6 # all imm/ad fates
+54/80 #proportion juv fates = dead
+36/68 #proportion imm/ad fates = dead
+
+#by age
+names(d)
+d[, .(.N), by = .(fate.at.annual.stage,fate.binned)]
+21+19+2 #all NB fates
+28+11+3 # all Br fates
+36+19+2 # fall mig fates
+5+1+1 # spring mig fates
+21/42 # nB = dead
+28/42 #br = dead
+
 
 #############################################################################
 # summary stats on data summary
