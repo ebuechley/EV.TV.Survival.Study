@@ -797,9 +797,6 @@ fwrite(TABLE2,"EGVU_AnnSurv_Table1_REV1_FINAL.csv")
 ##### FIGURE OF MONTHLY SURVIVAL WITH MIGRATORY STAGE
 ### SET UP ANNUAL TABLE
 
-##### FIGURE OF MONTHLY SURVIVAL WITH MIGRATORY STAGE
-### SET UP ANNUAL TABLE
-
 MigTab<-expand.grid(age=seq(1,54,3),mig=c(0,1),pop=c(0,1),lat=c(0,1), capt=c(0,1)) %>%
   mutate(Population=ifelse(pop==1,"western Europe","central and east")) %>%
   mutate(adult=ifelse(age<19,1,0))
@@ -838,11 +835,13 @@ MCMCpred %>% group_by(age,mig, lat) %>%
   #mutate(stage=ifelse(mig==0,"stationary","migrating")) %>%
   ggplot()+
   geom_ribbon(aes(x=age, ymin=lcl, ymax=ucl, fill=Season), alpha=0.2) +   ##, type=Origin
-  geom_line(aes(x=age, y=surv, color=Season))+     ## , linetype=Origin
+  geom_line(aes(x=age, y=surv, color=Season),size=2)+     ## , linetype=Origin
   
   ## format axis ticks
   scale_x_continuous(name="Age in years", limits=c(1,54), breaks=seq(1,54,6), labels=seq(0,4,0.5)) +
-  scale_y_continuous(name="Monthly survival probability", limits=c(0.7,1), breaks=seq(0.,1,0.05)) +
+  scale_y_continuous(name="Monthly survival probability", limits=c(0.8,1), breaks=seq(0.,1,0.05)) +
+  scale_fill_viridis_d(begin = .4, direction = -1) +
+  scale_color_viridis_d(begin = .4, direction = -1) +
   
   ## beautification of the axes
   theme(panel.background=element_rect(fill="white", colour="black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -850,11 +849,26 @@ MCMCpred %>% group_by(age,mig, lat) %>%
         axis.text.x=element_text(size=14, color="black"), 
         axis.title=element_text(size=18),
         legend.text=element_text(size=14, color="black"),
-        legend.title=element_text(size=16, color="black"),  
+        legend.title=element_text(size=16, color="black"),
+        legend.position=c(0.8,0.2), 
         strip.text=element_text(size=18, color="black"), 
         strip.background=element_rect(fill="white", colour="black"))
 
-ggsave("FIG3_EGVU_Monthly_Surv_mig_tradeoff.jpg", width=11,height=9, quality=100)
+ggsave("FIG2_EGVU_Monthly_Surv_mig_tradeoff.jpg", width=11,height=9, quality=100)
+ggsave("FIG2_EGVU_Monthly_Surv_mig_tradeoff.eps", width=11,height=9, device=cairo_ps, fallback_resolution = 600)
 
-
-
+Fig2data<-MCMCpred %>% group_by(age,mig, lat, pop, capt) %>%
+  summarise(med.surv=quantile(logit.surv,0.5),lcl.surv=quantile(logit.surv,0.025),ucl.surv=quantile(logit.surv,0.975)) %>%
+  filter(!(mig==1 & lat==1)) %>%
+  filter(!(age<19 & lat==1)) %>%
+  
+  ### BACKTRANSFORM TO NORMAL SCALE
+  mutate(surv=plogis(med.surv),lcl=plogis(lcl.surv),ucl=plogis(ucl.surv)) %>%
+  
+  ### ANNOTATE GROUPS
+  mutate(Origin=ifelse(capt==0,"wild","captive")) %>%
+  mutate(Population=ifelse(pop==1,"western Europe","central and east")) %>%
+  mutate(Season=ifelse(lat==1,"south of 25°N",ifelse(mig==1,"migration","north of 25°N"))) %>%
+  ungroup() %>%
+  select(Population, Origin, Season, age, surv,lcl,ucl)
+fwrite(Fig2data,"EGVU_MonthSurv_Fig2_FINAL.csv")
