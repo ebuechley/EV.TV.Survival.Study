@@ -363,11 +363,12 @@ summary(dead)
 #convert to data table to summarize
 d = data.table(dead)
 names(d)
-dead <- d[, .(.N), by = .(id,start.country,end.country,origin,age.at.deployment.simple, age.at.fate.simple,cause.of.death.binned,death.anthro,how.fate.determined)]
-dead = dead[order(id,start.country,end.country,origin,age.at.deployment.simple, age.at.fate.simple,cause.of.death.binned, death.anthro,how.fate.determined),] 
+unique(d$fate)
+dead <- d[, .(.N), by = .(id,start.country,end.country,origin,age.at.deployment.simple, age.at.fate.simple,fate,cause.of.death.binned,death.anthro,how.fate.determined)]
+dead = dead[order(id,start.country,end.country,origin,age.at.deployment.simple, age.at.fate.simple,fate,cause.of.death.binned, death.anthro,how.fate.determined),] 
 dead$N = NULL
 dead$id = NULL
-names(dead) = c("country tagged","location died","origin","age at tagging", "age at fate", "cause of death", "anthropogenic death?", "how fate determined")
+names(dead) = c("country tagged","location died","origin","age at tagging", "age at fate", "fate", "cause of death", "anthropogenic death?", "how fate determined")
 dead
 summary(dead)
 setwd("~/Google Drive/Research Projects/EV-TV Survival Study/Manuscript/Latest/Rev1/Tables/")
